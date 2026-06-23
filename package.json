@@ -1,0 +1,27 @@
+{
+  "name": "scrumrun",
+  "version": "1.0.0",
+  "description": "ScrumRun: sprint-driven project bootstrap, commands, and skills for Codex, Claude Code, and OpenCode.",
+  "bin": {
+    "scrumrun": "bin/scrumrun.js",
+    "sr-claude": "bin/claude-install.js"
+  },
+  "files": [
+    "bin",
+    "templates",
+    "README.md"
+  ],
+  "keywords": [
+    "ai",
+    "scrum",
+    "codex",
+    "opencode",
+    "agents",
+    "sprints"
+  ],
+  "author": "Leander Costa",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
