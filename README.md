@@ -223,6 +223,14 @@ npx github:leandercosta/scrumrun install opencode
 npx github:leandercosta/scrumrun install claude
 ```
 
+Install targets write to different client directories:
+
+```text
+codex    -> ~/.codex/prompts and ~/.codex/skills
+claude   -> ~/.claude/commands and ~/.claude/skills
+opencode -> ~/.config/opencode/commands and ~/.config/opencode/skills
+```
+
 Optional global install:
 
 ```bash
@@ -869,6 +877,9 @@ Checks whether global commands and skills are installed.
 
 ```bash
 npx github:leandercosta/scrumrun doctor
+npx github:leandercosta/scrumrun doctor codex
+npx github:leandercosta/scrumrun doctor claude
+npx github:leandercosta/scrumrun doctor opencode
 ```
 
 ## Safety Rules

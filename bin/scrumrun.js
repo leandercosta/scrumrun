@@ -54,7 +54,7 @@ Usage:
   scrumrun prompt <study|challenge|know|vault|goal-new|sprint-new|sprint-run|backlog-add> [text]
   scrumrun uninstall [--force]
   scrumrun migrate
-  scrumrun doctor
+  scrumrun doctor [all|codex|opencode|claude]
 
 Examples:
   npx github:leandercosta/scrumrun install
@@ -171,6 +171,17 @@ function installClaude(force) {
   printResults("Installed claude", results);
 }
 
+function installCodex(force) {
+  const home = os.homedir();
+  const promptsDir = path.join(home, ".codex", "prompts");
+  cleanupLegacy(promptsDir, path.join(home, ".codex", "skills"));
+  const results = [
+    ...copyDir(path.join(templates, "codex", "prompts"), promptsDir, { force }),
+    ...copyDir(path.join(templates, "codex", "skills"), path.join(home, ".codex", "skills"), { force })
+  ];
+  printResults("Installed codex", results);
+}
+
 function installOpenCode(force) {
   const home = os.homedir();
   const commandsDir = path.join(home, ".config", "opencode", "commands");
@@ -184,9 +195,12 @@ function installOpenCode(force) {
 
 function install(target, force) {
   if (target === "all") {
+    installCodex(force);
     installClaude(force);
     installOpenCode(force);
-  } else if (target === "codex" || target === "claude") {
+  } else if (target === "codex") {
+    installCodex(force);
+  } else if (target === "claude") {
     installClaude(force);
   } else if (target === "opencode") {
     installOpenCode(force);
@@ -852,19 +866,30 @@ function migrateProject() {
   printResults("Migrated project", results.filter((result) => result.status !== "missing"));
 }
 
-function doctor() {
+function doctor(target = "all") {
   const home = os.homedir();
   const checks = [];
 
-  for (const command of COMMANDS) {
-    checks.push([`Claude command ${command}`, path.join(home, ".claude", "commands", `${command}.md`)]);
+  if (target === "all" || target === "codex") {
+    for (const command of COMMANDS) {
+      checks.push([`Codex prompt ${command}`, path.join(home, ".codex", "prompts", `${command}.md`)]);
+    }
+    checks.push(["Codex skill scrumrun", path.join(home, ".codex", "skills", "scrumrun", "SKILL.md")]);
   }
-  checks.push(["Claude skill scrumrun", path.join(home, ".claude", "skills", "scrumrun", "SKILL.md")]);
 
-  for (const command of COMMANDS) {
-    checks.push([`OpenCode command ${command}`, path.join(home, ".config", "opencode", "commands", `${command}.md`)]);
+  if (target === "all" || target === "claude") {
+    for (const command of COMMANDS) {
+      checks.push([`Claude command ${command}`, path.join(home, ".claude", "commands", `${command}.md`)]);
+    }
+    checks.push(["Claude skill scrumrun", path.join(home, ".claude", "skills", "scrumrun", "SKILL.md")]);
   }
-  checks.push(["OpenCode skill scrumrun", path.join(home, ".config", "opencode", "skills", "scrumrun", "SKILL.md")]);
+
+  if (target === "all" || target === "opencode") {
+    for (const command of COMMANDS) {
+      checks.push([`OpenCode command ${command}`, path.join(home, ".config", "opencode", "commands", `${command}.md`)]);
+    }
+    checks.push(["OpenCode skill scrumrun", path.join(home, ".config", "opencode", "skills", "scrumrun", "SKILL.md")]);
+  }
 
   let ok = true;
   for (const [label, file] of checks) {
@@ -917,15 +942,26 @@ if (!command || command === "--help" || command === "-h") {
 } else if (command === "migrate") {
   migrateProject();
 } else if (command === "doctor") {
-  doctor();
+  const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
+  doctor(target);
 } else if (command === "claude") {
   const sub = args[1];
   if (sub === "install" || sub === "update") {
     installClaude(true);
   } else if (sub === "doctor") {
-    doctor();
+    doctor("claude");
   } else {
     console.error("Usage: scrumrun claude [install|update|doctor]");
+    process.exitCode = 1;
+  }
+} else if (command === "codex") {
+  const sub = args[1];
+  if (sub === "install" || sub === "update") {
+    installCodex(true);
+  } else if (sub === "doctor") {
+    doctor("codex");
+  } else {
+    console.error("Usage: scrumrun codex [install|update|doctor]");
     process.exitCode = 1;
   }
 } else if (command === "opencode") {
@@ -933,7 +969,7 @@ if (!command || command === "--help" || command === "-h") {
   if (sub === "install" || sub === "update") {
     installOpenCode(true);
   } else if (sub === "doctor") {
-    doctor();
+    doctor("opencode");
   } else {
     console.error("Usage: scrumrun opencode [install|update|doctor]");
     process.exitCode = 1;
