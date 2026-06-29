@@ -17,7 +17,7 @@ ScrumRun gives the agent a stable project memory, a sprint protocol, review chec
 - A sprint candidate backlog under `.scrumrun/backlog.md`.
 - An approved knowledge base under `.scrumrun/knowledge.md`.
 - Sprint history, decisions, review agents, golden rules, and project mapping.
-- A CLI that installs, updates, checks, and initializes ScrumRun files.
+- A CLI that installs, updates, checks, initializes, summarizes, and manages local ScrumRun files.
 
 ## Core Idea
 
@@ -682,6 +682,10 @@ Resolves pending decisions, questions, risks, and follow-ups one by one. With no
 
 ## CLI Reference
 
+The CLI manages local ScrumRun files and installed slash commands. It does not replace Codex, Claude Code, or OpenCode as the AI execution layer.
+
+Use slash commands inside your AI client for deep repository analysis and implementation. Use the CLI for local project setup, status, simple backlog/knowledge file operations, and generating prompts to paste into the client.
+
 ### `install [all|codex|opencode|claude]`
 
 Installs global slash commands and skills.
@@ -720,6 +724,74 @@ Default behavior is local with an agent hint. Use `--local` explicitly when you 
 Use `--shared` when ScrumRun should be committed as part of the repository.
 
 Use `--no-agent-hint` when you want `.scrumrun/` only.
+
+### `status`
+
+Shows a local ScrumRun project summary: required control files, local Git exclude status, backlog count, knowledge counts, planned sprint count, and history status counts.
+
+```bash
+npx github:leandercosta/scrumrun status
+```
+
+### `commands`
+
+Lists installed slash command names and useful CLI helpers.
+
+```bash
+npx github:leandercosta/scrumrun commands
+```
+
+### `backlog`
+
+Manages `.scrumrun/backlog.md` without running any sprint.
+
+```bash
+npx github:leandercosta/scrumrun backlog add "Sprint 01"
+npx github:leandercosta/scrumrun backlog list
+npx github:leandercosta/scrumrun backlog list permissions
+```
+
+Legacy aliases are also available:
+
+```bash
+npx github:leandercosta/scrumrun backlog-add "Sprint 01"
+npx github:leandercosta/scrumrun backlog-list
+```
+
+### `know`
+
+Manages `.scrumrun/knowledge.md` locally. CLI-created knowledge starts as pending and should still be verified by an agent before approval.
+
+```bash
+npx github:leandercosta/scrumrun know add "Tenant permissions for report exports"
+npx github:leandercosta/scrumrun know list
+npx github:leandercosta/scrumrun know approve K-001
+npx github:leandercosta/scrumrun know reject K-002 "Wrong module"
+npx github:leandercosta/scrumrun know insight K-001 "Also used by nightly export"
+npx github:leandercosta/scrumrun know resume
+npx github:leandercosta/scrumrun know resume K-001
+npx github:leandercosta/scrumrun know remove K-001
+```
+
+For deep verification, use the slash command in your AI client:
+
+```text
+/run-know --deep Tenant permissions for report exports
+```
+
+### `prompt`
+
+Generates a slash command line for your AI client without running the agent.
+
+```bash
+npx github:leandercosta/scrumrun prompt study
+npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
+npx github:leandercosta/scrumrun prompt know "Tenant permissions for report exports"
+npx github:leandercosta/scrumrun prompt goal-new "Continue evolving this legacy product"
+npx github:leandercosta/scrumrun prompt sprint-new "Implement tenant-safe CSV export"
+npx github:leandercosta/scrumrun prompt sprint-run "Sprint 01"
+npx github:leandercosta/scrumrun prompt backlog-add "Sprint 01"
+```
 
 ### `uninstall [--force]`
 

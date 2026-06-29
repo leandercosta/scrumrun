@@ -1,6 +1,6 @@
 # Knowledge Base - {{PROJECT_NAME}}
 
-Only approved knowledge should be used as planning context for `/scr-challenge`, `/scr-sprint --new`, `/scr-sprint --run`, and feature planning.
+Only approved knowledge should be used as planning context for `/run-challenge`, `/run-sprint --new`, `/run-sprint --run`, and feature planning.
 
 ## Approved Knowledge
 

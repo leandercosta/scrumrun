@@ -34,6 +34,18 @@ Usage:
   scrumrun install [all|codex|opencode|claude] [--force]
   scrumrun update  [all|codex|opencode|claude]
   scrumrun init [--local|--shared] [--no-agent-hint] [--force]
+  scrumrun status
+  scrumrun commands
+  scrumrun backlog add <sprint>
+  scrumrun backlog list
+  scrumrun know add <topic>
+  scrumrun know list
+  scrumrun know approve <K-NNN>
+  scrumrun know reject <K-NNN> [reason]
+  scrumrun know insight <K-NNN> <text>
+  scrumrun know remove <K-NNN>
+  scrumrun know resume [K-NNN]
+  scrumrun prompt <study|challenge|know|goal-new|sprint-new|sprint-run|backlog-add> [text]
   scrumrun uninstall [--force]
   scrumrun migrate
   scrumrun doctor
@@ -42,6 +54,10 @@ Examples:
   npx github:leandercosta/scrumrun install
   npx github:leandercosta/scrumrun install claude
   npx github:leandercosta/scrumrun init
+  npx github:leandercosta/scrumrun status
+  npx github:leandercosta/scrumrun backlog add "Sprint 01"
+  npx github:leandercosta/scrumrun know add "Tenant permissions for report exports"
+  npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
   npx github:leandercosta/scrumrun uninstall --force
   npx github:leandercosta/scrumrun init --shared
   npx github:leandercosta/scrumrun migrate
@@ -51,6 +67,35 @@ Examples:
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function joinArgs(parts) {
+  return parts.filter((part) => part && !part.startsWith("--")).join(" ").trim();
+}
+
+function joinText(parts) {
+  return parts.filter(Boolean).join(" ").trim();
+}
+
+function stripQuotes(value) {
+  return value.replace(/^["']|["']$/g, "");
+}
+
+function readIfExists(file) {
+  return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+}
+
+function writeFile(file, content) {
+  ensureDir(path.dirname(file));
+  fs.writeFileSync(file, content.endsWith("\n") ? content : `${content}\n`);
+}
+
+function projectFile(...parts) {
+  return path.join(process.cwd(), ".scrumrun", ...parts);
 }
 
 function copyFile(src, dest, { force = true, vars = {} } = {}) {
@@ -209,6 +254,359 @@ function ensureBacklogFile(cwd) {
   return backlogFile;
 }
 
+function ensureKnowledgeFile(cwd) {
+  const knowledgeFile = path.join(cwd, ".scrumrun", "knowledge.md");
+  if (!fs.existsSync(knowledgeFile)) {
+    writeFile(
+      knowledgeFile,
+      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /run-challenge, /run-sprint --new, /run-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
+    );
+  }
+  return knowledgeFile;
+}
+
+function removePendingNone(content) {
+  return content.replace(/^- Pending: none\.\n?/gm, "").replace(/\n{3,}/g, "\n\n");
+}
+
+function addBacklogItem(label) {
+  if (!label) {
+    console.error("Usage: scrumrun backlog add <sprint number or name>");
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureBacklogFile(process.cwd());
+  const current = readIfExists(file);
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (new RegExp(`^- \\[[ xX]\\] .*${escaped}(?: |$)`, "m").test(current)) {
+    console.log(`Already in backlog: ${label}`);
+    return;
+  }
+  let next = removePendingNone(current);
+  if (!next.endsWith("\n")) next += "\n";
+  next += `- [ ] ${label} - added ${today()}. Source: CLI.\n`;
+  writeFile(file, next);
+  console.log(`Added to backlog: ${label}`);
+}
+
+function listBacklog(filter = "") {
+  const file = ensureBacklogFile(process.cwd());
+  const content = readIfExists(file);
+  if (!filter) {
+    console.log(content);
+    return;
+  }
+  const lines = content.split(/\r?\n/).filter((line) => line.toLowerCase().includes(filter.toLowerCase()));
+  console.log(lines.length ? lines.join("\n") : `No backlog items matched: ${filter}`);
+}
+
+function sectionRegex(section) {
+  return new RegExp(`(^## ${section}\\n)([\\s\\S]*?)(?=^## |(?![\\s\\S]))`, "m");
+}
+
+function replaceSection(content, section, body) {
+  const regex = sectionRegex(section);
+  const cleanBody = body.trim() ? `${body.trim()}\n\n` : "- Pending: none.\n\n";
+  if (regex.test(content)) {
+    return content.replace(regex, `$1\n${cleanBody}`);
+  }
+  return `${content.trim()}\n\n## ${section}\n\n${cleanBody}`;
+}
+
+function getSection(content, section) {
+  const match = content.match(sectionRegex(section));
+  return match ? match[2].trim() : "";
+}
+
+function nextKnowledgeId(content) {
+  const ids = [...content.matchAll(/\bK-(\d{3})\b/g)].map((match) => Number(match[1]));
+  const next = ids.length ? Math.max(...ids) + 1 : 1;
+  return `K-${String(next).padStart(3, "0")}`;
+}
+
+function findKnowledgeBlock(content, id) {
+  const regex = new RegExp(`^### ${id}\\b[\\s\\S]*?(?=^### K-\\d{3}\\b|^## |(?![\\s\\S]))`, "m");
+  const match = content.match(regex);
+  return match ? match[0].trim() : "";
+}
+
+function removeKnowledgeBlock(content, id) {
+  const regex = new RegExp(`\\n?^### ${id}\\b[\\s\\S]*?(?=^### K-\\d{3}\\b|^## |(?![\\s\\S]))`, "m");
+  return content.replace(regex, "\n").replace(/\n{3,}/g, "\n\n");
+}
+
+function updateKnowledgeStatus(block, status, extra = "") {
+  const lines = block.split(/\r?\n/);
+  const next = lines.map((line) => line.startsWith("Status: ") ? `Status: ${status}` : line);
+  if (!lines.some((line) => line.startsWith("Status: "))) {
+    next.splice(1, 0, `Status: ${status}`);
+  }
+  if (extra) {
+    next.push("", extra);
+  }
+  return next.join("\n").trim();
+}
+
+function addKnowledge(topic) {
+  if (!topic) {
+    console.error("Usage: scrumrun know add <topic>");
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureKnowledgeFile(process.cwd());
+  const current = readIfExists(file);
+  const id = nextKnowledgeId(current);
+  const block = `### ${id} - ${stripQuotes(topic)}\nStatus: pending\nDate: ${today()}\nSource: CLI\nApprover: pending\n\n#### User Insight\n\n${stripQuotes(topic)}\n\n#### Verified Facts\n\n- Pending: requires agent verification with /run-know.\n\n#### Assumptions and Uncertainty\n\n- This entry was created from CLI input and has not been verified by an agent.\n\n#### Risks If Wrong\n\n- Future sprint planning could be based on an incorrect assumption if approved without review.\n\n#### Affected Modules\n\n- Pending: unknown.\n\n#### Suggested Future Use\n\n- Use as context only after approval.\n`;
+  const pending = getSection(current, "Pending Proposals");
+  const nextPending = `${pending.replace(/^- Pending: none\.\n?/gm, "").trim()}\n\n${block}`.trim();
+  writeFile(file, replaceSection(current, "Pending Proposals", nextPending));
+  console.log(`Created pending knowledge: ${id}`);
+  console.log(`Approve later with: scrumrun know approve ${id}`);
+}
+
+function moveKnowledge(id, targetSection, status, reason = "") {
+  if (!/^K-\d{3}$/.test(id || "")) {
+    console.error(`Invalid knowledge id: ${id || "(missing)"}`);
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureKnowledgeFile(process.cwd());
+  const current = readIfExists(file);
+  const block = findKnowledgeBlock(current, id);
+  if (!block) {
+    console.error(`Knowledge entry not found: ${id}`);
+    process.exitCode = 1;
+    return;
+  }
+  let next = removeKnowledgeBlock(current, id);
+  const extra = status === "approved"
+    ? `Approved: ${today()}`
+    : reason ? `Rejected: ${today()}\nReason: ${reason}` : `Rejected: ${today()}`;
+  const moved = updateKnowledgeStatus(block, status, extra);
+  const target = getSection(next, targetSection).replace(/^- Pending: none\.\n?/gm, "").trim();
+  next = replaceSection(next, targetSection, `${target}\n\n${moved}`.trim());
+  writeFile(file, next);
+  console.log(`${status === "approved" ? "Approved" : "Rejected"} knowledge: ${id}`);
+}
+
+function removeKnowledge(id) {
+  const file = ensureKnowledgeFile(process.cwd());
+  const current = readIfExists(file);
+  if (!findKnowledgeBlock(current, id)) {
+    console.error(`Knowledge entry not found: ${id}`);
+    process.exitCode = 1;
+    return;
+  }
+  writeFile(file, removeKnowledgeBlock(current, id));
+  console.log(`Removed knowledge: ${id}`);
+}
+
+function addKnowledgeInsight(id, text) {
+  if (!text) {
+    console.error("Usage: scrumrun know insight <K-NNN> <text>");
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureKnowledgeFile(process.cwd());
+  const current = readIfExists(file);
+  const block = findKnowledgeBlock(current, id);
+  if (!block) {
+    console.error(`Knowledge entry not found: ${id}`);
+    process.exitCode = 1;
+    return;
+  }
+  const insight = `- ${today()}: ${text}`;
+  const updated = block.includes("#### Insights")
+    ? block.replace(/(#### Insights\n\n)/, `$1${insight}\n`)
+    : `${block}\n\n#### Insights\n\n${insight}`;
+  writeFile(file, current.replace(block, updated));
+  console.log(`Added insight to ${id}`);
+}
+
+function listKnowledge(id = "") {
+  const file = ensureKnowledgeFile(process.cwd());
+  const content = readIfExists(file);
+  if (id) {
+    const block = findKnowledgeBlock(content, id);
+    console.log(block || `Knowledge entry not found: ${id}`);
+    return;
+  }
+  console.log(content);
+}
+
+function resumeKnowledge(id = "") {
+  const file = ensureKnowledgeFile(process.cwd());
+  const content = readIfExists(file);
+  const source = id ? findKnowledgeBlock(content, id) : content;
+  if (!source) {
+    console.log(`Knowledge entry not found: ${id}`);
+    return;
+  }
+  const entries = [...source.matchAll(/^### (K-\d{3}) - (.+)$/gm)];
+  if (!entries.length) {
+    console.log(source);
+    return;
+  }
+  for (const [, entryId, title] of entries) {
+    const block = findKnowledgeBlock(content, entryId);
+    const status = (block.match(/^Status: (.+)$/m) || [])[1] || "unknown";
+    const fact = (block.match(/#### Verified Facts\n\n([\s\S]*?)(?=\n#### |$)/) || [])[1] || "";
+    console.log(`- ${entryId} | ${status} | ${title}`);
+    console.log(`  ${fact.trim().split(/\r?\n/)[0] || "No verified fact summary."}`);
+  }
+}
+
+function runKnow(parts) {
+  const action = parts[0];
+  if (!action || action === "list" || action === "--list" || action === "-l") {
+    listKnowledge(parts[1]);
+  } else if (action === "add" || action === "--add" || action === "-a") {
+    addKnowledge(joinArgs(parts.slice(1)));
+  } else if (action === "approve") {
+    moveKnowledge(parts[1], "Approved Knowledge", "approved");
+  } else if (action === "reject") {
+    moveKnowledge(parts[1], "Rejected Proposals", "rejected", joinArgs(parts.slice(2)));
+  } else if (action === "remove" || action === "delete" || action === "--remove" || action === "-r") {
+    removeKnowledge(parts[1]);
+  } else if (action === "insight" || action === "--insight" || action === "-i") {
+    addKnowledgeInsight(parts[1], joinArgs(parts.slice(2)));
+  } else if (action === "resume" || action === "--resume" || action === "-s") {
+    resumeKnowledge(parts[1]);
+  } else if (/^K-\d{3}$/.test(action) && (parts[1] === "resume" || parts[1] === "--resume" || parts[1] === "-s")) {
+    resumeKnowledge(action);
+  } else {
+    addKnowledge(joinArgs(parts));
+  }
+}
+
+function runBacklog(parts) {
+  const action = parts[0];
+  if (!action || action === "list" || action === "--list" || action === "-l") {
+    listBacklog(joinArgs(parts.slice(1)));
+  } else if (action === "add" || action === "--add" || action === "-a") {
+    addBacklogItem(joinArgs(parts.slice(1)));
+  } else {
+    addBacklogItem(joinArgs(parts));
+  }
+}
+
+function commandList() {
+  console.log(`Slash commands installed by ScrumRun:
+
+Project:
+  /run-help
+  /run-init
+  /run-uninstall
+  /run-update
+  /run-study
+  /run-challenge
+
+Knowledge and planning:
+  /run-know
+  /run-goal
+  /run-feature
+  /run-sprint
+  /run-backlog
+
+Project controls:
+  /run-config
+  /run-golden
+  /run-map
+  /run-agent
+  /run-review
+  /run-decisions
+
+CLI helpers:
+  scrumrun status
+  scrumrun commands
+  scrumrun backlog add "Sprint 01"
+  scrumrun know add "Topic"
+  scrumrun prompt challenge "..."
+`);
+}
+
+function countMatches(content, regex) {
+  return (content.match(regex) || []).length;
+}
+
+function sprintStatusCounts(history) {
+  return {
+    completed: countMatches(history, /Status:\s*completed\.?/gi),
+    partial: countMatches(history, /Status:\s*partial\.?/gi),
+    blocked: countMatches(history, /Status:\s*blocked\.?/gi)
+  };
+}
+
+function statusProject() {
+  const cwd = process.cwd();
+  const scrumDir = path.join(cwd, ".scrumrun");
+  const required = [
+    "config.md",
+    "golden-rules.md",
+    "map.md",
+    "agents.md",
+    "runbook.md",
+    "project.md",
+    "backlog.md",
+    "knowledge.md",
+    path.join("goals", "main", "sprint.md"),
+    path.join("goals", "main", "history.md"),
+    path.join("goals", "main", "decisions.md")
+  ];
+  console.log(`# ScrumRun Status - ${path.basename(cwd)}`);
+  console.log("");
+  console.log(`Project files: ${fs.existsSync(scrumDir) ? "present" : "missing"}`);
+  console.log(`AGENTS.md: ${fs.existsSync(path.join(cwd, "AGENTS.md")) ? "present" : "missing"}`);
+  if (hasGitRepo(cwd)) {
+    const exclude = readIfExists(path.join(cwd, ".git", "info", "exclude"));
+    console.log(`Local git exclude: ${exclude.includes(".scrumrun/") ? ".scrumrun/ ignored" : ".scrumrun/ not ignored"}`);
+  }
+  console.log("");
+  console.log("## Files");
+  for (const file of required) {
+    const full = path.join(scrumDir, file);
+    console.log(`- ${fs.existsSync(full) ? "ok" : "missing"} ${path.join(".scrumrun", file)}`);
+  }
+  const backlog = readIfExists(projectFile("backlog.md"));
+  const knowledge = readIfExists(projectFile("knowledge.md"));
+  const sprint = readIfExists(projectFile("goals", "main", "sprint.md"));
+  const history = readIfExists(projectFile("goals", "main", "history.md"));
+  const counts = sprintStatusCounts(history);
+  console.log("");
+  console.log("## Counts");
+  console.log(`- Backlog candidates: ${countMatches(backlog, /^- \[[ xX]\] /gm)}`);
+  console.log(`- Knowledge approved: ${countMatches(getSection(knowledge, "Approved Knowledge"), /^### K-\d{3}/gm)}`);
+  console.log(`- Knowledge pending: ${countMatches(getSection(knowledge, "Pending Proposals"), /^### K-\d{3}/gm)}`);
+  console.log(`- Knowledge rejected: ${countMatches(getSection(knowledge, "Rejected Proposals"), /^### K-\d{3}/gm)}`);
+  console.log(`- Planned sprints: ${countMatches(sprint, /^##+ .*Sprint/gi)}`);
+  console.log(`- Completed: ${counts.completed}`);
+  console.log(`- Partial: ${counts.partial}`);
+  console.log(`- Blocked: ${counts.blocked}`);
+}
+
+function promptCommand(parts) {
+  const kind = parts[0];
+  const text = joinText(parts.slice(1));
+  const prompts = {
+    study: `/run-study${text ? ` ${text}` : ""}`,
+    challenge: `/run-challenge ${text}`.trim(),
+    know: `/run-know ${text}`.trim(),
+    "goal-new": `/run-goal --new ${text}`.trim(),
+    goal: `/run-goal --new ${text}`.trim(),
+    "sprint-new": `/run-sprint --new ${text}`.trim(),
+    "sprint-run": `/run-sprint --run ${text}`.trim(),
+    "backlog-add": `/run-backlog --add ${text}`.trim(),
+    backlog: `/run-backlog --add ${text}`.trim(),
+    status: `/run-sprint --status${text ? ` ${text}` : ""}`
+  };
+  if (!kind || !prompts[kind]) {
+    console.error("Usage: scrumrun prompt <study|challenge|know|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
+    process.exitCode = 1;
+    return;
+  }
+  console.log(prompts[kind]);
+}
+
 function initProject({ force, mode, agentHint }) {
   const cwd = process.cwd();
   const vars = {
@@ -354,6 +752,22 @@ if (!command || command === "--help" || command === "-h") {
   }
 } else if (command === "uninstall") {
   uninstallProject(force);
+} else if (command === "status") {
+  statusProject();
+} else if (command === "commands") {
+  commandList();
+} else if (command === "backlog" || command === "backlog-add" || command === "backlog-list") {
+  if (command === "backlog-add") {
+    runBacklog(["add", ...args.slice(1)]);
+  } else if (command === "backlog-list") {
+    runBacklog(["list", ...args.slice(1)]);
+  } else {
+    runBacklog(args.slice(1));
+  }
+} else if (command === "know") {
+  runKnow(args.slice(1));
+} else if (command === "prompt") {
+  promptCommand(args.slice(1));
 } else if (command === "migrate") {
   migrateProject();
 } else if (command === "doctor") {
