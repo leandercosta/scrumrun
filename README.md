@@ -51,6 +51,7 @@ AGENTS.md
   project.md
   backlog.md
   knowledge.md
+  vault.local.md      # optional, local-only, never committed
   goals/
     main/
       sprint.md
@@ -144,6 +145,14 @@ Approved project knowledge base.
 Use this for domain facts, legacy behavior, permission rules, integration details, known constraints, and user insights that should influence future challenges and sprint planning.
 
 Knowledge starts as a pending proposal. Only the `Approved Knowledge` section should be used as planning truth. Pending proposals can be mentioned as unapproved context, and rejected proposals should only be used to avoid repeating known bad assumptions.
+
+### `.scrumrun/vault.local.md`
+
+Optional local development vault.
+
+Use this for dev-only credentials and local test values that help you work on the project. It is plaintext Markdown, not encrypted storage, and must never be committed or used as a production secret manager.
+
+ScrumRun adds `.scrumrun/vault.local.md` to `.git/info/exclude` when initializing a Git project. Agents may mention that local vault entries exist, but they must not print vault values in study reports, sprint history, knowledge, reviews, backlog, commits, or normal summaries.
 
 ### `.scrumrun/goals/main/sprint.md`
 
@@ -280,6 +289,8 @@ AGENTS.md
 .scrumrun/features/
 .scrumrun/reviews/
 ```
+
+Even in shared mode, `.scrumrun/vault.local.md` is local-only and should never be committed.
 
 For an existing project that has been running for months or years, use local adoption:
 
@@ -483,6 +494,30 @@ Examples:
 /run-know approve K-001
 /run-know reject K-002 because exports are handled by the billing service, not reports
 ```
+
+#### `/run-vault`
+
+Manages local development credentials in `.scrumrun/vault.local.md`.
+
+This is intentionally local-only. It is useful for development credentials, sandbox API keys, local test tokens, and throwaway values. It is plaintext, so do not use it as a production secret manager.
+
+Examples:
+
+```text
+/run-vault OPENAI_API_KEY:sk-local-dev --add
+/run-vault --add STRIPE_SECRET_KEY:sk_test_local
+/run-vault --list
+/run-vault --show OPENAI_API_KEY
+/run-vault --remove OPENAI_API_KEY
+/run-vault --path
+```
+
+Rules:
+
+- values go only to `.scrumrun/vault.local.md`;
+- `.scrumrun/vault.local.md` must stay out of Git;
+- values must not be copied into knowledge, sprint history, reviews, backlog, decisions, commits, or normal summaries;
+- `/run-study` and `/run-challenge` may mention that vault entries exist, but must not reveal values.
 
 #### `/run-challenge`
 
@@ -741,6 +776,19 @@ Lists installed slash command names and useful CLI helpers.
 npx github:leandercosta/scrumrun commands
 ```
 
+### `vault`
+
+Manages `.scrumrun/vault.local.md` for local development secrets. Values are stored as plaintext and are hidden by default in list output.
+
+```bash
+npx github:leandercosta/scrumrun vault add OPENAI_API_KEY sk-local-dev
+npx github:leandercosta/scrumrun vault add STRIPE_SECRET_KEY:sk_test_local
+npx github:leandercosta/scrumrun vault list
+npx github:leandercosta/scrumrun vault show OPENAI_API_KEY
+npx github:leandercosta/scrumrun vault remove OPENAI_API_KEY
+npx github:leandercosta/scrumrun vault path
+```
+
 ### `backlog`
 
 Manages `.scrumrun/backlog.md` without running any sprint.
@@ -787,6 +835,7 @@ Generates a slash command line for your AI client without running the agent.
 npx github:leandercosta/scrumrun prompt study
 npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
 npx github:leandercosta/scrumrun prompt know "Tenant permissions for report exports"
+npx github:leandercosta/scrumrun prompt vault "OPENAI_API_KEY:sk-local-dev --add"
 npx github:leandercosta/scrumrun prompt goal-new "Continue evolving this legacy product"
 npx github:leandercosta/scrumrun prompt sprint-new "Implement tenant-safe CSV export"
 npx github:leandercosta/scrumrun prompt sprint-run "Sprint 01"

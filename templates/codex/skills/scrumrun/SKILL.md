@@ -34,6 +34,7 @@ AGENTS.md
   project.md
   backlog.md
   knowledge.md
+  vault.local.md
   goals/
     main/
       sprint.md
@@ -78,6 +79,7 @@ Every sprint follows:
 
 - Never modify read-only source paths.
 - Never commit real secrets.
+- Never copy `.scrumrun/vault.local.md` values into committed files, sprint history, reviews, knowledge, backlog, or normal summaries.
 - Runtime values must come from env/config.
 - External providers require current official docs before implementation.
 - Keep work scoped to one requested sprint.
@@ -148,6 +150,29 @@ Prefer precise file references over generic statements. If an area cannot be ver
 Show ScrumRun commands grouped by workflow.
 
 If a command or topic is provided, focus on that topic and include examples. Read `.scrumrun/config.md` if it exists to honor the response language. Do not modify files.
+
+## `/run-vault`
+
+Manage `.scrumrun/vault.local.md`, a plaintext local development vault for dev-only credentials and test values.
+
+This is not encrypted storage and must never be treated as a production secret manager.
+
+Actions:
+
+- `/run-vault <name:value> --add` or `/run-vault --add <name:value>`: add a local value.
+- `/run-vault --list` (`-l`): list ids and names with values redacted.
+- `/run-vault --show` (`-s`) `<id|name>`: reveal exactly one requested local value.
+- `/run-vault --remove` (`-r`) `<id|name>`: remove one local value.
+- `/run-vault --path`: show the vault file path.
+
+Rules:
+
+1. Store values only in `.scrumrun/vault.local.md`.
+2. Ensure `.scrumrun/vault.local.md` is in `.git/info/exclude` when Git is present.
+3. Never write vault values into `.scrumrun/knowledge.md`, `.scrumrun/backlog.md`, sprint history, decisions, reviews, commits, logs, or ordinary responses.
+4. `/run-study`, `/run-challenge`, `/run-sprint`, and reviews may mention that vault entries exist, but must not print their values.
+5. Use vault values only when the user explicitly asks for a local development credential or a command requires it.
+6. Do not modify application code.
 
 ## `/run-know`
 

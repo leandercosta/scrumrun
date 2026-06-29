@@ -13,6 +13,7 @@ const COMMANDS = [
   "run-init",
   "run-uninstall",
   "run-update",
+  "run-vault",
   "run-know",
   "run-config",
   "run-golden",

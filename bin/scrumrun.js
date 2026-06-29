@@ -13,6 +13,7 @@ const COMMANDS = [
   "run-init",
   "run-uninstall",
   "run-update",
+  "run-vault",
   "run-know",
   "run-config",
   "run-golden",
@@ -36,6 +37,11 @@ Usage:
   scrumrun init [--local|--shared] [--no-agent-hint] [--force]
   scrumrun status
   scrumrun commands
+  scrumrun vault add <name> <value>
+  scrumrun vault add <name:value>
+  scrumrun vault list
+  scrumrun vault show <V-NNN|name>
+  scrumrun vault remove <V-NNN|name>
   scrumrun backlog add <sprint>
   scrumrun backlog list
   scrumrun know add <topic>
@@ -45,7 +51,7 @@ Usage:
   scrumrun know insight <K-NNN> <text>
   scrumrun know remove <K-NNN>
   scrumrun know resume [K-NNN]
-  scrumrun prompt <study|challenge|know|goal-new|sprint-new|sprint-run|backlog-add> [text]
+  scrumrun prompt <study|challenge|know|vault|goal-new|sprint-new|sprint-run|backlog-add> [text]
   scrumrun uninstall [--force]
   scrumrun migrate
   scrumrun doctor
@@ -55,6 +61,7 @@ Examples:
   npx github:leandercosta/scrumrun install claude
   npx github:leandercosta/scrumrun init
   npx github:leandercosta/scrumrun status
+  npx github:leandercosta/scrumrun vault add OPENAI_API_KEY sk-local-dev
   npx github:leandercosta/scrumrun backlog add "Sprint 01"
   npx github:leandercosta/scrumrun know add "Tenant permissions for report exports"
   npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
@@ -265,8 +272,138 @@ function ensureKnowledgeFile(cwd) {
   return knowledgeFile;
 }
 
+function ensureVaultFile(cwd) {
+  const vaultFile = path.join(cwd, ".scrumrun", "vault.local.md");
+  if (!fs.existsSync(vaultFile)) {
+    writeFile(
+      vaultFile,
+      `# Local Development Vault - ${path.basename(cwd)}\n\nThis file is for local development secrets only. It is plaintext, local-only, and must never be committed.\n\n## Entries\n\n- Pending: none.\n`
+    );
+  }
+  return vaultFile;
+}
+
 function removePendingNone(content) {
   return content.replace(/^- Pending: none\.\n?/gm, "").replace(/\n{3,}/g, "\n\n");
+}
+
+function nextVaultId(content) {
+  const ids = [...content.matchAll(/\bV-(\d{3})\b/g)].map((match) => Number(match[1]));
+  const next = ids.length ? Math.max(...ids) + 1 : 1;
+  return `V-${String(next).padStart(3, "0")}`;
+}
+
+function findVaultBlock(content, selector) {
+  const escaped = (selector || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const byId = /^V-\d{3}$/.test(selector || "")
+    ? new RegExp(`^### ${escaped}\\b[\\s\\S]*?(?=^### V-\\d{3}\\b|^## |(?![\\s\\S]))`, "m")
+    : null;
+  const byName = selector
+    ? new RegExp(`^### V-\\d{3} - ${escaped}$[\\s\\S]*?(?=^### V-\\d{3}\\b|^## |(?![\\s\\S]))`, "m")
+    : null;
+  const match = (byId && content.match(byId)) || (byName && content.match(byName));
+  return match ? match[0].trim() : "";
+}
+
+function removeVaultBlock(content, selector) {
+  const block = findVaultBlock(content, selector);
+  return block ? content.replace(block, "").replace(/\n{3,}/g, "\n\n") : content;
+}
+
+function parseVaultInput(parts) {
+  const values = parts.filter((part) => part && !part.startsWith("--"));
+  if (values.length === 1 && values[0].includes(":")) {
+    const [name, ...rest] = values[0].split(":");
+    return { name: name.trim(), value: rest.join(":").trim() };
+  }
+  if (values.length === 1 && values[0].includes("=")) {
+    const [name, ...rest] = values[0].split("=");
+    return { name: name.trim(), value: rest.join("=").trim() };
+  }
+  return { name: values[0] || "", value: values.slice(1).join(" ").trim() };
+}
+
+function addVaultEntry(parts) {
+  const { name, value } = parseVaultInput(parts);
+  if (!name || !value) {
+    console.error("Usage: scrumrun vault add <name> <value> OR scrumrun vault add <name:value>");
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureVaultFile(process.cwd());
+  const current = readIfExists(file);
+  const id = nextVaultId(current);
+  let next = removePendingNone(current);
+  if (!next.endsWith("\n")) next += "\n";
+  next += `### ${id} - ${name}\nCreated: ${today()}\nSource: CLI\nValue: ${value}\n\n`;
+  writeFile(file, next);
+  console.log(`Stored local vault entry: ${id} - ${name}`);
+  console.log("Value hidden. Use `scrumrun vault show <id|name>` to reveal it locally.");
+}
+
+function listVaultEntries() {
+  const file = ensureVaultFile(process.cwd());
+  const content = readIfExists(file);
+  const entries = [...content.matchAll(/^### (V-\d{3}) - (.+)$/gm)];
+  if (!entries.length) {
+    console.log("No local vault entries.");
+    return;
+  }
+  for (const [, id, name] of entries) {
+    console.log(`- ${id} | ${name} | value: ******`);
+  }
+}
+
+function showVaultEntry(selector) {
+  if (!selector) {
+    console.error("Usage: scrumrun vault show <V-NNN|name>");
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureVaultFile(process.cwd());
+  const block = findVaultBlock(readIfExists(file), selector);
+  if (!block) {
+    console.error(`Vault entry not found: ${selector}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(block);
+}
+
+function removeVaultEntry(selector) {
+  if (!selector) {
+    console.error("Usage: scrumrun vault remove <V-NNN|name>");
+    process.exitCode = 1;
+    return;
+  }
+  const file = ensureVaultFile(process.cwd());
+  const current = readIfExists(file);
+  if (!findVaultBlock(current, selector)) {
+    console.error(`Vault entry not found: ${selector}`);
+    process.exitCode = 1;
+    return;
+  }
+  writeFile(file, removeVaultBlock(current, selector));
+  console.log(`Removed local vault entry: ${selector}`);
+}
+
+function runVault(parts) {
+  const action = parts[0];
+  if (!action || action === "list" || action === "--list" || action === "-l") {
+    listVaultEntries();
+  } else if (action === "add" || action === "--add" || action === "-a") {
+    addVaultEntry(parts.slice(1));
+  } else if (action === "show" || action === "--show" || action === "-s") {
+    showVaultEntry(parts[1]);
+  } else if (action === "remove" || action === "delete" || action === "--remove" || action === "-r") {
+    removeVaultEntry(parts[1]);
+  } else if (action === "path") {
+    console.log(ensureVaultFile(process.cwd()));
+  } else if (parts.includes("--add") || parts.includes("-a")) {
+    addVaultEntry(parts);
+  } else {
+    showVaultEntry(action);
+  }
 }
 
 function addBacklogItem(label) {
@@ -502,6 +639,7 @@ Project:
   /run-challenge
 
 Knowledge and planning:
+  /run-vault
   /run-know
   /run-goal
   /run-feature
@@ -519,6 +657,7 @@ Project controls:
 CLI helpers:
   scrumrun status
   scrumrun commands
+  scrumrun vault add "NAME" "local-dev-value"
   scrumrun backlog add "Sprint 01"
   scrumrun know add "Topic"
   scrumrun prompt challenge "..."
@@ -572,12 +711,14 @@ function statusProject() {
   const sprint = readIfExists(projectFile("goals", "main", "sprint.md"));
   const history = readIfExists(projectFile("goals", "main", "history.md"));
   const counts = sprintStatusCounts(history);
+  const vaultFile = projectFile("vault.local.md");
   console.log("");
   console.log("## Counts");
   console.log(`- Backlog candidates: ${countMatches(backlog, /^- \[[ xX]\] /gm)}`);
   console.log(`- Knowledge approved: ${countMatches(getSection(knowledge, "Approved Knowledge"), /^### K-\d{3}/gm)}`);
   console.log(`- Knowledge pending: ${countMatches(getSection(knowledge, "Pending Proposals"), /^### K-\d{3}/gm)}`);
   console.log(`- Knowledge rejected: ${countMatches(getSection(knowledge, "Rejected Proposals"), /^### K-\d{3}/gm)}`);
+  console.log(`- Vault entries: ${countMatches(readIfExists(vaultFile), /^### V-\d{3}/gm)} (${fs.existsSync(vaultFile) ? "local vault present" : "local vault not created"})`);
   console.log(`- Planned sprints: ${countMatches(sprint, /^##+ .*Sprint/gi)}`);
   console.log(`- Completed: ${counts.completed}`);
   console.log(`- Partial: ${counts.partial}`);
@@ -591,6 +732,7 @@ function promptCommand(parts) {
     study: `/run-study${text ? ` ${text}` : ""}`,
     challenge: `/run-challenge ${text}`.trim(),
     know: `/run-know ${text}`.trim(),
+    vault: `/run-vault ${text}`.trim(),
     "goal-new": `/run-goal --new ${text}`.trim(),
     goal: `/run-goal --new ${text}`.trim(),
     "sprint-new": `/run-sprint --new ${text}`.trim(),
@@ -600,7 +742,7 @@ function promptCommand(parts) {
     status: `/run-sprint --status${text ? ` ${text}` : ""}`
   };
   if (!kind || !prompts[kind]) {
-    console.error("Usage: scrumrun prompt <study|challenge|know|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
+    console.error("Usage: scrumrun prompt <study|challenge|know|vault|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
     process.exitCode = 1;
     return;
   }
@@ -630,6 +772,7 @@ function initProject({ force, mode, agentHint }) {
       results.push(addLocalExclude(cwd, "AGENTS.md"));
     }
   }
+  results.push(addLocalExclude(cwd, ".scrumrun/vault.local.md"));
 
   const title = mode === "local"
     ? "Initialized local ScrumRun project"
@@ -644,6 +787,7 @@ function uninstallProject(force) {
   const cwd = process.cwd();
   const results = [
     removeLocalExclude(cwd, ".scrumrun/"),
+    removeLocalExclude(cwd, ".scrumrun/vault.local.md"),
     removeLocalExclude(cwd, "AGENTS.md"),
     removePathIfExists(path.join(cwd, ".scrumrun"), { force }),
     removePathIfExists(path.join(cwd, "AGENTS.md"), { force, onlyIfScrumRunAgents: true })
@@ -756,6 +900,8 @@ if (!command || command === "--help" || command === "-h") {
   statusProject();
 } else if (command === "commands") {
   commandList();
+} else if (command === "vault") {
+  runVault(args.slice(1));
 } else if (command === "backlog" || command === "backlog-add" || command === "backlog-list") {
   if (command === "backlog-add") {
     runBacklog(["add", ...args.slice(1)]);

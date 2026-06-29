@@ -1,6 +1,6 @@
 {
   "name": "scrumrun",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "ScrumRun: sprint-driven project bootstrap, commands, and skills for Codex, Claude Code, and OpenCode.",
   "bin": {
     "scrumrun": "bin/scrumrun.js",
