@@ -1,13 +1,16 @@
 # ScrumRun
 
-ScrumRun is a lightweight workflow for running software projects with AI agents through small, auditable, independently executable sprints.
+ScrumRun is a lightweight, portable workflow for running software projects with AI agents through small, auditable, independently executable sprints.
 
 It is designed for one practical problem: keeping AI work organized when a project has a main goal, new feature ideas, review passes, pending decisions, and long-running implementation history.
 
 ScrumRun gives the agent a stable project memory, a sprint protocol, review checkpoints, and a clean place to separate the main project plan from isolated feature work.
 
+The method does not require a specific AI client. Codex, Claude Code, and OpenCode can use installed slash commands, but any capable coding agent can follow ScrumRun by reading `.scrumrun/core.md`.
+
 ## What ScrumRun Provides
 
+- A portable `CORE.md` method file that explains ScrumRun and its command equivalents.
 - Global slash commands for Codex, Claude Code, and OpenCode.
 - A `scrumrun` skill that tells agents how to plan, run, audit, and review sprints.
 - A project control folder under `.scrumrun/`.
@@ -44,6 +47,7 @@ After initialization, a project should look like this:
 AGENTS.md
 .scrumrun/
   config.md
+  core.md
   golden-rules.md
   map.md
   agents.md
@@ -66,6 +70,20 @@ AGENTS.md
   reviews/
 ```
 
+### `.scrumrun/core.md`
+
+Portable ScrumRun method.
+
+This is the fallback for agents that do not support installed slash commands. Ask the agent to read `.scrumrun/core.md` and execute the equivalent workflow manually:
+
+```text
+Read .scrumrun/core.md and follow ScrumRun.
+I want the equivalent of /run-study.
+Do not modify files.
+```
+
+Installed commands are convenience wrappers around this method, not a requirement.
+
 ### `AGENTS.md`
 
 Root instruction file for AI agents.
@@ -74,6 +92,7 @@ It should stay short and point agents to ScrumRun files:
 
 ```text
 .scrumrun/golden-rules.md
+.scrumrun/core.md
 .scrumrun/config.md
 .scrumrun/map.md
 .scrumrun/knowledge.md
@@ -209,6 +228,10 @@ Feature-specific decisions, questions, and follow-ups.
 
 ## Install
 
+Installation is optional.
+
+Use `install` when your AI client supports custom slash commands or skills and you want `/run-*` shortcuts available globally.
+
 Run directly from GitHub:
 
 ```bash
@@ -257,6 +280,67 @@ Check whether the global files are installed:
 npx github:leandercosta/scrumrun doctor
 ```
 
+## Portable Core Mode
+
+For AI clients that do not support ScrumRun commands, such as a new or unsupported coding agent, use core mode.
+
+Initialize the project only:
+
+```bash
+npx github:leandercosta/scrumrun init
+```
+
+This creates:
+
+```text
+AGENTS.md
+.scrumrun/core.md
+.scrumrun/...
+```
+
+After init, ScrumRun is the project methodology. `AGENTS.md` tells compatible agents that ScrumRun is mandatory, and `.scrumrun/core.md` explains how to follow it even without slash commands.
+
+Then ask the agent to read the core file:
+
+```text
+Read .scrumrun/core.md and follow ScrumRun.
+I want the equivalent of /run-study.
+Do not modify files.
+```
+
+For a challenge:
+
+```text
+Read .scrumrun/core.md and follow ScrumRun.
+I want the equivalent of /run-challenge:
+The billing module needs manual invoice retry support.
+Show options and recommendation only. Do not execute.
+```
+
+For sprint execution:
+
+```text
+Read .scrumrun/core.md and follow ScrumRun.
+Run the equivalent of /run-sprint --run Sprint 01.
+Follow the sprint protocol and update history when done.
+```
+
+You can print the bundled core file without initializing a project:
+
+```bash
+npx github:leandercosta/scrumrun core
+```
+
+For clients that do not reliably read project instructions, print a bootstrap prompt and paste it at the start of the agent session:
+
+```bash
+npx github:leandercosta/scrumrun core --prompt
+```
+
+The prompt tells the agent to read `AGENTS.md` and `.scrumrun/core.md`, then execute ScrumRun workflows manually when slash commands are unavailable.
+
+This makes ScrumRun usable in clients like Kiro or any other coding assistant even when custom command installation is not supported.
+
 ## Initialize A Project
 
 By default, ScrumRun initializes locally and keeps its files out of commits:
@@ -283,6 +367,7 @@ Shared mode creates versionable ScrumRun project files:
 
 ```text
 AGENTS.md
+.scrumrun/core.md
 .scrumrun/config.md
 .scrumrun/golden-rules.md
 .scrumrun/map.md
@@ -314,6 +399,8 @@ AGENTS.md
 ```
 
 This does not modify `.gitignore` and does not touch application code. It is the lowest-friction way to start using ScrumRun in an established repository without changing what the team sees in Git.
+
+Because local mode also creates `.scrumrun/core.md`, installed slash commands are not required. Any agent can be pointed at the core file and asked to run the equivalent ScrumRun workflow.
 
 If you do not want ScrumRun to create `AGENTS.md`, use:
 
@@ -402,6 +489,21 @@ history.md             -> .scrumrun/goals/main/history.md
 ## Typical Workflow
 
 Start a project:
+
+CLI-only portable setup:
+
+```bash
+npx github:leandercosta/scrumrun init
+```
+
+Then in any AI client:
+
+```text
+Read .scrumrun/core.md and follow ScrumRun.
+I want the equivalent of /run-study.
+```
+
+With installed slash commands:
 
 ```text
 /run-init

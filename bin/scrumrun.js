@@ -36,6 +36,7 @@ Usage:
   scrumrun update  [all|codex|opencode|claude]
   scrumrun init [--local|--shared] [--no-agent-hint] [--force]
   scrumrun status
+  scrumrun core [--path|--prompt]
   scrumrun commands
   scrumrun vault add <name> <value>
   scrumrun vault add <name:value>
@@ -60,6 +61,7 @@ Examples:
   npx github:leandercosta/scrumrun install
   npx github:leandercosta/scrumrun install claude
   npx github:leandercosta/scrumrun init
+  npx github:leandercosta/scrumrun core
   npx github:leandercosta/scrumrun status
   npx github:leandercosta/scrumrun vault add OPENAI_API_KEY sk-local-dev
   npx github:leandercosta/scrumrun backlog add "Sprint 01"
@@ -675,7 +677,24 @@ CLI helpers:
   scrumrun backlog add "Sprint 01"
   scrumrun know add "Topic"
   scrumrun prompt challenge "..."
+  scrumrun core
 `);
+}
+
+function printCore({ pathOnly = false, promptOnly = false } = {}) {
+  const coreFile = path.join(root, "CORE.md");
+  if (pathOnly) {
+    console.log(coreFile);
+    return;
+  }
+  if (promptOnly) {
+    console.log(`Read AGENTS.md and .scrumrun/core.md before doing anything else.
+Follow ScrumRun exactly.
+If slash commands are unavailable, execute the equivalent workflow from .scrumrun/core.md manually.
+Do not plan, edit, run, or review work until you have applied the ScrumRun safety rules, project files, approved knowledge, sprint history, and decision history.`);
+    return;
+  }
+  console.log(readIfExists(coreFile));
 }
 
 function countMatches(content, regex) {
@@ -694,6 +713,7 @@ function statusProject() {
   const cwd = process.cwd();
   const scrumDir = path.join(cwd, ".scrumrun");
   const required = [
+    "core.md",
     "config.md",
     "golden-rules.md",
     "map.md",
@@ -773,6 +793,7 @@ function initProject({ force, mode, agentHint }) {
   const results = [];
 
   results.push(...copyDir(path.join(projectTemplate, ".scrumrun"), path.join(cwd, ".scrumrun"), { force, vars }));
+  results.push(copyFile(path.join(root, "CORE.md"), path.join(cwd, ".scrumrun", "core.md"), { force, vars }));
 
   if (mode === "shared" || agentHint) {
     results.push(copyFile(path.join(projectTemplate, "AGENTS.md"), path.join(cwd, "AGENTS.md"), { force, vars }));
@@ -923,6 +944,8 @@ if (!command || command === "--help" || command === "-h") {
   uninstallProject(force);
 } else if (command === "status") {
   statusProject();
+} else if (command === "core") {
+  printCore({ pathOnly: args.includes("--path"), promptOnly: args.includes("--prompt") });
 } else if (command === "commands") {
   commandList();
 } else if (command === "vault") {

@@ -7,6 +7,8 @@ description: Use when initializing ScrumRun projects, planning main goals or iso
 
 Use this skill for ScrumRun commands and workflows.
 
+If a project contains `.scrumrun/core.md` or an `AGENTS.md` that says the project uses ScrumRun, ScrumRun is mandatory project methodology. Follow it even when the user does not explicitly mention ScrumRun in the task.
+
 ScrumRun separates project rules, the main goal, and isolated feature lanes. A feature lane is isolated from the main goal history, but it still respects project rules, architecture, map, review agents, and safety requirements.
 
 ## Command Shape
@@ -26,6 +28,7 @@ Preferred v2 layout:
 ```text
 AGENTS.md
 .scrumrun/
+  core.md
   config.md
   golden-rules.md
   map.md
@@ -51,13 +54,14 @@ AGENTS.md
 
 ## Priority Rules
 
-1. Read `.scrumrun/golden-rules.md` before all ScrumRun planning, execution, auditing, and review work.
-2. Golden rules are absolute. If a golden rule conflicts with any other instruction, the golden rule wins.
-3. Read `.scrumrun/config.md` after golden rules and apply project preferences, especially response language.
-4. Read `.scrumrun/map.md` before broad discovery work, repeated searches, or architecture questions.
-5. Read `AGENTS.md` and `.scrumrun/runbook.md` before executing or auditing sprints.
-6. Read `.scrumrun/knowledge.md` before challenge intake, sprint creation, sprint execution, and feature planning. Only `Approved Knowledge` is planning truth.
-7. Keep main goal history and feature lane history separate.
+1. Read `.scrumrun/core.md` before all ScrumRun planning, execution, auditing, and review work.
+2. Read `.scrumrun/golden-rules.md` before all ScrumRun planning, execution, auditing, and review work.
+3. Golden rules are absolute. If a golden rule conflicts with any other instruction, the golden rule wins.
+4. Read `.scrumrun/config.md` after golden rules and apply project preferences, especially response language.
+5. Read `.scrumrun/map.md` before broad discovery work, repeated searches, or architecture questions.
+6. Read `AGENTS.md` and `.scrumrun/runbook.md` before executing or auditing sprints.
+7. Read `.scrumrun/knowledge.md` before challenge intake, sprint creation, sprint execution, and feature planning. Only `Approved Knowledge` is planning truth.
+8. Keep main goal history and feature lane history separate.
 
 If `.scrumrun/golden-rules.md` does not exist, remind the user they can initialize ScrumRun with `/run-init` or add rules with `/run-golden --add`.
 

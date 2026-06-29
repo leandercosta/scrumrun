@@ -4,16 +4,24 @@
 
 This project uses ScrumRun.
 
+ScrumRun is mandatory in this project. Slash commands are optional shortcuts; the methodology is not optional.
+
 Before planning, executing, auditing, or reviewing work, read:
 
-1. `.scrumrun/golden-rules.md` — **MANDATORY. Highest priority. Never violate.**
-2. `.scrumrun/config.md` — response language and ScrumRun behavior preferences.
-3. `.scrumrun/map.md` — project folders, paths, modules, and key files.
-4. `.scrumrun/runbook.md`
-5. `.scrumrun/project.md`
-6. `.scrumrun/goals/main/sprint.md`
-7. `.scrumrun/goals/main/history.md`
-8. `.scrumrun/agents.md`
+1. `.scrumrun/core.md` — portable ScrumRun method and command equivalents.
+2. `.scrumrun/golden-rules.md` — **MANDATORY. Highest priority. Never violate.**
+3. `.scrumrun/config.md` — response language and ScrumRun behavior preferences.
+4. `.scrumrun/map.md` — project folders, paths, modules, and key files.
+5. `.scrumrun/knowledge.md`
+6. `.scrumrun/runbook.md`
+7. `.scrumrun/project.md`
+8. `.scrumrun/goals/main/sprint.md`
+9. `.scrumrun/goals/main/history.md`
+10. `.scrumrun/agents.md`
+
+If the current AI client does not support `/run-*` slash commands, read `.scrumrun/core.md` and execute the matching ScrumRun workflow manually.
+
+If the user asks for work without mentioning ScrumRun, still follow ScrumRun because this project was initialized with it.
 
 ## Absolute Safety Rules
 
