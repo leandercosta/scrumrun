@@ -59,9 +59,10 @@ AGENTS.md
 3. Golden rules are absolute. If a golden rule conflicts with any other instruction, the golden rule wins.
 4. Read `.scrumrun/config.md` after golden rules and apply project preferences, especially response language.
 5. Read `.scrumrun/map.md` before broad discovery work, repeated searches, or architecture questions.
-6. Read `AGENTS.md` and `.scrumrun/runbook.md` before executing or auditing sprints.
-7. Read `.scrumrun/knowledge.md` before challenge intake, sprint creation, sprint execution, and feature planning. Only `Approved Knowledge` is planning truth.
-8. Keep main goal history and feature lane history separate.
+6. Read `.scrumrun/project.md` and `.scrumrun/knowledge.md` before challenge intake, sprint creation, sprint execution, and feature planning. Only `Approved Knowledge` is planning truth.
+7. Read `AGENTS.md` and `.scrumrun/runbook.md` before the backlog, sprint plan, or feature lane when executing or auditing work.
+8. Read the relevant backlog, sprint plan, feature lane, review agents, history, and decisions before execution.
+9. Keep main goal history and feature lane history separate.
 
 If `.scrumrun/golden-rules.md` does not exist, remind the user they can initialize ScrumRun with `/run-init` or add rules with `/run-golden --add`.
 
@@ -272,7 +273,7 @@ Manage main-goal sprints. A bare `/run-sprint` lists the actions below. Use only
 - `--status` (`-st`) `[id]`: read the main sprint plan and history, then output only a compact Markdown table with exactly `Sprint | Breve descricao | Status`. With an id, show only that sprint; without an id, show one row per sprint. Use brief title/goal descriptions and emoji statuses: `✅ feito`, `🚧 parcial`, `⛔ bloqueado`, or `⏳ pendente`. Do not add surrounding narrative. Do not modify files.
 - `--show` (`-s`) `<id>`: show the sprint with a prominent plain-language Goal section, scope, acceptance criteria, priority, status, and history entry. Do not modify files.
 - `--rename` (`-rn`) `<id> "name"`: rename only the sprint's descriptive label; keep its number/id (history and backlog reference the number), and note "renamed from X to Y" in history.
-- `--run` (`-r`) `<id>`: run one main-goal sprint. If the arguments include `--backlog` (`-k`) or `--to-backlog`, add the sprint to `.scrumrun/backlog.md` and stop without executing. Otherwise read `AGENTS.md`, golden-rules, config, map, knowledge, runbook, agents, and the main goal files; if the sprint already has status completed, partial, or blocked, stop and ask whether to audit, rerun/fix, resume, or move on; follow Entenda -> Avalie Impactos -> Tire Duvidas -> Execute -> Teste; run every agent; fix findings before completing; update main history.
+- `--run` (`-r`) `<id>`: run one main-goal sprint. If the arguments include `--backlog` (`-k`) or `--to-backlog`, add the sprint to `.scrumrun/backlog.md` and stop without executing. Otherwise read `AGENTS.md`, golden-rules, config, map, project, knowledge, runbook, main goal files, agents, history, and decisions; if the sprint already has status completed, partial, or blocked, stop and ask whether to audit, rerun/fix, resume, or move on; follow Entenda -> Avalie Impactos -> Tire Duvidas -> Execute -> Teste; run every agent; fix findings before completing; update main history.
 - `--audit` (`-a`) `<id>`: audit a main-goal sprint from current file state; report findings by severity. Do not modify code unless explicitly requested.
 - `--fix` (`-f`) `<id>`: corrective pass. First ask what went wrong and wait; then, on confirmation, create an executable corrective child sprint `Sprint <id>.M` (dotted, e.g. `02.1`) linked to the parent, leaving the parent intact and marked as patched. Record it in history, capture the lesson in `.scrumrun/knowledge.md` (pending proposal or insight, never auto-approved — ask to approve), and log any decision. Run it with `/run-sprint --run <id>.M`; a fix of a fix is a sibling `<id>.M+1`. Do not change application code.
 - `--commit-message` (`-cm`) `<id>`: return a single, succinct commit message for what that sprint delivered — one short line, imperative, lowercase, no trailing period, as few characters as possible. Read-only; output only the message and never stage, commit, or modify files.

@@ -12,12 +12,14 @@ Before planning, executing, auditing, or reviewing work, read:
 2. `.scrumrun/golden-rules.md` — **MANDATORY. Highest priority. Never violate.**
 3. `.scrumrun/config.md` — response language and ScrumRun behavior preferences.
 4. `.scrumrun/map.md` — project folders, paths, modules, and key files.
-5. `.scrumrun/knowledge.md`
-6. `.scrumrun/runbook.md`
-7. `.scrumrun/project.md`
-8. `.scrumrun/goals/main/sprint.md`
-9. `.scrumrun/goals/main/history.md`
+5. `.scrumrun/project.md`
+6. `.scrumrun/knowledge.md`
+7. `.scrumrun/runbook.md` — execution protocol before reading operational work.
+8. `.scrumrun/backlog.md`
+9. `.scrumrun/goals/main/sprint.md`
 10. `.scrumrun/agents.md`
+11. `.scrumrun/goals/main/history.md`
+12. `.scrumrun/goals/main/decisions.md`
 
 If the current AI client does not support `/run-*` slash commands, read `.scrumrun/core.md` and execute the matching ScrumRun workflow manually.
 

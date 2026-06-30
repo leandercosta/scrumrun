@@ -100,6 +100,7 @@ It should stay short and point agents to ScrumRun files:
 .scrumrun/backlog.md
 .scrumrun/goals/main/sprint.md
 .scrumrun/goals/main/history.md
+.scrumrun/goals/main/decisions.md
 ```
 
 ### `.scrumrun/config.md`
@@ -144,6 +145,8 @@ Every sprint follows:
 ```text
 Entenda -> Avalie Impactos -> Tire Duvidas -> Execute -> Teste
 ```
+
+The runbook sits before the operational sprint/backlog layer because it defines how the agent must behave before touching the work item.
 
 ### `.scrumrun/project.md`
 

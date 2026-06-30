@@ -16,12 +16,16 @@ Before planning, changing, auditing, or reviewing work, read these files when th
 4. `.scrumrun/map.md`
 5. `.scrumrun/project.md`
 6. `.scrumrun/knowledge.md`
-7. `.scrumrun/backlog.md`
-8. `.scrumrun/runbook.md`
-9. `.scrumrun/agents.md`
-10. `.scrumrun/goals/main/sprint.md`
-11. `.scrumrun/goals/main/history.md`
-12. `.scrumrun/goals/main/decisions.md`
+7. `.scrumrun/runbook.md`
+8. `.scrumrun/backlog.md`
+9. `.scrumrun/goals/main/sprint.md`
+10. `.scrumrun/features/*/feature.md`
+11. `.scrumrun/features/*/sprint.md`
+12. `.scrumrun/agents.md`
+13. `.scrumrun/goals/main/history.md`
+14. `.scrumrun/goals/main/decisions.md`
+15. `.scrumrun/features/*/history.md`
+16. `.scrumrun/features/*/decisions.md`
 
 Golden rules have the highest priority. If a golden rule conflicts with any other instruction, the golden rule wins.
 
@@ -183,7 +187,7 @@ For a new sprint, add it to `.scrumrun/goals/main/sprint.md` with goal, scope, a
 
 For sprint execution:
 
-1. Read `AGENTS.md`, core, golden rules, config, map, knowledge, runbook, agents, sprint plan, history, and decisions.
+1. Read `AGENTS.md`, core, golden rules, config, map, project, knowledge, runbook, sprint or feature plan, agents, history, and decisions.
 2. Use only approved knowledge.
 3. Check whether the sprint is completed, partial, or blocked.
 4. Follow Entenda -> Avalie Impactos -> Tire Duvidas -> Execute -> Teste.
