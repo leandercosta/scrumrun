@@ -11,15 +11,17 @@ Before planning, executing, auditing, or reviewing work, read:
 1. `.scrumrun/core.md` — portable ScrumRun method and command equivalents.
 2. `.scrumrun/golden-rules.md` — **MANDATORY. Highest priority. Never violate.**
 3. `.scrumrun/config.md` — response language and ScrumRun behavior preferences.
-4. `.scrumrun/map.md` — project folders, paths, modules, and key files.
-5. `.scrumrun/project.md`
-6. `.scrumrun/knowledge.md`
-7. `.scrumrun/runbook.md` — execution protocol before reading operational work.
-8. `.scrumrun/backlog.md`
-9. `.scrumrun/goals/main/sprint.md`
-10. `.scrumrun/agents.md`
-11. `.scrumrun/goals/main/history.md`
-12. `.scrumrun/goals/main/decisions.md`
+4. `.scrumrun/token-policy.md` — context economy rules.
+5. `.scrumrun/context.md` — token-safe snapshot, not source of truth.
+6. `.scrumrun/map.md` — project folders, paths, modules, and key files.
+7. `.scrumrun/project.md`
+8. `.scrumrun/knowledge.md`
+9. `.scrumrun/runbook.md` — execution protocol before reading operational work.
+10. `.scrumrun/backlog.md`
+11. `.scrumrun/goals/main/sprint.md`
+12. `.scrumrun/agents.md`
+13. `.scrumrun/goals/main/history.md`
+14. `.scrumrun/goals/main/decisions.md`
 
 If the current AI client does not support `/run-*` slash commands, read `.scrumrun/core.md` and execute the matching ScrumRun workflow manually.
 
@@ -36,6 +38,8 @@ If the user asks for work without mentioning ScrumRun, still follow ScrumRun bec
 - Runtime-specific values must come from env/config, not hardcoded strings.
 - If a project has a read-only source path, never modify it.
 - Keep main goal history and feature lane history separate.
+- Use `.scrumrun/context.md` to reduce unnecessary reading, but never as canonical truth.
+- If context conflicts with golden rules, approved knowledge, history, decisions, or source code, context loses.
 
 ## Sprint Protocol
 

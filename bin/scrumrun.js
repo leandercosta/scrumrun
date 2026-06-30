@@ -15,6 +15,7 @@ const COMMANDS = [
   "run-update",
   "run-vault",
   "run-know",
+  "run-context",
   "run-config",
   "run-golden",
   "run-map",
@@ -37,6 +38,11 @@ Usage:
   scrumrun init [--local|--shared] [--no-agent-hint] [--force]
   scrumrun status
   scrumrun core [--path|--prompt]
+  scrumrun context build
+  scrumrun context update [reason]
+  scrumrun context show
+  scrumrun context clear
+  scrumrun context policy
   scrumrun commands
   scrumrun vault add <name> <value>
   scrumrun vault add <name:value>
@@ -52,7 +58,7 @@ Usage:
   scrumrun know insight <K-NNN> <text>
   scrumrun know remove <K-NNN>
   scrumrun know resume [K-NNN]
-  scrumrun prompt <study|challenge|know|vault|goal-new|sprint-new|sprint-run|backlog-add> [text]
+  scrumrun prompt <study|challenge|know|context-build|context-update|vault|goal-new|sprint-new|sprint-run|backlog-add> [text]
   scrumrun uninstall [--force]
   scrumrun migrate
   scrumrun doctor [all|codex|opencode|claude]
@@ -63,6 +69,7 @@ Examples:
   npx github:leandercosta/scrumrun init
   npx github:leandercosta/scrumrun core
   npx github:leandercosta/scrumrun status
+  npx github:leandercosta/scrumrun context show
   npx github:leandercosta/scrumrun vault add OPENAI_API_KEY sk-local-dev
   npx github:leandercosta/scrumrun backlog add "Sprint 01"
   npx github:leandercosta/scrumrun know add "Tenant permissions for report exports"
@@ -297,6 +304,103 @@ function ensureVaultFile(cwd) {
     );
   }
   return vaultFile;
+}
+
+function contextTemplate(cwd, { stale = false, reason = "CLI" } = {}) {
+  const name = path.basename(cwd);
+  const status = stale ? "stale - rebuild required" : "cli placeholder - agent verification required";
+  return `# ScrumRun Context Snapshot - ${name}
+
+This file is a token-safe snapshot. It helps agents decide what to read next, but it is not a source of truth.
+
+Canonical sources remain \`golden-rules.md\`, \`config.md\`, \`project.md\`, \`knowledge.md\`, \`runbook.md\`, sprint/feature plans, history, decisions, and source code.
+
+Last updated: ${today()}
+Updated by: ${reason}
+Confidence: ${status}
+
+## Current Focus
+
+- Main goal: pending.
+- Active sprint: pending.
+- Active feature lane: none.
+- Current challenge: none.
+
+## Must Read For Current Work
+
+- \`AGENTS.md\`
+- \`.scrumrun/core.md\`
+- \`.scrumrun/golden-rules.md\`
+- \`.scrumrun/config.md\`
+- \`.scrumrun/token-policy.md\`
+- \`.scrumrun/map.md\`
+- \`.scrumrun/project.md\`
+- \`.scrumrun/knowledge.md\`
+- \`.scrumrun/runbook.md\`
+
+## Read Only If Needed
+
+- Full historical reviews under \`.scrumrun/reviews/\`
+- Full old sprint history unrelated to the current lane
+- Large generated files, build outputs, dependency folders, and logs
+
+## Current Decisions
+
+- Pending: none.
+
+## Current Risks
+
+- Do not treat this snapshot as canonical truth.
+- Do not use pending knowledge as approved planning truth.
+- Never print or copy \`.scrumrun/vault.local.md\` values.
+
+## Current Map Pointers
+
+- Pending: run \`/run-map --build\` or \`/run-context --build\`.
+
+## Staleness Triggers
+
+Refresh this snapshot after:
+
+- \`/run-study\`
+- \`/run-goal --new\`
+- \`/run-feature --new\`
+- \`/run-sprint --new\`
+- \`/run-sprint --run\`
+- \`/run-sprint --fix\`
+- \`/run-review --code\`
+- major changes to \`knowledge.md\`, \`project.md\`, \`map.md\`, \`history.md\`, or \`decisions.md\`
+`;
+}
+
+function ensureContextFile(cwd) {
+  const contextFile = path.join(cwd, ".scrumrun", "context.md");
+  if (!fs.existsSync(contextFile)) {
+    writeFile(contextFile, contextTemplate(cwd));
+  }
+  return contextFile;
+}
+
+function ensureTokenPolicyFile(cwd) {
+  const policyFile = path.join(cwd, ".scrumrun", "token-policy.md");
+  if (!fs.existsSync(policyFile)) {
+    writeFile(
+      policyFile,
+      `# ScrumRun Token Policy - ${path.basename(cwd)}
+
+This policy reduces token waste without weakening ScrumRun safety.
+
+## Rules
+
+1. Safety beats token economy. Never skip core, golden rules, config, or relevant history to save tokens.
+2. Context is a snapshot, not truth. Use it to choose what to read, then verify against canonical files.
+3. Prefer targeted reads over broad dumps.
+4. Do not read or print vault values unless explicitly required for a local development credential workflow.
+5. If uncertainty affects correctness or safety, read the source even if it costs more tokens.
+`
+    );
+  }
+  return policyFile;
 }
 
 function removePendingNone(content) {
@@ -657,6 +761,7 @@ Project:
 Knowledge and planning:
   /run-vault
   /run-know
+  /run-context
   /run-goal
   /run-feature
   /run-sprint
@@ -665,6 +770,7 @@ Knowledge and planning:
 Project controls:
   /run-config
   /run-golden
+  /run-context
   /run-map
   /run-agent
   /run-review
@@ -674,6 +780,7 @@ CLI helpers:
   scrumrun status
   scrumrun commands
   scrumrun vault add "NAME" "local-dev-value"
+  scrumrun context show
   scrumrun backlog add "Sprint 01"
   scrumrun know add "Topic"
   scrumrun prompt challenge "..."
@@ -697,6 +804,36 @@ Do not plan, edit, run, or review work until you have applied the ScrumRun safet
   console.log(readIfExists(coreFile));
 }
 
+function runContext(parts) {
+  const action = parts[0];
+  const cwd = process.cwd();
+  if (!action || action === "show" || action === "--show" || action === "-s") {
+    console.log(readIfExists(ensureContextFile(cwd)));
+  } else if (action === "build" || action === "--build" || action === "-b") {
+    ensureTokenPolicyFile(cwd);
+    writeFile(projectFile("context.md"), contextTemplate(cwd, { reason: "CLI build" }));
+    console.log("Built .scrumrun/context.md placeholder.");
+    console.log("For a verified snapshot, run `/run-context --build` in your AI client.");
+  } else if (action === "update" || action === "--update" || action === "-u") {
+    const reason = joinArgs(parts.slice(1)) || "CLI update";
+    const file = ensureContextFile(cwd);
+    const current = readIfExists(file);
+    const note = `\n## CLI Update Note - ${today()}\n\n- Reason: ${reason}\n- This note is not verified project truth. Run \`/run-context --update ${reason}\` for an agent-verified snapshot update.\n`;
+    writeFile(file, `${current.trim()}\n${note}`);
+    console.log("Added context update note to .scrumrun/context.md.");
+  } else if (action === "clear" || action === "--clear" || action === "-c") {
+    writeFile(projectFile("context.md"), contextTemplate(cwd, { stale: true, reason: "CLI clear" }));
+    console.log("Reset .scrumrun/context.md to a stale placeholder.");
+  } else if (action === "policy" || action === "--policy" || action === "-p") {
+    console.log(readIfExists(ensureTokenPolicyFile(cwd)));
+  } else if (action === "path") {
+    console.log(ensureContextFile(cwd));
+  } else {
+    console.error("Usage: scrumrun context [build|update|show|clear|policy|path]");
+    process.exitCode = 1;
+  }
+}
+
 function countMatches(content, regex) {
   return (content.match(regex) || []).length;
 }
@@ -716,6 +853,8 @@ function statusProject() {
     "core.md",
     "config.md",
     "golden-rules.md",
+    "token-policy.md",
+    "context.md",
     "map.md",
     "agents.md",
     "runbook.md",
@@ -766,6 +905,10 @@ function promptCommand(parts) {
     study: `/run-study${text ? ` ${text}` : ""}`,
     challenge: `/run-challenge ${text}`.trim(),
     know: `/run-know ${text}`.trim(),
+    "context-build": `/run-context --build${text ? ` ${text}` : ""}`,
+    "context-update": `/run-context --update${text ? ` ${text}` : ""}`,
+    "context-show": `/run-context --show${text ? ` ${text}` : ""}`,
+    context: `/run-context ${text}`.trim(),
     vault: `/run-vault ${text}`.trim(),
     "goal-new": `/run-goal --new ${text}`.trim(),
     goal: `/run-goal --new ${text}`.trim(),
@@ -776,7 +919,7 @@ function promptCommand(parts) {
     status: `/run-sprint --status${text ? ` ${text}` : ""}`
   };
   if (!kind || !prompts[kind]) {
-    console.error("Usage: scrumrun prompt <study|challenge|know|vault|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
+    console.error("Usage: scrumrun prompt <study|challenge|know|context-build|context-update|vault|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
     process.exitCode = 1;
     return;
   }
@@ -873,6 +1016,14 @@ function migrateProject() {
     );
     results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "project.md") });
   }
+  if (!fs.existsSync(path.join(cwd, ".scrumrun", "context.md"))) {
+    ensureContextFile(cwd);
+    results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "context.md") });
+  }
+  if (!fs.existsSync(path.join(cwd, ".scrumrun", "token-policy.md"))) {
+    ensureTokenPolicyFile(cwd);
+    results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "token-policy.md") });
+  }
   if (!fs.existsSync(path.join(cwd, ".scrumrun", "backlog.md"))) {
     ensureBacklogFile(cwd);
     results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "backlog.md") });
@@ -948,6 +1099,8 @@ if (!command || command === "--help" || command === "-h") {
   printCore({ pathOnly: args.includes("--path"), promptOnly: args.includes("--prompt") });
 } else if (command === "commands") {
   commandList();
+} else if (command === "context") {
+  runContext(args.slice(1));
 } else if (command === "vault") {
   runVault(args.slice(1));
 } else if (command === "backlog" || command === "backlog-add" || command === "backlog-list") {

@@ -30,6 +30,8 @@ AGENTS.md
 .scrumrun/
   core.md
   config.md
+  token-policy.md
+  context.md
   golden-rules.md
   map.md
   agents.md
@@ -58,11 +60,12 @@ AGENTS.md
 2. Read `.scrumrun/golden-rules.md` before all ScrumRun planning, execution, auditing, and review work.
 3. Golden rules are absolute. If a golden rule conflicts with any other instruction, the golden rule wins.
 4. Read `.scrumrun/config.md` after golden rules and apply project preferences, especially response language.
-5. Read `.scrumrun/map.md` before broad discovery work, repeated searches, or architecture questions.
-6. Read `.scrumrun/project.md` and `.scrumrun/knowledge.md` before challenge intake, sprint creation, sprint execution, and feature planning. Only `Approved Knowledge` is planning truth.
-7. Read `AGENTS.md` and `.scrumrun/runbook.md` before the backlog, sprint plan, or feature lane when executing or auditing work.
-8. Read the relevant backlog, sprint plan, feature lane, review agents, history, and decisions before execution.
-9. Keep main goal history and feature lane history separate.
+5. Read `.scrumrun/token-policy.md` and `.scrumrun/context.md` early to reduce unnecessary reads. `context.md` is a snapshot, not truth.
+6. Read `.scrumrun/map.md` before broad discovery work, repeated searches, or architecture questions.
+7. Read `.scrumrun/project.md` and `.scrumrun/knowledge.md` before challenge intake, sprint creation, sprint execution, and feature planning. Only `Approved Knowledge` is planning truth.
+8. Read `AGENTS.md` and `.scrumrun/runbook.md` before the backlog, sprint plan, or feature lane when executing or auditing work.
+9. Read the relevant backlog, sprint plan, feature lane, review agents, history, and decisions before execution.
+10. Keep main goal history and feature lane history separate.
 
 If `.scrumrun/golden-rules.md` does not exist, remind the user they can initialize ScrumRun with `/run-init` or add rules with `/run-golden --add`.
 
@@ -89,6 +92,8 @@ Every sprint follows:
 - External providers require current official docs before implementation.
 - Keep work scoped to one requested sprint.
 - Update the relevant history file at the end of a sprint.
+- Update `.scrumrun/context.md` after study, challenge intake, sprint planning, sprint execution, review, or important knowledge/decision changes.
+- Never let `.scrumrun/context.md` override golden rules, approved knowledge, history, decisions, or source code.
 
 ## `/run-init`
 
@@ -323,6 +328,22 @@ Manage the project map in `.scrumrun/map.md`. A bare `/run-map` lists the action
 
 - `--build` (`-b`): inspect the project and update the map with top-level folders, important paths, modules, tooling, config files, routes, and data/storage files. Do not include secrets.
 - `--view` (`-v`): show a concise project structure view from the map and current folders. Do not modify files.
+
+## `/run-context`
+
+Manage `.scrumrun/context.md`, the token-safe project snapshot, and `.scrumrun/token-policy.md`, the context economy rules. A bare `/run-context` lists the actions below.
+
+- `--build` (`-b`): fully rebuild `.scrumrun/context.md`. Read canonical ScrumRun files and inspect only targeted source areas needed to produce a short, accurate snapshot. Include current focus, must-read files, read-if-needed files, current decisions, risks, map pointers, and staleness triggers. Never include vault values. Mark uncertainty explicitly.
+- `--update` (`-u`) `[reason]`: update only the affected sections after study, challenge intake, sprint creation, sprint execution, review, map changes, knowledge approval/rejection, or decision changes. Do not rewrite unrelated sections.
+- `--show` (`-s`): show the current `.scrumrun/context.md` snapshot. Do not modify files.
+- `--clear` (`-c`): reset `.scrumrun/context.md` to a stale placeholder that tells future agents to rebuild it. Do not delete canonical files.
+- `--policy` (`-p`): show `.scrumrun/token-policy.md` and explain how token economy should apply to the current task. Do not modify files.
+
+Rules:
+
+1. `context.md` is never planning truth.
+2. If `context.md` conflicts with golden rules, approved knowledge, history, decisions, or source code, the canonical source wins.
+3. Token economy must never skip safety, relevant history, or uncertainty checks.
 
 ## `/run-decisions`
 

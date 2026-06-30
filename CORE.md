@@ -13,23 +13,27 @@ Before planning, changing, auditing, or reviewing work, read these files when th
 1. `.scrumrun/core.md`
 2. `.scrumrun/golden-rules.md`
 3. `.scrumrun/config.md`
-4. `.scrumrun/map.md`
-5. `.scrumrun/project.md`
-6. `.scrumrun/knowledge.md`
-7. `.scrumrun/runbook.md`
-8. `.scrumrun/backlog.md`
-9. `.scrumrun/goals/main/sprint.md`
-10. `.scrumrun/features/*/feature.md`
-11. `.scrumrun/features/*/sprint.md`
-12. `.scrumrun/agents.md`
-13. `.scrumrun/goals/main/history.md`
-14. `.scrumrun/goals/main/decisions.md`
-15. `.scrumrun/features/*/history.md`
-16. `.scrumrun/features/*/decisions.md`
+4. `.scrumrun/token-policy.md`
+5. `.scrumrun/context.md`
+6. `.scrumrun/map.md`
+7. `.scrumrun/project.md`
+8. `.scrumrun/knowledge.md`
+9. `.scrumrun/runbook.md`
+10. `.scrumrun/backlog.md`
+11. `.scrumrun/goals/main/sprint.md`
+12. `.scrumrun/features/*/feature.md`
+13. `.scrumrun/features/*/sprint.md`
+14. `.scrumrun/agents.md`
+15. `.scrumrun/goals/main/history.md`
+16. `.scrumrun/goals/main/decisions.md`
+17. `.scrumrun/features/*/history.md`
+18. `.scrumrun/features/*/decisions.md`
 
 Golden rules have the highest priority. If a golden rule conflicts with any other instruction, the golden rule wins.
 
 Only approved knowledge is planning truth. Pending knowledge is unverified context. Rejected knowledge must not be used except to avoid repeating a known bad assumption.
+
+`context.md` is a token-saving snapshot, not canonical truth. Use it to decide what to read next, then verify against canonical ScrumRun files and source code before planning, editing, reviewing, or marking work done.
 
 If the current AI client does not support slash commands, do not invent a different workflow. Use the command equivalents in this file.
 
@@ -44,6 +48,8 @@ AGENTS.md
 .scrumrun/
   core.md
   config.md
+  token-policy.md
+  context.md
   golden-rules.md
   map.md
   agents.md
@@ -76,6 +82,36 @@ AGENTS.md
 - Keep main goal history and feature lane history separate.
 - Before running a sprint, check the relevant history file.
 - If a sprint is completed, partial, or blocked, stop and ask whether to audit, resume, fix, rerun, or move on.
+
+## Context Economy Protocol
+
+This protocol reduces token waste while preserving correctness.
+
+```text
+AGENTS.md
+  -> core.md
+  -> golden-rules.md
+  -> config.md
+  -> token-policy.md
+  -> context.md
+  -> map.md
+  -> project.md
+  -> knowledge.md
+  -> runbook.md
+  -> current backlog / sprint / feature files
+  -> agents.md
+  -> relevant history + decisions
+  -> targeted source files
+```
+
+Rules:
+
+1. Safety beats token economy.
+2. Use `context.md` as a reading guide, never as proof.
+3. Prefer targeted file/range/symbol reads over broad dumps.
+4. Summarize large logs, generated files, old reviews, and old unrelated history.
+5. If a skipped source could affect correctness or safety, read it.
+6. Update `context.md` after study, challenge intake, sprint planning, sprint execution, review, or important knowledge/decision changes.
 
 ## Sprint Protocol
 
@@ -222,6 +258,20 @@ Manage `.scrumrun/golden-rules.md`. Golden rules are absolute and must be checke
 ### `/run-map`
 
 Build or view `.scrumrun/map.md`. The map is a navigation aid, not source of truth. Verify files before editing.
+
+### `/run-context`
+
+Manage `.scrumrun/context.md`, the token-safe project snapshot, and `.scrumrun/token-policy.md`, the context economy rules.
+
+Actions:
+
+- `/run-context --build` (`-b`): create or fully refresh the snapshot from canonical ScrumRun files and targeted source inspection.
+- `/run-context --update` (`-u`) `[reason]`: update only changed sections after study, challenge, planning, execution, review, or knowledge changes.
+- `/run-context --show` (`-s`): show the current snapshot without modifying files.
+- `/run-context --clear` (`-c`): reset the snapshot to a stale placeholder so future agents know it must be rebuilt.
+- `/run-context --policy` (`-p`): show token economy rules and explain how they apply to the current task.
+
+Never let `context.md` override golden rules, approved knowledge, history, decisions, or source code.
 
 ### `/run-decisions`
 

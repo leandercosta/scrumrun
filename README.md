@@ -11,6 +11,8 @@ The method does not require a specific AI client. Codex, Claude Code, and OpenCo
 ## What ScrumRun Provides
 
 - A portable `CORE.md` method file that explains ScrumRun and its command equivalents.
+- A token-safe context snapshot under `.scrumrun/context.md`.
+- Context economy rules under `.scrumrun/token-policy.md`.
 - Global slash commands for Codex, Claude Code, and OpenCode.
 - A `scrumrun` skill that tells agents how to plan, run, audit, and review sprints.
 - A project control folder under `.scrumrun/`.
@@ -48,6 +50,8 @@ AGENTS.md
 .scrumrun/
   config.md
   core.md
+  token-policy.md
+  context.md
   golden-rules.md
   map.md
   agents.md
@@ -94,6 +98,8 @@ It should stay short and point agents to ScrumRun files:
 .scrumrun/golden-rules.md
 .scrumrun/core.md
 .scrumrun/config.md
+.scrumrun/token-policy.md
+.scrumrun/context.md
 .scrumrun/map.md
 .scrumrun/knowledge.md
 .scrumrun/runbook.md
@@ -113,6 +119,29 @@ Typical contents:
 - preferred review behavior;
 - project-specific workflow preferences.
 - sprint automation mode.
+
+### `.scrumrun/token-policy.md`
+
+Context economy rules.
+
+This file tells agents how to reduce unnecessary token usage without weakening safety. It encourages targeted reads, summaries for noisy outputs, and explicit disclosure when something was skipped for token economy.
+
+Safety still wins. Agents must not skip golden rules, approved knowledge, relevant history, decisions, or source code when correctness depends on them.
+
+### `.scrumrun/context.md`
+
+Token-safe project snapshot.
+
+This is ScrumRun's closest equivalent to RTK at the methodology layer:
+
+```text
+RTK compresses terminal output.
+ScrumRun context compresses project memory.
+```
+
+It records current focus, must-read files, read-if-needed files, current decisions, risks, map pointers, and staleness triggers.
+
+It is not a source of truth. If `context.md` conflicts with golden rules, approved knowledge, history, decisions, or source code, `context.md` loses.
 
 ### `.scrumrun/golden-rules.md`
 
@@ -371,6 +400,8 @@ Shared mode creates versionable ScrumRun project files:
 ```text
 AGENTS.md
 .scrumrun/core.md
+.scrumrun/token-policy.md
+.scrumrun/context.md
 .scrumrun/config.md
 .scrumrun/golden-rules.md
 .scrumrun/map.md
@@ -405,6 +436,8 @@ This does not modify `.gitignore` and does not touch application code. It is the
 
 Because local mode also creates `.scrumrun/core.md`, installed slash commands are not required. Any agent can be pointed at the core file and asked to run the equivalent ScrumRun workflow.
 
+Local mode also creates `.scrumrun/context.md` and `.scrumrun/token-policy.md`, so agents can avoid repeatedly reading old history, reviews, logs, and unrelated files while still verifying the canonical sources that matter.
+
 If you do not want ScrumRun to create `AGENTS.md`, use:
 
 ```bash
@@ -432,10 +465,12 @@ Then, inside your AI client:
 
 ```text
 /run-study
+/run-context --build
 /run-know The reports export checks tenant membership before file generation
 /run-know approve K-001
 /run-challenge The existing reports module needs tenant-level permissions before export
 /run-map --build
+/run-context --update after map build and challenge review
 /run-goal --new Continue evolving this existing product without rewriting the architecture
 ```
 
@@ -513,11 +548,13 @@ With installed slash commands:
 /run-help
 /run-config --lang pt-BR
 /run-study
+/run-context --build
 /run-know Billing seat limits depend on active subscriptions, not invited users
 /run-know approve K-001
 /run-challenge Users need team billing limits before creating paid seats
 /run-goal --new Build a SaaS task manager with teams and Stripe billing
 /run-map --build
+/run-context --update after goal and map setup
 /run-backlog --add Sprint 01
 /run-backlog --list
 /run-sprint --run Sprint 01
@@ -700,6 +737,28 @@ Manages the project map in `.scrumrun/map.md`.
 /run-map --view
 ```
 
+### Context Economy
+
+#### `/run-context`
+
+Manages `.scrumrun/context.md` and `.scrumrun/token-policy.md`.
+
+`context.md` is a short project snapshot that helps the agent avoid reading unnecessary files. It is never canonical truth.
+
+- `--build` (`-b`): rebuild the full context snapshot from canonical ScrumRun files and targeted source inspection.
+- `--update` (`-u`) `[reason]`: update only sections affected by recent work.
+- `--show` (`-s`): display the current snapshot without changing files.
+- `--clear` (`-c`): reset the snapshot to a stale placeholder.
+- `--policy` (`-p`): show the token policy and explain how it applies to the current task.
+
+```text
+/run-context --build
+/run-context --update after Sprint 01 completed
+/run-context --show
+/run-context --clear
+/run-context --policy
+```
+
 ### Goals
 
 #### `/run-goal`
@@ -880,6 +939,26 @@ Shows a local ScrumRun project summary: required control files, local Git exclud
 ```bash
 npx github:leandercosta/scrumrun status
 ```
+
+### `context`
+
+Manages local context economy files.
+
+The CLI can create and maintain safe placeholders. Use `/run-context` inside an AI client for verified project-aware snapshots.
+
+```bash
+npx github:leandercosta/scrumrun context build
+npx github:leandercosta/scrumrun context update "after Sprint 01 completed"
+npx github:leandercosta/scrumrun context show
+npx github:leandercosta/scrumrun context clear
+npx github:leandercosta/scrumrun context policy
+```
+
+- `build`: creates or resets `.scrumrun/context.md` to a safe placeholder and ensures `.scrumrun/token-policy.md` exists.
+- `update`: appends a local note explaining why the snapshot should be refreshed.
+- `show`: prints the snapshot.
+- `clear`: marks the snapshot stale.
+- `policy`: prints the token policy.
 
 ### `commands`
 
