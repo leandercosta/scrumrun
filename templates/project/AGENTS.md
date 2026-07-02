@@ -23,7 +23,7 @@ Before planning, executing, auditing, or reviewing work, read:
 13. `.scrumrun/goals/main/history.md`
 14. `.scrumrun/goals/main/decisions.md`
 
-If the current AI client does not support `/run-*` slash commands, read `.scrumrun/core.md` and execute the matching ScrumRun workflow manually.
+If the current AI client does not support `/sc-*` slash commands, read `.scrumrun/core.md` and execute the matching ScrumRun workflow manually.
 
 If the user asks for work without mentioning ScrumRun, still follow ScrumRun because this project was initialized with it.
 

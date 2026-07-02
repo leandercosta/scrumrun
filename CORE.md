@@ -129,11 +129,11 @@ Do not skip the first three steps. They are what prevent confident but unsafe ex
 
 Use these workflows even when slash commands are unavailable.
 
-### `/run-help`
+### `/sc-help`
 
 Explain ScrumRun commands and workflows. Read `.scrumrun/config.md` first to honor the response language. Do not modify files.
 
-### `/run-init`
+### `/sc-init`
 
 Initialize ScrumRun. In CLI form, run:
 
@@ -143,7 +143,7 @@ npx github:leandercosta/scrumrun init
 
 Default init is local: it creates `AGENTS.md` and `.scrumrun/`, then adds them to `.git/info/exclude` when Git is present. This keeps ScrumRun out of commits unless the owner chooses `--shared`.
 
-### `/run-study`
+### `/sc-study`
 
 Perform a deep, read-only project study.
 
@@ -161,7 +161,7 @@ Inspect:
 
 Return evidence with file references. If something cannot be verified, say it is unknown and explain what evidence is missing. Do not modify files. Recommend sprint candidates as backlog candidates unless the user explicitly asks to create or run a sprint.
 
-### `/run-know`
+### `/sc-know`
 
 Investigate a specific topic and write a pending knowledge proposal in `.scrumrun/knowledge.md` using the next `K-NNN` id.
 
@@ -179,7 +179,7 @@ With deep knowledge, also include key functions, symbols, entry points, call sit
 
 Do not treat new or edited knowledge as approved. Ask the owner to approve or reject it.
 
-### `/run-challenge`
+### `/sc-challenge`
 
 Analyze a user challenge after study and recommend the safest path.
 
@@ -201,7 +201,7 @@ Valid recommendations include creating a small sprint, adding to backlog, creati
 
 Do not create backlog items, sprints, feature lanes, code changes, commits, tests, or history entries unless the user explicitly asks.
 
-### `/run-goal`
+### `/sc-goal`
 
 Manage the main project goal in `.scrumrun/goals/main/`.
 
@@ -209,13 +209,13 @@ When creating or changing the goal, read project rules, map, approved knowledge,
 
 Do not implement code.
 
-### `/run-feature`
+### `/sc-feature`
 
 Create or manage isolated feature lanes under `.scrumrun/features/<slug>/`.
 
 Feature lanes must have separate `feature.md`, `sprint.md`, `history.md`, and `decisions.md`. They must respect project rules and approved knowledge but must not pollute main goal history.
 
-### `/run-sprint`
+### `/sc-sprint`
 
 Manage or run main-goal sprints.
 
@@ -233,51 +233,51 @@ For sprint execution:
 
 If the owner asks to send a sprint to backlog, add it to `.scrumrun/backlog.md` and stop without executing.
 
-### `/run-backlog`
+### `/sc-backlog`
 
 Manage `.scrumrun/backlog.md`.
 
 Backlog items are candidates, not active work. Adding to backlog must not change sprint status, run tests, execute agents, or modify application code.
 
-### `/run-agent`
+### `/sc-agent`
 
 Manage review agents in `.scrumrun/agents.md` or run them against a sprint. Agent findings should be recorded in the relevant history file.
 
-### `/run-review`
+### `/sc-review`
 
 Run a code review. Findings must be ordered by severity and include file/line references. Do not modify code unless explicitly asked.
 
-### `/run-config`
+### `/sc-config`
 
 Manage `.scrumrun/config.md`, including response language and sprint automation preferences.
 
-### `/run-golden`
+### `/sc-golden`
 
 Manage `.scrumrun/golden-rules.md`. Golden rules are absolute and must be checked before every planning or execution workflow.
 
-### `/run-map`
+### `/sc-map`
 
 Build or view `.scrumrun/map.md`. The map is a navigation aid, not source of truth. Verify files before editing.
 
-### `/run-context`
+### `/sc-context`
 
 Manage `.scrumrun/context.md`, the token-safe project snapshot, and `.scrumrun/token-policy.md`, the context economy rules.
 
 Actions:
 
-- `/run-context --build` (`-b`): create or fully refresh the snapshot from canonical ScrumRun files and targeted source inspection.
-- `/run-context --update` (`-u`) `[reason]`: update only changed sections after study, challenge, planning, execution, review, or knowledge changes.
-- `/run-context --show` (`-s`): show the current snapshot without modifying files.
-- `/run-context --clear` (`-c`): reset the snapshot to a stale placeholder so future agents know it must be rebuilt.
-- `/run-context --policy` (`-p`): show token economy rules and explain how they apply to the current task.
+- `/sc-context --build` (`-b`): create or fully refresh the snapshot from canonical ScrumRun files and targeted source inspection.
+- `/sc-context --update` (`-u`) `[reason]`: update only changed sections after study, challenge, planning, execution, review, or knowledge changes.
+- `/sc-context --show` (`-s`): show the current snapshot without modifying files.
+- `/sc-context --clear` (`-c`): reset the snapshot to a stale placeholder so future agents know it must be rebuilt.
+- `/sc-context --policy` (`-p`): show token economy rules and explain how they apply to the current task.
 
 Never let `context.md` override golden rules, approved knowledge, history, decisions, or source code.
 
-### `/run-decisions`
+### `/sc-decisions`
 
 Resolve open decisions one at a time in the relevant decisions/history file.
 
-### `/run-vault`
+### `/sc-vault`
 
 Manage `.scrumrun/vault.local.md`, a plaintext local development vault.
 
@@ -289,7 +289,7 @@ If commands are unavailable, ask the agent to do this:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /run-study.
+I want the equivalent of /sc-study.
 Do not modify files.
 ```
 
@@ -297,7 +297,7 @@ Or:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /run-challenge:
+I want the equivalent of /sc-challenge:
 <challenge>
 Show options and recommendation only. Do not execute.
 ```
@@ -306,7 +306,7 @@ Or:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-Run the equivalent of /run-sprint --run Sprint 01.
+Run the equivalent of /sc-sprint --run Sprint 01.
 Follow the sprint protocol and update history when done.
 ```
 

@@ -8,24 +8,24 @@ const root = path.resolve(__dirname, "..");
 const templates = path.join(root, "templates");
 
 const COMMANDS = [
-  "run-help",
-  "run-study",
-  "run-init",
-  "run-uninstall",
-  "run-update",
-  "run-vault",
-  "run-know",
-  "run-config",
-  "run-golden",
-  "run-map",
-  "run-challenge",
-  "run-goal",
-  "run-backlog",
-  "run-feature",
-  "run-sprint",
-  "run-agent",
-  "run-review",
-  "run-decisions"
+  "sc-help",
+  "sc-study",
+  "sc-init",
+  "sc-uninstall",
+  "sc-update",
+  "sc-vault",
+  "sc-know",
+  "sc-config",
+  "sc-golden",
+  "sc-map",
+  "sc-challenge",
+  "sc-goal",
+  "sc-backlog",
+  "sc-feature",
+  "sc-sprint",
+  "sc-agent",
+  "sc-review",
+  "sc-decisions"
 ];
 
 function usage() {
@@ -87,7 +87,7 @@ function cleanupLegacy(commandsDir, skillsDir) {
     for (const entry of fs.readdirSync(commandsDir, { withFileTypes: true })) {
       if (!entry.isFile()) continue;
       const name = entry.name;
-      const legacyPrefix = name.startsWith("srun-") || name.startsWith("asm-") || name.startsWith("sr-") || name.startsWith("scr-") || name.startsWith("src-");
+      const legacyPrefix = name.startsWith("srun-") || name.startsWith("asm-") || name.startsWith("sr-") || name.startsWith("scr-") || name.startsWith("src-") || name.startsWith("run-");
       const oldConsolidated = /^scr-[a-z]+-[a-z]+\.md$/.test(name);
       if (legacyPrefix || oldConsolidated) {
         fs.rmSync(path.join(commandsDir, name), { force: true });

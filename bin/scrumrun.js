@@ -8,25 +8,25 @@ const root = path.resolve(__dirname, "..");
 const templates = path.join(root, "templates");
 
 const COMMANDS = [
-  "run-help",
-  "run-study",
-  "run-init",
-  "run-uninstall",
-  "run-update",
-  "run-vault",
-  "run-know",
-  "run-context",
-  "run-config",
-  "run-golden",
-  "run-map",
-  "run-challenge",
-  "run-goal",
-  "run-backlog",
-  "run-feature",
-  "run-sprint",
-  "run-agent",
-  "run-review",
-  "run-decisions"
+  "sc-help",
+  "sc-study",
+  "sc-init",
+  "sc-uninstall",
+  "sc-update",
+  "sc-vault",
+  "sc-know",
+  "sc-context",
+  "sc-config",
+  "sc-golden",
+  "sc-map",
+  "sc-challenge",
+  "sc-goal",
+  "sc-backlog",
+  "sc-feature",
+  "sc-sprint",
+  "sc-agent",
+  "sc-review",
+  "sc-decisions"
 ];
 
 function usage() {
@@ -154,7 +154,7 @@ function cleanupLegacy(commandsDir, skillsDir) {
     for (const entry of fs.readdirSync(commandsDir, { withFileTypes: true })) {
       if (!entry.isFile()) continue;
       const name = entry.name;
-      const legacyPrefix = name.startsWith("srun-") || name.startsWith("asm-") || name.startsWith("sr-") || name.startsWith("scr-") || name.startsWith("src-");
+      const legacyPrefix = name.startsWith("srun-") || name.startsWith("asm-") || name.startsWith("sr-") || name.startsWith("scr-") || name.startsWith("src-") || name.startsWith("run-");
       const oldConsolidated = /^scr-[a-z]+-[a-z]+\.md$/.test(name);
       if (legacyPrefix || oldConsolidated) {
         fs.rmSync(path.join(commandsDir, name), { force: true });
@@ -278,7 +278,7 @@ function ensureBacklogFile(cwd) {
     ensureDir(path.dirname(backlogFile));
     fs.writeFileSync(
       backlogFile,
-      `# Sprint Backlog - ${path.basename(cwd)}\n\nBacklog items are sprint candidates. They are not active work until the user explicitly runs \`/run-sprint --run\`.\n\n## Items\n\n- Pending: none.\n`
+      `# Sprint Backlog - ${path.basename(cwd)}\n\nBacklog items are sprint candidates. They are not active work until the user explicitly runs \`/sc-sprint --run\`.\n\n## Items\n\n- Pending: none.\n`
     );
   }
   return backlogFile;
@@ -289,7 +289,7 @@ function ensureKnowledgeFile(cwd) {
   if (!fs.existsSync(knowledgeFile)) {
     writeFile(
       knowledgeFile,
-      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /run-challenge, /run-sprint --new, /run-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
+      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /sc-challenge, /sc-sprint --new, /sc-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
     );
   }
   return knowledgeFile;
@@ -356,19 +356,19 @@ Confidence: ${status}
 
 ## Current Map Pointers
 
-- Pending: run \`/run-map --build\` or \`/run-context --build\`.
+- Pending: run \`/sc-map --build\` or \`/sc-context --build\`.
 
 ## Staleness Triggers
 
 Refresh this snapshot after:
 
-- \`/run-study\`
-- \`/run-goal --new\`
-- \`/run-feature --new\`
-- \`/run-sprint --new\`
-- \`/run-sprint --run\`
-- \`/run-sprint --fix\`
-- \`/run-review --code\`
+- \`/sc-study\`
+- \`/sc-goal --new\`
+- \`/sc-feature --new\`
+- \`/sc-sprint --new\`
+- \`/sc-sprint --run\`
+- \`/sc-sprint --fix\`
+- \`/sc-review --code\`
 - major changes to \`knowledge.md\`, \`project.md\`, \`map.md\`, \`history.md\`, or \`decisions.md\`
 `;
 }
@@ -613,7 +613,7 @@ function addKnowledge(topic) {
   const file = ensureKnowledgeFile(process.cwd());
   const current = readIfExists(file);
   const id = nextKnowledgeId(current);
-  const block = `### ${id} - ${stripQuotes(topic)}\nStatus: pending\nDate: ${today()}\nSource: CLI\nApprover: pending\n\n#### User Insight\n\n${stripQuotes(topic)}\n\n#### Verified Facts\n\n- Pending: requires agent verification with /run-know.\n\n#### Assumptions and Uncertainty\n\n- This entry was created from CLI input and has not been verified by an agent.\n\n#### Risks If Wrong\n\n- Future sprint planning could be based on an incorrect assumption if approved without review.\n\n#### Affected Modules\n\n- Pending: unknown.\n\n#### Suggested Future Use\n\n- Use as context only after approval.\n`;
+  const block = `### ${id} - ${stripQuotes(topic)}\nStatus: pending\nDate: ${today()}\nSource: CLI\nApprover: pending\n\n#### User Insight\n\n${stripQuotes(topic)}\n\n#### Verified Facts\n\n- Pending: requires agent verification with /sc-know.\n\n#### Assumptions and Uncertainty\n\n- This entry was created from CLI input and has not been verified by an agent.\n\n#### Risks If Wrong\n\n- Future sprint planning could be based on an incorrect assumption if approved without review.\n\n#### Affected Modules\n\n- Pending: unknown.\n\n#### Suggested Future Use\n\n- Use as context only after approval.\n`;
   const pending = getSection(current, "Pending Proposals");
   const nextPending = `${pending.replace(/^- Pending: none\.\n?/gm, "").trim()}\n\n${block}`.trim();
   writeFile(file, replaceSection(current, "Pending Proposals", nextPending));
@@ -751,30 +751,30 @@ function commandList() {
   console.log(`Slash commands installed by ScrumRun:
 
 Project:
-  /run-help
-  /run-init
-  /run-uninstall
-  /run-update
-  /run-study
-  /run-challenge
+  /sc-help
+  /sc-init
+  /sc-uninstall
+  /sc-update
+  /sc-study
+  /sc-challenge
 
 Knowledge and planning:
-  /run-vault
-  /run-know
-  /run-context
-  /run-goal
-  /run-feature
-  /run-sprint
-  /run-backlog
+  /sc-vault
+  /sc-know
+  /sc-context
+  /sc-goal
+  /sc-feature
+  /sc-sprint
+  /sc-backlog
 
 Project controls:
-  /run-config
-  /run-golden
-  /run-context
-  /run-map
-  /run-agent
-  /run-review
-  /run-decisions
+  /sc-config
+  /sc-golden
+  /sc-context
+  /sc-map
+  /sc-agent
+  /sc-review
+  /sc-decisions
 
 CLI helpers:
   scrumrun status
@@ -813,12 +813,12 @@ function runContext(parts) {
     ensureTokenPolicyFile(cwd);
     writeFile(projectFile("context.md"), contextTemplate(cwd, { reason: "CLI build" }));
     console.log("Built .scrumrun/context.md placeholder.");
-    console.log("For a verified snapshot, run `/run-context --build` in your AI client.");
+    console.log("For a verified snapshot, run `/sc-context --build` in your AI client.");
   } else if (action === "update" || action === "--update" || action === "-u") {
     const reason = joinArgs(parts.slice(1)) || "CLI update";
     const file = ensureContextFile(cwd);
     const current = readIfExists(file);
-    const note = `\n## CLI Update Note - ${today()}\n\n- Reason: ${reason}\n- This note is not verified project truth. Run \`/run-context --update ${reason}\` for an agent-verified snapshot update.\n`;
+    const note = `\n## CLI Update Note - ${today()}\n\n- Reason: ${reason}\n- This note is not verified project truth. Run \`/sc-context --update ${reason}\` for an agent-verified snapshot update.\n`;
     writeFile(file, `${current.trim()}\n${note}`);
     console.log("Added context update note to .scrumrun/context.md.");
   } else if (action === "clear" || action === "--clear" || action === "-c") {
@@ -902,21 +902,21 @@ function promptCommand(parts) {
   const kind = parts[0];
   const text = joinText(parts.slice(1));
   const prompts = {
-    study: `/run-study${text ? ` ${text}` : ""}`,
-    challenge: `/run-challenge ${text}`.trim(),
-    know: `/run-know ${text}`.trim(),
-    "context-build": `/run-context --build${text ? ` ${text}` : ""}`,
-    "context-update": `/run-context --update${text ? ` ${text}` : ""}`,
-    "context-show": `/run-context --show${text ? ` ${text}` : ""}`,
-    context: `/run-context ${text}`.trim(),
-    vault: `/run-vault ${text}`.trim(),
-    "goal-new": `/run-goal --new ${text}`.trim(),
-    goal: `/run-goal --new ${text}`.trim(),
-    "sprint-new": `/run-sprint --new ${text}`.trim(),
-    "sprint-run": `/run-sprint --run ${text}`.trim(),
-    "backlog-add": `/run-backlog --add ${text}`.trim(),
-    backlog: `/run-backlog --add ${text}`.trim(),
-    status: `/run-sprint --status${text ? ` ${text}` : ""}`
+    study: `/sc-study${text ? ` ${text}` : ""}`,
+    challenge: `/sc-challenge ${text}`.trim(),
+    know: `/sc-know ${text}`.trim(),
+    "context-build": `/sc-context --build${text ? ` ${text}` : ""}`,
+    "context-update": `/sc-context --update${text ? ` ${text}` : ""}`,
+    "context-show": `/sc-context --show${text ? ` ${text}` : ""}`,
+    context: `/sc-context ${text}`.trim(),
+    vault: `/sc-vault ${text}`.trim(),
+    "goal-new": `/sc-goal --new ${text}`.trim(),
+    goal: `/sc-goal --new ${text}`.trim(),
+    "sprint-new": `/sc-sprint --new ${text}`.trim(),
+    "sprint-run": `/sc-sprint --run ${text}`.trim(),
+    "backlog-add": `/sc-backlog --add ${text}`.trim(),
+    backlog: `/sc-backlog --add ${text}`.trim(),
+    status: `/sc-sprint --status${text ? ` ${text}` : ""}`
   };
   if (!kind || !prompts[kind]) {
     console.error("Usage: scrumrun prompt <study|challenge|know|context-build|context-update|vault|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
@@ -1012,7 +1012,7 @@ function migrateProject() {
   if (!fs.existsSync(path.join(cwd, ".scrumrun", "project.md"))) {
     fs.writeFileSync(
       path.join(cwd, ".scrumrun", "project.md"),
-      `# Project - ${path.basename(cwd)}\n\n## Purpose\n\nPending: review migrated ScrumRun files and update with /run-goal --new.\n\n## Active Lanes\n\n- Main goal: .scrumrun/goals/main/\n- Features: .scrumrun/features/\n`
+      `# Project - ${path.basename(cwd)}\n\n## Purpose\n\nPending: review migrated ScrumRun files and update with /sc-goal --new.\n\n## Active Lanes\n\n- Main goal: .scrumrun/goals/main/\n- Features: .scrumrun/features/\n`
     );
     results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "project.md") });
   }
@@ -1031,7 +1031,7 @@ function migrateProject() {
   if (!fs.existsSync(path.join(cwd, ".scrumrun", "knowledge.md"))) {
     fs.writeFileSync(
       path.join(cwd, ".scrumrun", "knowledge.md"),
-      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /run-challenge, /run-sprint --new, /run-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
+      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /sc-challenge, /sc-sprint --new, /sc-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
     );
     results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "knowledge.md") });
   }

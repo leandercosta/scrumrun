@@ -82,7 +82,7 @@ This is the fallback for agents that do not support installed slash commands. As
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /run-study.
+I want the equivalent of /sc-study.
 Do not modify files.
 ```
 
@@ -187,7 +187,7 @@ It should document the product goal, stack, architecture, infrastructure, import
 
 Sprint candidate backlog.
 
-This is where suggested or manually selected sprint candidates can be parked without starting implementation. It is useful for legacy projects where `/run-study` may discover many important issues, but the user still needs full control over which work is allowed to run.
+This is where suggested or manually selected sprint candidates can be parked without starting implementation. It is useful for legacy projects where `/sc-study` may discover many important issues, but the user still needs full control over which work is allowed to run.
 
 ### `.scrumrun/knowledge.md`
 
@@ -209,7 +209,7 @@ ScrumRun adds `.scrumrun/vault.local.md` to `.git/info/exclude` when initializin
 
 Sprint plan for the main project goal.
 
-This is the structured plan for main-goal sprints. A sprint listed here is not active work until the user explicitly runs `/run-sprint --run`.
+This is the structured plan for main-goal sprints. A sprint listed here is not active work until the user explicitly runs `/sc-sprint --run`.
 
 ### `.scrumrun/goals/main/history.md`
 
@@ -262,7 +262,7 @@ Feature-specific decisions, questions, and follow-ups.
 
 Installation is optional.
 
-Use `install` when your AI client supports custom slash commands or skills and you want `/run-*` shortcuts available globally.
+Use `install` when your AI client supports custom slash commands or skills and you want `/sc-*` shortcuts available globally.
 
 Run directly from GitHub:
 
@@ -336,7 +336,7 @@ Then ask the agent to read the core file:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /run-study.
+I want the equivalent of /sc-study.
 Do not modify files.
 ```
 
@@ -344,7 +344,7 @@ For a challenge:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /run-challenge:
+I want the equivalent of /sc-challenge:
 The billing module needs manual invoice retry support.
 Show options and recommendation only. Do not execute.
 ```
@@ -353,7 +353,7 @@ For sprint execution:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-Run the equivalent of /run-sprint --run Sprint 01.
+Run the equivalent of /sc-sprint --run Sprint 01.
 Follow the sprint protocol and update history when done.
 ```
 
@@ -464,42 +464,42 @@ npx github:leandercosta/scrumrun init --local
 Then, inside your AI client:
 
 ```text
-/run-study
-/run-context --build
-/run-know The reports export checks tenant membership before file generation
-/run-know approve K-001
-/run-challenge The existing reports module needs tenant-level permissions before export
-/run-map --build
-/run-context --update after map build and challenge review
-/run-goal --new Continue evolving this existing product without rewriting the architecture
+/sc-study
+/sc-context --build
+/sc-know The reports export checks tenant membership before file generation
+/sc-know approve K-001
+/sc-challenge The existing reports module needs tenant-level permissions before export
+/sc-map --build
+/sc-context --update after map build and challenge review
+/sc-goal --new Continue evolving this existing product without rewriting the architecture
 ```
 
-In established projects, `/run-study` is intentionally deep. It should inspect stack, architecture, permissions, auth, data model, integrations, env/config, deployment clues, tests, risks, and current ScrumRun files. It is read-only and should recommend sprint candidates without running them.
+In established projects, `/sc-study` is intentionally deep. It should inspect stack, architecture, permissions, auth, data model, integrations, env/config, deployment clues, tests, risks, and current ScrumRun files. It is read-only and should recommend sprint candidates without running them.
 
 When the study surfaces possible work, park candidates in the backlog first:
 
 ```text
-/run-challenge The current permissions screen needs role inheritance support
-/run-backlog --add Sprint 01
-/run-backlog --list
+/sc-challenge The current permissions screen needs role inheritance support
+/sc-backlog --add Sprint 01
+/sc-backlog --list
 ```
 
 Only run a sprint when you explicitly choose it:
 
 ```text
-/run-sprint --run Sprint 01
+/sc-sprint --run Sprint 01
 ```
 
 You can also send a sprint candidate to the backlog from the run command:
 
 ```text
-/run-sprint --run Sprint 01 --backlog
+/sc-sprint --run Sprint 01 --backlog
 ```
 
 For a new isolated feature:
 
 ```text
-/run-feature --new Add a billing dashboard with invoices and subscription controls
+/sc-feature --new Add a billing dashboard with invoices and subscription controls
 ```
 
 Use `--shared` only when the repository owner or team explicitly wants ScrumRun files committed. ScrumRun does not require methodology files to be committed.
@@ -538,44 +538,44 @@ Then in any AI client:
 
 ```text
 Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /run-study.
+I want the equivalent of /sc-study.
 ```
 
 With installed slash commands:
 
 ```text
-/run-init
-/run-help
-/run-config --lang pt-BR
-/run-study
-/run-context --build
-/run-know Billing seat limits depend on active subscriptions, not invited users
-/run-know approve K-001
-/run-challenge Users need team billing limits before creating paid seats
-/run-goal --new Build a SaaS task manager with teams and Stripe billing
-/run-map --build
-/run-context --update after goal and map setup
-/run-backlog --add Sprint 01
-/run-backlog --list
-/run-sprint --run Sprint 01
-/run-sprint --audit Sprint 01
+/sc-init
+/sc-help
+/sc-config --lang pt-BR
+/sc-study
+/sc-context --build
+/sc-know Billing seat limits depend on active subscriptions, not invited users
+/sc-know approve K-001
+/sc-challenge Users need team billing limits before creating paid seats
+/sc-goal --new Build a SaaS task manager with teams and Stripe billing
+/sc-map --build
+/sc-context --update after goal and map setup
+/sc-backlog --add Sprint 01
+/sc-backlog --list
+/sc-sprint --run Sprint 01
+/sc-sprint --audit Sprint 01
 ```
 
 Start an isolated feature:
 
 ```text
-/run-feature --new Add a marketplace with sellers, commissions, and Stripe Connect
-/run-feature --show marketplace
-/run-feature --run marketplace Sprint 01
-/run-feature --audit marketplace Sprint 01
+/sc-feature --new Add a marketplace with sellers, commissions, and Stripe Connect
+/sc-feature --show marketplace
+/sc-feature --run marketplace Sprint 01
+/sc-feature --audit marketplace Sprint 01
 ```
 
 Review work:
 
 ```text
-/run-review --code
-/run-review --file src/auth/login.ts:40_120
-/run-decisions
+/sc-review --code
+/sc-review --file src/auth/login.ts:40_120
+/sc-decisions
 ```
 
 ## Slash Commands
@@ -584,23 +584,23 @@ Commands are grouped by noun. The action is a flag, and every long flag has a sh
 
 ### Project
 
-#### `/run-help`
+#### `/sc-help`
 
 Shows ScrumRun commands grouped by workflow.
 
 Examples:
 
 ```text
-/run-help
-/run-help feature
-/run-help /run-sprint
+/sc-help
+/sc-help feature
+/sc-help /sc-sprint
 ```
 
-#### `/run-init`
+#### `/sc-init`
 
 Initializes ScrumRun in the current project. Creates `AGENTS.md` and `.scrumrun/` control files. It does not create application code.
 
-#### `/run-uninstall`
+#### `/sc-uninstall`
 
 Removes ScrumRun from the current project.
 
@@ -609,17 +609,17 @@ Default behavior is conservative: it removes ScrumRun entries from `.git/info/ex
 Examples:
 
 ```text
-/run-uninstall
-/run-uninstall --force
+/sc-uninstall
+/sc-uninstall --force
 ```
 
-#### `/run-study`
+#### `/sc-study`
 
 Deep-studies the project and summarizes the operational state: stack, architecture, entry points, auth, permissions, data model, env/config, integrations, deployment clues, tests, observability, risks, and unknowns. Read-only; recommended work is presented as backlog candidates, not executed.
 
-#### `/run-know`
+#### `/sc-know`
 
-Creates and manages project knowledge before sprint planning. Each entry has a stable id in the form `K-NNN` (for example `K-001`). New knowledge is never approved automatically — `/run-know <topic>` writes a pending proposal in `.scrumrun/knowledge.md` and asks for approval. Only approved knowledge influences `/run-challenge`, `/run-sprint --new`, `/run-sprint --run`, and feature planning.
+Creates and manages project knowledge before sprint planning. Each entry has a stable id in the form `K-NNN` (for example `K-001`). New knowledge is never approved automatically — `/sc-know <topic>` writes a pending proposal in `.scrumrun/knowledge.md` and asks for approval. Only approved knowledge influences `/sc-challenge`, `/sc-sprint --new`, `/sc-sprint --run`, and feature planning.
 
 Flags:
 
@@ -633,19 +633,19 @@ Flags:
 Examples:
 
 ```text
-/run-know Understand how tenant permissions work for report exports
-/run-know --deep How report export permissions are enforced
-/run-know K-001 -d -e
-/run-know K-002 --remove
-/run-know K-001 --resume
-/run-know K-001 --insight This flow is also hit by the nightly export job, so permission changes must cover that path
-/run-know K-001 --rename Report export tenant permission model
-/run-know list
-/run-know approve K-001
-/run-know reject K-002 because exports are handled by the billing service, not reports
+/sc-know Understand how tenant permissions work for report exports
+/sc-know --deep How report export permissions are enforced
+/sc-know K-001 -d -e
+/sc-know K-002 --remove
+/sc-know K-001 --resume
+/sc-know K-001 --insight This flow is also hit by the nightly export job, so permission changes must cover that path
+/sc-know K-001 --rename Report export tenant permission model
+/sc-know list
+/sc-know approve K-001
+/sc-know reject K-002 because exports are handled by the billing service, not reports
 ```
 
-#### `/run-vault`
+#### `/sc-vault`
 
 Manages local development credentials in `.scrumrun/vault.local.md`.
 
@@ -654,12 +654,12 @@ This is intentionally local-only. It is useful for development credentials, sand
 Examples:
 
 ```text
-/run-vault OPENAI_API_KEY:sk-local-dev --add
-/run-vault --add STRIPE_SECRET_KEY:sk_test_local
-/run-vault --list
-/run-vault --show OPENAI_API_KEY
-/run-vault --remove OPENAI_API_KEY
-/run-vault --path
+/sc-vault OPENAI_API_KEY:sk-local-dev --add
+/sc-vault --add STRIPE_SECRET_KEY:sk_test_local
+/sc-vault --list
+/sc-vault --show OPENAI_API_KEY
+/sc-vault --remove OPENAI_API_KEY
+/sc-vault --path
 ```
 
 Rules:
@@ -667,33 +667,33 @@ Rules:
 - values go only to `.scrumrun/vault.local.md`;
 - `.scrumrun/vault.local.md` must stay out of Git;
 - values must not be copied into knowledge, sprint history, reviews, backlog, decisions, commits, or normal summaries;
-- `/run-study` and `/run-challenge` may mention that vault entries exist, but must not reveal values.
+- `/sc-study` and `/sc-challenge` may mention that vault entries exist, but must not reveal values.
 
-#### `/run-challenge`
+#### `/sc-challenge`
 
 Analyzes a concrete user challenge against the studied project and recommends the safest ScrumRun path. It reads existing history and uses only `Approved Knowledge` as planning truth. Read-only by default; it returns challenge understanding, evidence with file references, history findings, impact, risks, options (sprint, backlog, feature lane, discovery, or reject/defer), and a recommended next command.
 
 Examples:
 
 ```text
-/run-challenge The export flow needs tenant-level permission checks before CSV download
-/run-challenge Add invoice retry logic, but only if it does not conflict with current Stripe webhooks
+/sc-challenge The export flow needs tenant-level permission checks before CSV download
+/sc-challenge Add invoice retry logic, but only if it does not conflict with current Stripe webhooks
 ```
 
-#### `/run-update`
+#### `/sc-update`
 
 Updates installed global command and skill files.
 
 ```text
-/run-update
-/run-update codex
-/run-update opencode
-/run-update claude
+/sc-update
+/sc-update codex
+/sc-update opencode
+/sc-update claude
 ```
 
 ### Configuration
 
-#### `/run-config`
+#### `/sc-config`
 
 Manages `.scrumrun/config.md`.
 
@@ -701,14 +701,14 @@ Manages `.scrumrun/config.md`.
 - `--lang` (`-l`) `<language>`: set the response language for all commands.
 
 ```text
-/run-config --show
-/run-config --lang pt-BR
-/run-config -l English
+/sc-config --show
+/sc-config --lang pt-BR
+/sc-config -l English
 ```
 
 ### Golden Rules
 
-#### `/run-golden`
+#### `/sc-golden`
 
 Manages golden rules in `.scrumrun/golden-rules.md` — absolute priority, never violated.
 
@@ -717,14 +717,14 @@ Manages golden rules in `.scrumrun/golden-rules.md` — absolute priority, never
 - `--remove` (`-r`) `<number>`: remove a rule by number.
 
 ```text
-/run-golden --list
-/run-golden --add Always use TypeScript with strict mode
-/run-golden --remove 2
+/sc-golden --list
+/sc-golden --add Always use TypeScript with strict mode
+/sc-golden --remove 2
 ```
 
 ### Map
 
-#### `/run-map`
+#### `/sc-map`
 
 Manages the project map in `.scrumrun/map.md`.
 
@@ -732,14 +732,14 @@ Manages the project map in `.scrumrun/map.md`.
 - `--view` (`-v`): display the map without modifying files.
 
 ```text
-/run-map --build
-/run-map --build src/auth
-/run-map --view
+/sc-map --build
+/sc-map --build src/auth
+/sc-map --view
 ```
 
 ### Context Economy
 
-#### `/run-context`
+#### `/sc-context`
 
 Manages `.scrumrun/context.md` and `.scrumrun/token-policy.md`.
 
@@ -752,32 +752,32 @@ Manages `.scrumrun/context.md` and `.scrumrun/token-policy.md`.
 - `--policy` (`-p`): show the token policy and explain how it applies to the current task.
 
 ```text
-/run-context --build
-/run-context --update after Sprint 01 completed
-/run-context --show
-/run-context --clear
-/run-context --policy
+/sc-context --build
+/sc-context --update after Sprint 01 completed
+/sc-context --show
+/sc-context --clear
+/sc-context --policy
 ```
 
 ### Goals
 
-#### `/run-goal`
+#### `/sc-goal`
 
 Manages project goal lanes.
 
-- `--new` (`-n`) `<goal>`: plan or replace the main project goal. The agent asks architectural questions before creating sprints. If `Sprint Automation: backlog` (or legacy `bypass`) is set, suggested sprints become candidates; add them with `/run-backlog --add` and review with `/run-backlog --list`.
+- `--new` (`-n`) `<goal>`: plan or replace the main project goal. The agent asks architectural questions before creating sprints. If `Sprint Automation: backlog` (or legacy `bypass`) is set, suggested sprints become candidates; add them with `/sc-backlog --add` and review with `/sc-backlog --list`.
 - `--show` (`-s`) `[focus]`: show the current main goal plan and status.
 - `--list` (`-l`) `[filter]`: list goal lanes; the default lane is `main`.
 
 ```text
-/run-goal --new Build a headless CMS with GraphQL API and S3 media uploads
-/run-goal --show
-/run-goal --list
+/sc-goal --new Build a headless CMS with GraphQL API and S3 media uploads
+/sc-goal --show
+/sc-goal --list
 ```
 
 ### Features
 
-#### `/run-feature`
+#### `/sc-feature`
 
 Manages isolated feature lanes under `.scrumrun/features/<slug>/`, kept out of the main goal history.
 
@@ -788,18 +788,18 @@ Manages isolated feature lanes under `.scrumrun/features/<slug>/`, kept out of t
 - `--audit` (`-a`) `<slug> <sprint>`: audit one sprint from a lane.
 
 ```text
-/run-feature --new Add a billing dashboard with invoices and subscription controls
-/run-feature --list
-/run-feature --show billing-dashboard
-/run-feature --run billing-dashboard Sprint 01
-/run-feature --audit billing-dashboard Sprint 01
+/sc-feature --new Add a billing dashboard with invoices and subscription controls
+/sc-feature --list
+/sc-feature --show billing-dashboard
+/sc-feature --run billing-dashboard Sprint 01
+/sc-feature --audit billing-dashboard Sprint 01
 ```
 
 ### Sprints
 
 Before creating or running sprints, agents read `.scrumrun/knowledge.md` and use only `Approved Knowledge` as planning truth.
 
-#### `/run-sprint`
+#### `/sc-sprint`
 
 Manages main-goal sprints.
 
@@ -810,29 +810,29 @@ Manages main-goal sprints.
 - `--rename` (`-rn`) `<id> "name"`: rename only the sprint's descriptive label; the number/id stays the same.
 - `--run` (`-r`) `<id>`: run one sprint (history check, protocol, review agents, history update). Add `--backlog` (`-k`) to send it to the backlog instead of executing.
 - `--audit` (`-a`) `<id>`: audit an executed sprint.
-- `--fix` (`-f`) `<id>`: corrective pass — asks what went wrong, then (on confirmation) creates an executable corrective child sprint `NN.M` (e.g. `02.1`) linked to the parent, captures the lesson in the knowledge base (pending proposal or insight, never auto-approved), and logs decisions. Run it with `/run-sprint --run 02.1`. Does not change application code.
+- `--fix` (`-f`) `<id>`: corrective pass — asks what went wrong, then (on confirmation) creates an executable corrective child sprint `NN.M` (e.g. `02.1`) linked to the parent, captures the lesson in the knowledge base (pending proposal or insight, never auto-approved), and logs decisions. Run it with `/sc-sprint --run 02.1`. Does not change application code.
 - `--commit-message` (`-cm`) `<id>`: print a short, succinct commit message for the sprint's delivered work — one line, minimal characters. Read-only (does not commit).
 - `--discuss` (`-d`) `<id>`: discuss the approach and log the decision.
-- `--bypass` (`-b`) `[context]`: put sprint planning into backlog mode for legacy or hand-managed projects; prefer `/run-backlog --add` and `/run-backlog --list` afterward.
+- `--bypass` (`-b`) `[context]`: put sprint planning into backlog mode for legacy or hand-managed projects; prefer `/sc-backlog --add` and `/sc-backlog --list` afterward.
 
 ```text
-/run-sprint --new Add dark mode toggle
-/run-sprint --new * Fix critical auth bug
-/run-sprint --list
-/run-sprint --status
-/run-sprint --status Sprint 01
-/run-sprint --show Sprint 01
-/run-sprint --run Sprint 01
-/run-sprint --run Sprint 01 --backlog
-/run-sprint --audit Sprint 01
-/run-sprint --commit-message Sprint 01
-/run-sprint --fix Sprint 01
-/run-sprint --rename Sprint 01 Tenant-aware CSV export
-/run-sprint --discuss 04 Should we use SQLite instead of Postgres?
-/run-sprint --bypass
+/sc-sprint --new Add dark mode toggle
+/sc-sprint --new * Fix critical auth bug
+/sc-sprint --list
+/sc-sprint --status
+/sc-sprint --status Sprint 01
+/sc-sprint --show Sprint 01
+/sc-sprint --run Sprint 01
+/sc-sprint --run Sprint 01 --backlog
+/sc-sprint --audit Sprint 01
+/sc-sprint --commit-message Sprint 01
+/sc-sprint --fix Sprint 01
+/sc-sprint --rename Sprint 01 Tenant-aware CSV export
+/sc-sprint --discuss 04 Should we use SQLite instead of Postgres?
+/sc-sprint --bypass
 ```
 
-#### `/run-backlog`
+#### `/sc-backlog`
 
 Manages sprint candidates in `.scrumrun/backlog.md`.
 
@@ -840,14 +840,14 @@ Manages sprint candidates in `.scrumrun/backlog.md`.
 - `--list` (`-l`) `[filter]`: list candidates with the command needed to run each.
 
 ```text
-/run-backlog --add Sprint 01
-/run-backlog --add Audit permissions and role policies
-/run-backlog --list
+/sc-backlog --add Sprint 01
+/sc-backlog --add Audit permissions and role policies
+/sc-backlog --list
 ```
 
 ### Review Agents
 
-#### `/run-agent`
+#### `/sc-agent`
 
 Manages review agents in `.scrumrun/agents.md`.
 
@@ -856,15 +856,15 @@ Manages review agents in `.scrumrun/agents.md`.
 - `--run` (`-r`) `<sprint>`: run all agents, or one numbered agent, against a sprint.
 
 ```text
-/run-agent --add Security review
-/run-agent --list
-/run-agent --run Sprint 01
-/run-agent --run 2 Sprint 01
+/sc-agent --add Security review
+/sc-agent --list
+/sc-agent --run Sprint 01
+/sc-agent --run 2 Sprint 01
 ```
 
 ### Reviews
 
-#### `/run-review`
+#### `/sc-review`
 
 Runs a review.
 
@@ -872,19 +872,19 @@ Runs a review.
 - `--file` (`-f`) `<path:start_end>`: review one file range without changing code.
 
 ```text
-/run-review --code
-/run-review --file src/auth/login.ts:40_120
+/sc-review --code
+/sc-review --file src/auth/login.ts:40_120
 ```
 
 ### Decisions
 
-#### `/run-decisions`
+#### `/sc-decisions`
 
 Resolves pending decisions, questions, risks, and follow-ups one by one. With no argument it scans the main goal; pass a feature slug to use that lane's history and decisions.
 
 ```text
-/run-decisions
-/run-decisions billing-dashboard
+/sc-decisions
+/sc-decisions billing-dashboard
 ```
 
 ## CLI Reference
@@ -944,7 +944,7 @@ npx github:leandercosta/scrumrun status
 
 Manages local context economy files.
 
-The CLI can create and maintain safe placeholders. Use `/run-context` inside an AI client for verified project-aware snapshots.
+The CLI can create and maintain safe placeholders. Use `/sc-context` inside an AI client for verified project-aware snapshots.
 
 ```bash
 npx github:leandercosta/scrumrun context build
@@ -1016,7 +1016,7 @@ npx github:leandercosta/scrumrun know remove K-001
 For deep verification, use the slash command in your AI client:
 
 ```text
-/run-know --deep Tenant permissions for report exports
+/sc-know --deep Tenant permissions for report exports
 ```
 
 ### `prompt`
@@ -1083,22 +1083,22 @@ npx github:leandercosta/scrumrun doctor opencode
 Use domain-first command names:
 
 ```text
-run-goal-*
-run-feature-*
-run-sprint-*
-run-review-*
-run-agent-*
-run-golden-*
-run-config-*
-run-map-*
+sc-goal-*
+sc-feature-*
+sc-sprint-*
+sc-review-*
+sc-agent-*
+sc-golden-*
+sc-config-*
+sc-map-*
 ```
 
 Avoid old planning names such as:
 
 ```text
-run-plan-goal
-run-plan-task
-run-plan-edit
+sc-plan-goal
+sc-plan-task
+sc-plan-edit
 ```
 
 The v2 model uses `goal` for the main project direction and `feature` for isolated new work.

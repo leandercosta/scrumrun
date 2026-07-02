@@ -45,17 +45,17 @@ Confidence: initial placeholder
 
 ## Current Map Pointers
 
-- Pending: run `/run-map --build` or `/run-context --build`.
+- Pending: run `/sc-map --build` or `/sc-context --build`.
 
 ## Staleness Triggers
 
 Refresh this snapshot after:
 
-- `/run-study`
-- `/run-goal --new`
-- `/run-feature --new`
-- `/run-sprint --new`
-- `/run-sprint --run`
-- `/run-sprint --fix`
-- `/run-review --code`
+- `/sc-study`
+- `/sc-goal --new`
+- `/sc-feature --new`
+- `/sc-sprint --new`
+- `/sc-sprint --run`
+- `/sc-sprint --fix`
+- `/sc-review --code`
 - major changes to `knowledge.md`, `project.md`, `map.md`, `history.md`, or `decisions.md`

@@ -62,7 +62,7 @@ For the whole base (no id), group entries under Approved, Pending, and Rejected,
 
 Rules:
 
-1. Approved knowledge can influence `/run-challenge`, `/run-sprint --new`, `/run-sprint --run`, and feature planning.
+1. Approved knowledge can influence `/sc-challenge`, `/sc-sprint --new`, `/sc-sprint --run`, and feature planning.
 2. Pending proposals are not planning truth. Mention them only as unapproved context.
 3. Rejected proposals must not be used for planning except to avoid repeating a known bad assumption.
 4. Editing an approved entry returns it to pending for re-approval; never silently keep edited content as approved.
