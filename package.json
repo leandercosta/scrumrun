@@ -1,6 +1,6 @@
 {
   "name": "scrumrun",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "ScrumRun: portable sprint-driven AI workflow for real software projects.",
   "bin": {
     "scrumrun": "bin/scrumrun.js",

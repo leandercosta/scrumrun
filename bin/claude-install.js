@@ -23,6 +23,7 @@ const COMMANDS = [
   "sc-backlog",
   "sc-feature",
   "sc-sprint",
+  "sc-fix",
   "sc-agent",
   "sc-review",
   "sc-decisions"

@@ -810,7 +810,7 @@ Manages main-goal sprints.
 - `--rename` (`-rn`) `<id> "name"`: rename only the sprint's descriptive label; the number/id stays the same.
 - `--run` (`-r`) `<id>`: run one sprint (history check, protocol, review agents, history update). Add `--backlog` (`-k`) to send it to the backlog instead of executing.
 - `--audit` (`-a`) `<id>`: audit an executed sprint.
-- `--fix` (`-f`) `<id>`: corrective pass — asks what went wrong, then (on confirmation) creates an executable corrective child sprint `NN.M` (e.g. `02.1`) linked to the parent, captures the lesson in the knowledge base (pending proposal or insight, never auto-approved), and logs decisions. Run it with `/sc-sprint --run 02.1`. Does not change application code.
+- `--fix` (`-f`) `<id>`: corrective pass — asks what went wrong, then (on confirmation) creates an executable corrective child sprint `NN.M` (e.g. `02.1`) linked to the parent, captures the lesson in the knowledge base (pending proposal or insight, never auto-approved), and logs decisions. Also registers the fix in `.scrumrun/fixes.md` as `F-NNN`. Run it with `/sc-sprint --run 02.1`. Does not change application code.
 - `--commit-message` (`-cm`) `<id>`: print a short, succinct commit message for the sprint's delivered work — one line, minimal characters. Read-only (does not commit).
 - `--discuss` (`-d`) `<id>`: discuss the approach and log the decision.
 - `--bypass` (`-b`) `[context]`: put sprint planning into backlog mode for legacy or hand-managed projects; prefer `/sc-backlog --add` and `/sc-backlog --list` afterward.
@@ -843,6 +843,24 @@ Manages sprint candidates in `.scrumrun/backlog.md`.
 /sc-backlog --add Sprint 01
 /sc-backlog --add Audit permissions and role policies
 /sc-backlog --list
+```
+
+#### `/sc-fix`
+
+Manages the fix log in `.scrumrun/fixes.md` — a chronological record of what went wrong and what was done, for detecting recurring issues.
+
+- `--add` (`-a`) `"description"`: register a new fix entry (`F-NNN`, auto-sequenced, dated).
+- `--list` (`-l`): list all entries, most recent first (compact: id, date, first line).
+- `--show` (`-s`) `<id>`: show full details of one `F-NNN` entry.
+- `--insight` (`-i`) `<id>`: if this fix reveals recurring patterns, propose a `K-NNN` knowledge entry for durable learning.
+
+`/sc-sprint --fix` automatically registers an entry in `.scrumrun/fixes.md` — no manual `--add` is needed for sprint-originated fixes.
+
+```text
+/sc-fix --add Permissions check failed on CSV export; added tenant guard
+/sc-fix --list
+/sc-fix --show F-001
+/sc-fix --insight F-001
 ```
 
 ### Review Agents

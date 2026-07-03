@@ -280,7 +280,7 @@ Manage main-goal sprints. A bare `/sc-sprint` lists the actions below. Use only 
 - `--rename` (`-rn`) `<id> "name"`: rename only the sprint's descriptive label; keep its number/id (history and backlog reference the number), and note "renamed from X to Y" in history.
 - `--run` (`-r`) `<id>`: run one main-goal sprint. If the arguments include `--backlog` (`-k`) or `--to-backlog`, add the sprint to `.scrumrun/backlog.md` and stop without executing. Otherwise read `AGENTS.md`, golden-rules, config, map, project, knowledge, runbook, main goal files, agents, history, and decisions; if the sprint already has status completed, partial, or blocked, stop and ask whether to audit, rerun/fix, resume, or move on; follow Entenda -> Avalie Impactos -> Tire Duvidas -> Execute -> Teste; run every agent; fix findings before completing; update main history.
 - `--audit` (`-a`) `<id>`: audit a main-goal sprint from current file state; report findings by severity. Do not modify code unless explicitly requested.
-- `--fix` (`-f`) `<id>`: corrective pass. First ask what went wrong and wait; then, on confirmation, create an executable corrective child sprint `Sprint <id>.M` (dotted, e.g. `02.1`) linked to the parent, leaving the parent intact and marked as patched. Record it in history, capture the lesson in `.scrumrun/knowledge.md` (pending proposal or insight, never auto-approved — ask to approve), and log any decision. Run it with `/sc-sprint --run <id>.M`; a fix of a fix is a sibling `<id>.M+1`. Do not change application code.
+- `--fix` (`-f`) `<id>`: corrective pass. First ask what went wrong and wait; then, on confirmation, create an executable corrective child sprint `Sprint <id>.M` (dotted, e.g. `02.1`) linked to the parent, leaving the parent intact and marked as patched. Record it in history, capture the lesson in `.scrumrun/knowledge.md` (pending proposal or insight, never auto-approved — ask to approve), and log any decision. Run it with `/sc-sprint --run <id>.M`; a fix of a fix is a sibling `<id>.M+1`. Also register the fix in `.scrumrun/fixes.md` as `F-NNN` linked to both `<id>` and `<id>.M`. Do not change application code.
 - `--commit-message` (`-cm`) `<id>`: return a single, succinct commit message for what that sprint delivered — one short line, imperative, lowercase, no trailing period, as few characters as possible. Read-only; output only the message and never stage, commit, or modify files.
 - `--discuss` (`-d`) `<id>`: explore the user's concern about the approach, propose 2-3 alternatives with trade-offs, ask for preference before changes, and log the discussion in main history.
 - `--bypass` (`-b`) `[context]`: set `.scrumrun/config.md` to `Sprint Automation: backlog` for legacy or hand-managed projects so suggested sprints become backlog candidates until the user chooses what to run. Keep other preferences intact, note the change in `.scrumrun/project.md` or `.scrumrun/goals/main/decisions.md`, and prefer `/sc-backlog --add` and `/sc-backlog --list`.
@@ -357,3 +357,16 @@ Default scope is the main goal:
 If a feature is specified, use that feature lane's `history.md` and `decisions.md`.
 
 Update the relevant decisions/history file with each resolution.
+
+## `/sc-fix`
+
+Manage `.scrumrun/fixes.md`, the chronological fix log used to detect recurring issues. Each entry uses a stable id `F-NNN` (e.g. `F-001`). A bare `/sc-fix` lists the actions below.
+
+- `--add` (`-a`) `"description"`: register a new fix entry, stamped with today's date. Say what broke and what was done; optionally reference the sprint or `K-NNN`.
+- `--list` (`-l`): list all entries, most recent first (compact: id, date, first line).
+- `--show` (`-s`) `<id>`: show the full details of one `F-NNN` entry.
+- `--insight` (`-i`) `<id>`: scan the fix entry and log for recurring patterns; if found, propose a pending knowledge proposal or insight on a related `K-NNN`.
+
+When `/sc-sprint --fix` creates a corrective child sprint, it automatically registers an entry in `.scrumrun/fixes.md` linking the parent and child sprint ids. Day-to-day fixes should use `sc-fix --add`.
+
+Do not modify application code.

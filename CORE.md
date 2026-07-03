@@ -239,6 +239,12 @@ Manage `.scrumrun/backlog.md`.
 
 Backlog items are candidates, not active work. Adding to backlog must not change sprint status, run tests, execute agents, or modify application code.
 
+### `/sc-fix`
+
+Manage `.scrumrun/fixes.md`.
+
+Record what went wrong and what was done with `--add`. Browse the fix log with `--list` and `--show`. If patterns repeat, use `--insight` to create durable knowledge. `/sc-sprint --fix` auto-registers entries.
+
 ### `/sc-agent`
 
 Manage review agents in `.scrumrun/agents.md` or run them against a sprint. Agent findings should be recorded in the relevant history file.
