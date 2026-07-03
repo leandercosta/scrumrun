@@ -273,6 +273,8 @@ Manage isolated feature lanes outside the main goal history. A bare `/sc-feature
 
 Manage main-goal sprints. A bare `/sc-sprint` lists the actions below. Use only `Approved Knowledge` before planning or execution.
 
+Important: `sprint.md` is the planned catalog; `history.md` is the executed truth. Sprint execution status (completed, partial, blocked, pending) is determined solely from `history.md`. Never infer status from `sprint.md` alone. Every status query must cross-reference both files.
+
 - `--new` (`-n`) `[*] <name>`: create a main-goal sprint in `.scrumrun/goals/main/sprint.md`; prefix the name with `*` to mark priority; assign the next sprint number; add goal, scope, acceptance criteria, dependencies, suggested verification, and review checkpoints.
 - `--list` (`-l`): summarize main-goal sprint status from the sprint plan and history. Do not modify files.
 - `--status` (`-st`) `[id]`: read the main sprint plan and history, then output only a compact Markdown table with exactly `Sprint | Breve descricao | Status`. With an id, show only that sprint; without an id, show one row per sprint. Use brief title/goal descriptions and emoji statuses: `✅ feito`, `🚧 parcial`, `⛔ bloqueado`, or `⏳ pendente`. Do not add surrounding narrative. Do not modify files.
