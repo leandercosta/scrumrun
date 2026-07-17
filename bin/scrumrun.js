@@ -66,21 +66,21 @@ Usage:
   scrumrun doctor [all|codex|opencode|claude]
 
 Examples:
-  npx github:leandercosta/scrumrun install
-  npx github:leandercosta/scrumrun install claude
-  npx github:leandercosta/scrumrun init
-  npx github:leandercosta/scrumrun core
-  npx github:leandercosta/scrumrun status
-  npx github:leandercosta/scrumrun context show
-  npx github:leandercosta/scrumrun vault add OPENAI_API_KEY sk-local-dev
-  npx github:leandercosta/scrumrun backlog add "Sprint 01"
-  npx github:leandercosta/scrumrun know add "Tenant permissions for report exports"
-  npx github:leandercosta/scrumrun prompt intake "Checkout payments duplicate after refresh"
-  npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
-  npx github:leandercosta/scrumrun uninstall --force
-  npx github:leandercosta/scrumrun init --shared
-  npx github:leandercosta/scrumrun migrate
-  npx github:leandercosta/scrumrun doctor
+  npx scrumrun@latest install
+  npx scrumrun@latest install claude
+  npx scrumrun@latest init
+  npx scrumrun@latest core
+  npx scrumrun@latest status
+  npx scrumrun@latest context show
+  npx scrumrun@latest vault add OPENAI_API_KEY sk-local-dev
+  npx scrumrun@latest backlog add "Sprint 01"
+  npx scrumrun@latest know add "Tenant permissions for report exports"
+  npx scrumrun@latest prompt intake "Checkout payments duplicate after refresh"
+  npx scrumrun@latest prompt challenge "Exports need tenant permission checks"
+  npx scrumrun@latest uninstall --force
+  npx scrumrun@latest init --shared
+  npx scrumrun@latest migrate
+  npx scrumrun@latest doctor
 `);
 }
 
