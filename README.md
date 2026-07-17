@@ -24,10 +24,10 @@ Local by default: creates `AGENTS.md` and `.scrumrun/`, adds them to `.git/info/
 Once initialized, talk to your agent in natural language:
 
 ```
-crie um botão salvar no formulário de perfil
-o checkout cobra em dobro após refresh
-estude o módulo de pagamentos
-rode a próxima sprint
+add a save button to the profile form
+checkout charges twice after refresh
+study the payments module
+run the next sprint
 ```
 
 The agent runs intake (read-only), classifies the request, proposes a route, and asks for approval before touching artifacts or code. No configuration silently grants blanket implementation permission.
