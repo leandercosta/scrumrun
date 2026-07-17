@@ -21,3 +21,15 @@ test("CLI help uses the public npm command", () => {
   assert.match(output, /npx scrumrun@latest init/);
   assert.doesNotMatch(output, /github:leandercosta\/scrumrun/);
 });
+
+test("CLI reports its package version", () => {
+  const pkg = require(path.join(root, "package.json"));
+
+  for (const flag of ["--version", "-v"]) {
+    const output = execFileSync(process.execPath, [path.join(root, "bin/scrumrun.js"), flag], {
+      encoding: "utf8",
+    });
+
+    assert.equal(output.trim(), `ScrumRun ${pkg.version}`);
+  }
+});
