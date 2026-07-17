@@ -20,4 +20,4 @@ Read ScrumRun control files first, then inspect the repository deeply enough to 
 
 Prefer precise file references over generic statements. If an area cannot be verified from the repo, say it is unknown and explain what evidence is missing.
 
-When recommending sprints, present them as backlog candidates. Do not create, run, or mark sprints unless the user explicitly asks for `/sc-sprint --new`, `/sc-backlog --add`, or `/sc-sprint --run`.
+When recommending sprints, present them as backlog candidates. Do not create, run, or mark sprints unless the user explicitly asks for `/sc-sprint --add`, `/sc-backlog --add`, or `/sc-sprint --run`.

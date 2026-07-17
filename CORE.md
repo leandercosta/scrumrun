@@ -2,6 +2,8 @@
 
 ScrumRun is a portable workflow for using AI agents on software projects without relying on a specific AI client.
 
+ScrumRun provides controlled autonomy: AI has room to investigate, reason, and recommend, while explicit operating rules prevent it from confusing confidence with permission. In short, autonomy to think, guardrails to act.
+
 Slash commands are optional shortcuts. If the current AI client does not support ScrumRun commands, read this file and execute the matching workflow manually.
 
 After ScrumRun is initialized in a project, this file is mandatory project methodology. Any AI agent working in the project must follow it before planning, changing, auditing, or reviewing work.
@@ -40,6 +42,51 @@ If the current AI client does not support slash commands, do not invent a differ
 If this file was loaded from `AGENTS.md`, treat it as the active project methodology.
 
 If the user asks for work without mentioning ScrumRun, still follow ScrumRun because the project was initialized with it.
+
+## Natural-Language Intake
+
+The owner does not need to choose a ScrumRun command. A request such as "I have a checkout bug" or "we need passkeys" automatically starts intake.
+
+Intake must:
+
+1. understand the desired outcome rather than matching keywords alone;
+2. inspect the minimum canonical context and relevant history needed for a reliable classification;
+3. classify the request as a quick task, knowledge/discovery, main sprint, corrective fix, backlog candidate, isolated feature lane, or reject/defer;
+4. explain the recommended route, important risks and unknowns, plus no more than two useful alternatives;
+5. ask for approval according to `.scrumrun/config.md`;
+6. invoke the chosen workflow only after approval.
+
+Intake is read-only until approval. It must not create planning records, modify application code, run a sprint, or treat an ambiguous acknowledgement as execution consent.
+
+Default preferences are:
+
+```text
+Interaction Mode: guided
+Execution Approval: always
+Quick Tasks: ask
+```
+
+`guided` presents a recommendation and useful alternatives. `concise` presents only the classification and recommendation. `autonomous-planning` may create planning records when the approval policy permits it, but still may not implement without explicit execution approval. `strict` requires explicit ScrumRun commands and disables automatic intake.
+
+`Execution Approval: always` requires approval before creating operational records and again before implementation when those are separate steps. `implementation-only` permits the recommended planning record after intake but still requires explicit approval before changing application code. There is intentionally no mode that silently authorizes implementation.
+
+`Quick Tasks: ask` asks before small low-risk changes. `allow` permits a clearly scoped low-risk quick task after classification, but never bypasses golden rules, security checks, or explicit user constraints. `backlog` parks quick tasks instead of executing them.
+
+## Command Grammar
+
+Commands use one canonical verb for the same semantic action:
+
+- `--add`: create or append a collection item, such as a sprint, feature, backlog item, rule, agent, fix, vault entry, or knowledge proposal;
+- `--set`: define or replace a singleton value, such as the main goal or language;
+- `--update`: change an existing resource without replacing its identity;
+- `--remove`: delete an existing resource;
+- `--list`: list multiple resources;
+- `--show`: display one resource or the current state;
+- `--run`: execute approved work;
+- `--audit`: verify completed or current work;
+- `--approve` / `--reject`: resolve a pending proposal.
+
+Legacy forms such as `--new`, bare knowledge topics, and positional `approve`/`reject` remain accepted as compatibility aliases, but agents should recommend and generate only the canonical forms. Short aliases that historically conflict keep their legacy meaning; prefer long flags in generated instructions.
 
 ## Project Layout
 
@@ -129,6 +176,12 @@ Do not skip the first three steps. They are what prevent confident but unsafe ex
 
 Use these workflows even when slash commands are unavailable.
 
+### `/sc-intake`
+
+Explicitly invoke the natural-language intake protocol. This is useful when an AI client does not automatically detect ScrumRun from `AGENTS.md`.
+
+Analyze the request, recommend a route, and ask for approval. Do not create records or execute work during intake.
+
 ### `/sc-help`
 
 Explain ScrumRun commands and workflows. Read `.scrumrun/config.md` first to honor the response language. Do not modify files.
@@ -205,7 +258,7 @@ Do not create backlog items, sprints, feature lanes, code changes, commits, test
 
 Manage the main project goal in `.scrumrun/goals/main/`.
 
-When creating or changing the goal, read project rules, map, approved knowledge, review agents, main history, and decisions. Detect the stack first, ask blocking architecture questions, then update `.scrumrun/project.md`, `.scrumrun/goals/main/sprint.md`, and `.scrumrun/goals/main/decisions.md`.
+When setting or changing the goal with `--set`, read project rules, map, approved knowledge, review agents, main history, and decisions. Detect the stack first, ask blocking architecture questions, then update `.scrumrun/project.md`, `.scrumrun/goals/main/sprint.md`, and `.scrumrun/goals/main/decisions.md`.
 
 Do not implement code.
 
@@ -219,7 +272,7 @@ Feature lanes must have separate `feature.md`, `sprint.md`, `history.md`, and `d
 
 Manage or run main-goal sprints.
 
-For a new sprint, add it to `.scrumrun/goals/main/sprint.md` with goal, scope, acceptance criteria, dependencies, suggested verification, and review checkpoints.
+For a sprint added with `--add`, append it to `.scrumrun/goals/main/sprint.md` with goal, scope, acceptance criteria, dependencies, suggested verification, and review checkpoints.
 
 For sprint execution:
 

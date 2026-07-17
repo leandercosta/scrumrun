@@ -9,6 +9,7 @@ const templates = path.join(root, "templates");
 
 const COMMANDS = [
   "sc-help",
+  "sc-intake",
   "sc-study",
   "sc-init",
   "sc-uninstall",
@@ -59,7 +60,7 @@ Usage:
   scrumrun know insight <K-NNN> <text>
   scrumrun know remove <K-NNN>
   scrumrun know resume [K-NNN]
-  scrumrun prompt <study|challenge|know|context-build|context-update|vault|goal-new|sprint-new|sprint-run|backlog-add> [text]
+  scrumrun prompt <intake|study|challenge|know|context-build|context-update|vault|goal-set|sprint-add|sprint-run|backlog-add> [text]
   scrumrun uninstall [--force]
   scrumrun migrate
   scrumrun doctor [all|codex|opencode|claude]
@@ -74,6 +75,7 @@ Examples:
   npx github:leandercosta/scrumrun vault add OPENAI_API_KEY sk-local-dev
   npx github:leandercosta/scrumrun backlog add "Sprint 01"
   npx github:leandercosta/scrumrun know add "Tenant permissions for report exports"
+  npx github:leandercosta/scrumrun prompt intake "Checkout payments duplicate after refresh"
   npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
   npx github:leandercosta/scrumrun uninstall --force
   npx github:leandercosta/scrumrun init --shared
@@ -113,6 +115,25 @@ function writeFile(file, content) {
 
 function projectFile(...parts) {
   return path.join(process.cwd(), ".scrumrun", ...parts);
+}
+
+function ensureInteractionPreferences(cwd) {
+  const configFile = path.join(cwd, ".scrumrun", "config.md");
+  if (!fs.existsSync(configFile)) return null;
+
+  let content = fs.readFileSync(configFile, "utf8").trimEnd();
+  const defaults = [
+    ["Interaction Mode:", "Interaction Mode: guided"],
+    ["Execution Approval:", "Execution Approval: always"],
+    ["Quick Tasks:", "Quick Tasks: ask"]
+  ];
+  const added = defaults.filter(([prefix]) => !content.split("\n").some((line) => line.trim().startsWith(prefix)));
+  if (!added.length) return null;
+
+  const section = content.includes("\n## Intake") ? "\n" : "\n\n## Intake\n\n";
+  content += `${section}${added.map(([, line]) => line).join("\n")}\n`;
+  fs.writeFileSync(configFile, content);
+  return { status: "updated", dest: configFile };
 }
 
 function copyFile(src, dest, { force = true, vars = {} } = {}) {
@@ -290,7 +311,7 @@ function ensureKnowledgeFile(cwd) {
   if (!fs.existsSync(knowledgeFile)) {
     writeFile(
       knowledgeFile,
-      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /sc-challenge, /sc-sprint --new, /sc-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
+      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /sc-challenge, /sc-sprint --add, /sc-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
     );
   }
   return knowledgeFile;
@@ -364,9 +385,9 @@ Confidence: ${status}
 Refresh this snapshot after:
 
 - \`/sc-study\`
-- \`/sc-goal --new\`
-- \`/sc-feature --new\`
-- \`/sc-sprint --new\`
+- \`/sc-goal --set\`
+- \`/sc-feature --add\`
+- \`/sc-sprint --add\`
 - \`/sc-sprint --run\`
 - \`/sc-sprint --fix\`
 - \`/sc-review --code\`
@@ -757,6 +778,7 @@ Project:
   /sc-uninstall
   /sc-update
   /sc-study
+  /sc-intake
   /sc-challenge
 
 Knowledge and planning:
@@ -903,24 +925,27 @@ function promptCommand(parts) {
   const kind = parts[0];
   const text = joinText(parts.slice(1));
   const prompts = {
+    intake: `/sc-intake ${text}`.trim(),
     study: `/sc-study${text ? ` ${text}` : ""}`,
     challenge: `/sc-challenge ${text}`.trim(),
-    know: `/sc-know ${text}`.trim(),
+    know: `/sc-know --add ${text}`.trim(),
     "context-build": `/sc-context --build${text ? ` ${text}` : ""}`,
     "context-update": `/sc-context --update${text ? ` ${text}` : ""}`,
     "context-show": `/sc-context --show${text ? ` ${text}` : ""}`,
     context: `/sc-context ${text}`.trim(),
     vault: `/sc-vault ${text}`.trim(),
-    "goal-new": `/sc-goal --new ${text}`.trim(),
-    goal: `/sc-goal --new ${text}`.trim(),
-    "sprint-new": `/sc-sprint --new ${text}`.trim(),
+    "goal-set": `/sc-goal --set ${text}`.trim(),
+    "goal-new": `/sc-goal --set ${text}`.trim(),
+    goal: `/sc-goal --set ${text}`.trim(),
+    "sprint-add": `/sc-sprint --add ${text}`.trim(),
+    "sprint-new": `/sc-sprint --add ${text}`.trim(),
     "sprint-run": `/sc-sprint --run ${text}`.trim(),
     "backlog-add": `/sc-backlog --add ${text}`.trim(),
     backlog: `/sc-backlog --add ${text}`.trim(),
     status: `/sc-sprint --status${text ? ` ${text}` : ""}`
   };
   if (!kind || !prompts[kind]) {
-    console.error("Usage: scrumrun prompt <study|challenge|know|context-build|context-update|vault|goal-new|sprint-new|sprint-run|backlog-add|status> [text]");
+    console.error("Usage: scrumrun prompt <intake|study|challenge|know|context-build|context-update|vault|goal-set|sprint-add|sprint-run|backlog-add|status> [text]");
     process.exitCode = 1;
     return;
   }
@@ -1003,6 +1028,17 @@ function migrateProject() {
   ensureDir(path.join(cwd, ".scrumrun", "reviews"));
   ensureDir(path.join(cwd, ".scrumrun", "goals", "main"));
   const results = moves.map(([from, to]) => moveIfPossible(cwd, from, to));
+  if (!fs.existsSync(path.join(cwd, ".scrumrun", "config.md"))) {
+    results.push(copyFile(path.join(templates, "project", ".scrumrun", "config.md"), path.join(cwd, ".scrumrun", "config.md"), {
+      vars: { PROJECT_NAME: path.basename(cwd) }
+    }));
+  }
+  const interactionConfig = ensureInteractionPreferences(cwd);
+  if (interactionConfig) results.push(interactionConfig);
+  results.push(copyFile(path.join(root, "CORE.md"), path.join(cwd, ".scrumrun", "core.md"), {
+    force: true,
+    vars: { PROJECT_NAME: path.basename(cwd), DATE: today() }
+  }));
   if (!fs.existsSync(path.join(cwd, ".scrumrun", "goals", "main", "decisions.md"))) {
     fs.writeFileSync(
       path.join(cwd, ".scrumrun", "goals", "main", "decisions.md"),
@@ -1013,7 +1049,7 @@ function migrateProject() {
   if (!fs.existsSync(path.join(cwd, ".scrumrun", "project.md"))) {
     fs.writeFileSync(
       path.join(cwd, ".scrumrun", "project.md"),
-      `# Project - ${path.basename(cwd)}\n\n## Purpose\n\nPending: review migrated ScrumRun files and update with /sc-goal --new.\n\n## Active Lanes\n\n- Main goal: .scrumrun/goals/main/\n- Features: .scrumrun/features/\n`
+      `# Project - ${path.basename(cwd)}\n\n## Purpose\n\nPending: review migrated ScrumRun files and update with /sc-goal --set.\n\n## Active Lanes\n\n- Main goal: .scrumrun/goals/main/\n- Features: .scrumrun/features/\n`
     );
     results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "project.md") });
   }
@@ -1032,7 +1068,7 @@ function migrateProject() {
   if (!fs.existsSync(path.join(cwd, ".scrumrun", "knowledge.md"))) {
     fs.writeFileSync(
       path.join(cwd, ".scrumrun", "knowledge.md"),
-      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /sc-challenge, /sc-sprint --new, /sc-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
+      `# Knowledge Base - ${path.basename(cwd)}\n\nOnly approved knowledge should be used as planning context for /sc-challenge, /sc-sprint --add, /sc-sprint --run, and feature planning.\n\n## Approved Knowledge\n\n- Pending: none.\n\n## Pending Proposals\n\n- Pending: none.\n\n## Rejected Proposals\n\n- Pending: none.\n`
     );
     results.push({ status: "written", dest: path.join(cwd, ".scrumrun", "knowledge.md") });
   }

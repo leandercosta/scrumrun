@@ -4,6 +4,19 @@
 
 This runbook lets an AI agent execute one sprint independently and safely.
 
+## Natural-Language Intake
+
+When the owner describes work without a ScrumRun command and `Interaction Mode` is not `strict`:
+
+1. Identify the intent, expected outcome, urgency, scope, risk, and relationship to the main goal.
+2. Read only the canonical context and relevant history needed to verify the classification.
+3. Route the request to one of: quick task, knowledge/discovery, main sprint, corrective fix, backlog, isolated feature lane, or reject/defer.
+4. Present the recommendation, rationale, material unknowns, and at most two useful alternatives.
+5. Ask for approval when required by `.scrumrun/config.md`; otherwise state which configured policy authorizes the transition.
+6. Only after approval, invoke the matching workflow and preserve its normal safety rules.
+
+Intake may think and recommend autonomously. It must not interpret a vague acknowledgement as permission to execute application changes.
+
 ## Required Start Sequence
 
 1. Read `AGENTS.md`.

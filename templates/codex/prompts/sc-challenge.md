@@ -52,6 +52,6 @@ Return:
    - run discovery first;
    - reject or defer because it conflicts with architecture, safety, product direction, or missing information;
 8. Recommendation with rationale;
-9. Suggested next command, such as `/sc-backlog --add ...`, `/sc-sprint --new ...`, `/sc-feature --new ...`, or a clarifying question.
+9. Suggested next command, such as `/sc-backlog --add ...`, `/sc-sprint --add ...`, `/sc-feature --add ...`, or a clarifying question.
 
 Do not create backlog items, sprint plans, feature lanes, code changes, commits, tests, or history entries unless the user explicitly asks in a follow-up command.

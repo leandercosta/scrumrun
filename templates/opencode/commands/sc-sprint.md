@@ -1,6 +1,6 @@
 ---
-description: Manage main-goal sprints — new, list, status, show, rename, run, audit, fix, discuss, bypass, commit-message
-argument-hint: --new|-n [* name], --list|-l, --status|-st [id], --show|-s <id>, --rename|-rn <id> "name", --run|-r [--backlog|-k] <id>, --audit|-a <id>, --fix|-f <id>, --discuss|-d <id>, --bypass|-b, --commit-message|-cm <id>
+description: Manage main-goal sprints — add, list, status, show, rename, run, audit, fix, discuss, bypass, commit-message
+argument-hint: --add [* name], --list|-l, --status|-st [id], --show|-s <id>, --rename|-rn <id> "name", --run|-r [--backlog|-k] <id>, --audit|-a <id>, --fix|-f <id>, --discuss|-d <id>, --bypass|-b, --commit-message|-cm <id>
 ---
 
 Manage main-goal sprints in `.scrumrun/goals/main/`: $ARGUMENTS
@@ -13,7 +13,7 @@ Important: `.scrumrun/goals/main/sprint.md` is the planned catalog — it lists 
 
 Actions:
 
-- `--new` (`-n`) `[*] <name>`: create a new sprint in `.scrumrun/goals/main/sprint.md`; prefix the name with `*` to mark priority. Read `.scrumrun/golden-rules.md`, `.scrumrun/config.md`, `.scrumrun/knowledge.md`, `.scrumrun/goals/main/sprint.md`, and `.scrumrun/goals/main/history.md` first. Assign the next available sprint number and add goal, scope, acceptance criteria, dependencies, and suggested verification.
+- `--add` (`--new` and `-n` are legacy aliases) `[*] <name>`: create a new sprint in `.scrumrun/goals/main/sprint.md`; prefix the name with `*` to mark priority. Read `.scrumrun/golden-rules.md`, `.scrumrun/config.md`, `.scrumrun/knowledge.md`, `.scrumrun/goals/main/sprint.md`, and `.scrumrun/goals/main/history.md` first. Assign the next available sprint number and add goal, scope, acceptance criteria, dependencies, and suggested verification.
 - `--list` (`-l`): cross-reference `.scrumrun/goals/main/sprint.md` and `.scrumrun/goals/main/history.md` now — never assume status from sprint.md alone. Show current sprint status (completed, pending, blocked, next steps) as recorded in history.md. Do not use cached context. Do not modify files.
 - `--status` (`-st`) `[id]`: cross-reference `.scrumrun/goals/main/sprint.md` and `.scrumrun/goals/main/history.md` now — status comes from history.md, not sprint.md. Output only a compact Markdown table with exactly three columns: `Sprint | Breve descricao | Status`. If `[id]` is present, show only that sprint; otherwise show one row per sprint. Keep descriptions brief, derived from the sprint title or goal. Use status labels with emojis: `✅ feito` for completed, `🚧 parcial` for partial, `⛔ bloqueado` for blocked, and `⏳ pendente` when no history entry exists. Do not add narrative before or after the table. Do not modify files.
 - `--show` (`-s`) `<id>`: cross-reference both sprint.md and history.md now and show the requested sprint with a clear non-technical Goal first, plus scope, acceptance, and its history entry (the executed truth).

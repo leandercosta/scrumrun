@@ -2,6 +2,8 @@
 
 ScrumRun is a lightweight, portable workflow for running software projects with AI agents through small, auditable, independently executable sprints.
 
+It is also a controlled-autonomy layer for AI development: the agent is free to investigate, reason, and recommend, but rules, history, approval gates, and execution protocols stop it from confusing confidence with permission. Autonomy to think, guardrails to act.
+
 It is designed for one practical problem: keeping AI work organized when a project has a main goal, new feature ideas, review passes, pending decisions, and long-running implementation history.
 
 ScrumRun gives the agent a stable project memory, a sprint protocol, review checkpoints, and a clean place to separate the main project plan from isolated feature work.
@@ -11,6 +13,7 @@ The method does not require a specific AI client. Codex, Claude Code, and OpenCo
 ## What ScrumRun Provides
 
 - A portable `CORE.md` method file that explains ScrumRun and its command equivalents.
+- Automatic natural-language intake that routes ordinary requests into the safest workflow.
 - A token-safe context snapshot under `.scrumrun/context.md`.
 - Context economy rules under `.scrumrun/token-policy.md`.
 - Global slash commands for Codex, Claude Code, and OpenCode.
@@ -40,6 +43,57 @@ Feature lanes
 ```
 
 This matters because a feature idea can be valid without being part of the current main sprint sequence. ScrumRun lets that feature be planned separately while still respecting project rules, architecture, safety boundaries, and review standards.
+
+## Natural-Language Intake
+
+Users do not need to memorize ScrumRun commands. Once ScrumRun is initialized, an ordinary request automatically starts intake:
+
+```text
+The checkout sometimes charges twice after a page refresh.
+```
+
+The agent reads the minimum relevant context and history, then classifies the request as a quick task, knowledge/discovery, main-goal sprint, corrective fix, backlog candidate, isolated feature lane, or reject/defer. It recommends one route, explains why, offers at most two useful alternatives, and asks for approval before creating records or changing code.
+
+The explicit equivalent is:
+
+```text
+/sc-intake The checkout sometimes charges twice after a page refresh
+```
+
+Intake is read-only. It gives the agent autonomy to understand the problem, not permission to execute it.
+
+Default behavior:
+
+```text
+Interaction Mode: guided
+Execution Approval: always
+Quick Tasks: ask
+```
+
+- `guided`: recommendation, rationale, and up to two useful alternatives;
+- `concise`: classification and recommendation only;
+- `autonomous-planning`: planning records may be created automatically when the approval policy permits it, but implementation still requires explicit approval;
+- `strict`: automatic intake is disabled and explicit ScrumRun commands are required.
+
+Approval policies are intentionally limited. `always` asks before creating operational records and before implementation; `implementation-only` may create the recommended plan after intake but still stops before changing application code. ScrumRun has no configuration that silently grants blanket implementation permission.
+
+Quick-task policies are `ask`, `allow`, and `backlog`. Even `allow` cannot bypass golden rules, security checks, or explicit owner constraints.
+
+## Command Grammar
+
+Canonical long flags have the same meaning everywhere:
+
+- `--add` creates or appends an item;
+- `--set` defines or replaces a singleton value;
+- `--update` changes an existing resource;
+- `--remove` deletes a resource;
+- `--list` lists resources;
+- `--show` displays one resource or current state;
+- `--run` executes approved work;
+- `--audit` verifies work;
+- `--approve` and `--reject` resolve pending proposals.
+
+Legacy forms such as `--new`, bare knowledge topics, and positional `approve`/`reject` remain accepted for compatibility. New documentation and agent output use canonical long flags. Historical short aliases may conflict, so generated instructions prefer long flags.
 
 ## Project Layout
 
@@ -117,7 +171,10 @@ Typical contents:
 
 - response language;
 - preferred review behavior;
-- project-specific workflow preferences.
+- project-specific workflow preferences;
+- intake interaction mode;
+- execution approval policy;
+- quick-task policy;
 - sprint automation mode.
 
 ### `.scrumrun/token-policy.md`
@@ -466,12 +523,12 @@ Then, inside your AI client:
 ```text
 /sc-study
 /sc-context --build
-/sc-know The reports export checks tenant membership before file generation
-/sc-know approve K-001
+/sc-know --add The reports export checks tenant membership before file generation
+/sc-know --approve K-001
 /sc-challenge The existing reports module needs tenant-level permissions before export
 /sc-map --build
 /sc-context --update after map build and challenge review
-/sc-goal --new Continue evolving this existing product without rewriting the architecture
+/sc-goal --set Continue evolving this existing product without rewriting the architecture
 ```
 
 In established projects, `/sc-study` is intentionally deep. It should inspect stack, architecture, permissions, auth, data model, integrations, env/config, deployment clues, tests, risks, and current ScrumRun files. It is read-only and should recommend sprint candidates without running them.
@@ -499,7 +556,7 @@ You can also send a sprint candidate to the backlog from the run command:
 For a new isolated feature:
 
 ```text
-/sc-feature --new Add a billing dashboard with invoices and subscription controls
+/sc-feature --add Add a billing dashboard with invoices and subscription controls
 ```
 
 Use `--shared` only when the repository owner or team explicitly wants ScrumRun files committed. ScrumRun does not require methodology files to be committed.
@@ -511,6 +568,8 @@ For projects using the old flat layout, migrate files into `.scrumrun/`:
 ```bash
 npx github:leandercosta/scrumrun migrate
 ```
+
+The command is also safe to run in an existing ScrumRun project after updating the CLI. It refreshes the canonical `.scrumrun/core.md` and adds missing configuration defaults while preserving golden rules, plans, backlog, knowledge, history, decisions, and application code.
 
 Migration map:
 
@@ -549,10 +608,10 @@ With installed slash commands:
 /sc-config --lang pt-BR
 /sc-study
 /sc-context --build
-/sc-know Billing seat limits depend on active subscriptions, not invited users
-/sc-know approve K-001
+/sc-know --add Billing seat limits depend on active subscriptions, not invited users
+/sc-know --approve K-001
 /sc-challenge Users need team billing limits before creating paid seats
-/sc-goal --new Build a SaaS task manager with teams and Stripe billing
+/sc-goal --set Build a SaaS task manager with teams and Stripe billing
 /sc-map --build
 /sc-context --update after goal and map setup
 /sc-backlog --add Sprint 01
@@ -564,7 +623,7 @@ With installed slash commands:
 Start an isolated feature:
 
 ```text
-/sc-feature --new Add a marketplace with sellers, commissions, and Stripe Connect
+/sc-feature --add Add a marketplace with sellers, commissions, and Stripe Connect
 /sc-feature --show marketplace
 /sc-feature --run marketplace Sprint 01
 /sc-feature --audit marketplace Sprint 01
@@ -596,6 +655,14 @@ Examples:
 /sc-help /sc-sprint
 ```
 
+#### `/sc-intake`
+
+Explicitly runs the same read-only routing used automatically for natural-language work requests. It classifies the request, recommends one path, presents useful alternatives allowed by the interaction mode, and asks for approval.
+
+```text
+/sc-intake We need passkey login without breaking existing password sessions
+```
+
 #### `/sc-init`
 
 Initializes ScrumRun in the current project. Creates `AGENTS.md` and `.scrumrun/` control files. It does not create application code.
@@ -619,7 +686,7 @@ Deep-studies the project and summarizes the operational state: stack, architectu
 
 #### `/sc-know`
 
-Creates and manages project knowledge before sprint planning. Each entry has a stable id in the form `K-NNN` (for example `K-001`). New knowledge is never approved automatically — `/sc-know <topic>` writes a pending proposal in `.scrumrun/knowledge.md` and asks for approval. Only approved knowledge influences `/sc-challenge`, `/sc-sprint --new`, `/sc-sprint --run`, and feature planning.
+Creates and manages project knowledge before sprint planning. Each entry has a stable id in the form `K-NNN` (for example `K-001`). New knowledge is never approved automatically — `/sc-know --add <topic>` writes a pending proposal in `.scrumrun/knowledge.md` and asks for approval. Only approved knowledge influences `/sc-challenge`, `/sc-sprint --add`, `/sc-sprint --run`, and feature planning.
 
 Flags:
 
@@ -633,16 +700,16 @@ Flags:
 Examples:
 
 ```text
-/sc-know Understand how tenant permissions work for report exports
-/sc-know --deep How report export permissions are enforced
-/sc-know K-001 -d -e
-/sc-know K-002 --remove
-/sc-know K-001 --resume
-/sc-know K-001 --insight This flow is also hit by the nightly export job, so permission changes must cover that path
-/sc-know K-001 --rename Report export tenant permission model
-/sc-know list
-/sc-know approve K-001
-/sc-know reject K-002 because exports are handled by the billing service, not reports
+/sc-know --add Understand how tenant permissions work for report exports
+/sc-know --add --deep How report export permissions are enforced
+/sc-know --update K-001 --deep
+/sc-know --remove K-002
+/sc-know --show K-001
+/sc-know --insight K-001 This flow is also hit by the nightly export job, so permission changes must cover that path
+/sc-know --rename K-001 Report export tenant permission model
+/sc-know --list
+/sc-know --approve K-001
+/sc-know --reject K-002 because exports are handled by the billing service, not reports
 ```
 
 #### `/sc-vault`
@@ -699,6 +766,11 @@ Manages `.scrumrun/config.md`.
 
 - `--show` (`-s`): display preferences, including `Language` and `Sprint Automation`.
 - `--lang` (`-l`) `<language>`: set the response language for all commands.
+- `--interaction` (`-i`) `<guided|concise|autonomous-planning|strict>`: set the intake response mode.
+- `--approval` (`-a`) `<always|implementation-only>`: set the approval gate.
+- `--quick-tasks` (`-q`) `<ask|allow|backlog>`: set the policy for small low-risk work.
+
+The file also controls `Interaction Mode`, `Execution Approval`, and `Quick Tasks`. These are read by automatic intake even when no slash command is used.
 
 ```text
 /sc-config --show
@@ -765,12 +837,12 @@ Manages `.scrumrun/context.md` and `.scrumrun/token-policy.md`.
 
 Manages project goal lanes.
 
-- `--new` (`-n`) `<goal>`: plan or replace the main project goal. The agent asks architectural questions before creating sprints. If `Sprint Automation: backlog` (or legacy `bypass`) is set, suggested sprints become candidates; add them with `/sc-backlog --add` and review with `/sc-backlog --list`.
+- `--set` (`--new` and `-n` are legacy aliases) `<goal>`: plan or replace the main project goal. The agent asks architectural questions before creating sprints. If `Sprint Automation: backlog` (or legacy `bypass`) is set, suggested sprints become candidates; add them with `/sc-backlog --add` and review with `/sc-backlog --list`.
 - `--show` (`-s`) `[focus]`: show the current main goal plan and status.
 - `--list` (`-l`) `[filter]`: list goal lanes; the default lane is `main`.
 
 ```text
-/sc-goal --new Build a headless CMS with GraphQL API and S3 media uploads
+/sc-goal --set Build a headless CMS with GraphQL API and S3 media uploads
 /sc-goal --show
 /sc-goal --list
 ```
@@ -781,14 +853,14 @@ Manages project goal lanes.
 
 Manages isolated feature lanes under `.scrumrun/features/<slug>/`, kept out of the main goal history.
 
-- `--new` (`-n`) `<description>`: create a lane (`feature.md`, `sprint.md`, `history.md`, `decisions.md`).
+- `--add` (`--new` and `-n` are legacy aliases) `<description>`: create a lane (`feature.md`, `sprint.md`, `history.md`, `decisions.md`).
 - `--list` (`-l`) `[filter]`: list lanes and their status.
 - `--show` (`-s`) `<slug>`: show one lane's brief, plan, history, and decisions.
 - `--run` (`-r`) `<slug> <sprint>`: run one sprint from a lane.
 - `--audit` (`-a`) `<slug> <sprint>`: audit one sprint from a lane.
 
 ```text
-/sc-feature --new Add a billing dashboard with invoices and subscription controls
+/sc-feature --add Add a billing dashboard with invoices and subscription controls
 /sc-feature --list
 /sc-feature --show billing-dashboard
 /sc-feature --run billing-dashboard Sprint 01
@@ -803,7 +875,7 @@ Before creating or running sprints, agents read `.scrumrun/knowledge.md` and use
 
 Manages main-goal sprints.
 
-- `--new` (`-n`) `[*] <name>`: create a sprint; prefix the name with `*` to mark priority.
+- `--add` (`--new` and `-n` are legacy aliases) `[*] <name>`: create a sprint; prefix the name with `*` to mark priority.
 - `--list` (`-l`): list sprints and status.
 - `--status` (`-st`) `[id]`: show only a compact `Sprint | Breve descricao | Status` table. With an id, shows one sprint; without an id, shows all sprints. Status uses `✅ feito`, `🚧 parcial`, `⛔ bloqueado`, or `⏳ pendente`.
 - `--show` (`-s`) `<id>`: show full details for one sprint.
@@ -816,8 +888,8 @@ Manages main-goal sprints.
 - `--bypass` (`-b`) `[context]`: put sprint planning into backlog mode for legacy or hand-managed projects; prefer `/sc-backlog --add` and `/sc-backlog --list` afterward.
 
 ```text
-/sc-sprint --new Add dark mode toggle
-/sc-sprint --new * Fix critical auth bug
+/sc-sprint --add Add dark mode toggle
+/sc-sprint --add * Fix critical auth bug
 /sc-sprint --list
 /sc-sprint --status
 /sc-sprint --status Sprint 01
@@ -1043,11 +1115,12 @@ Generates a slash command line for your AI client without running the agent.
 
 ```bash
 npx github:leandercosta/scrumrun prompt study
+npx github:leandercosta/scrumrun prompt intake "Checkout payments duplicate after refresh"
 npx github:leandercosta/scrumrun prompt challenge "Exports need tenant permission checks"
 npx github:leandercosta/scrumrun prompt know "Tenant permissions for report exports"
 npx github:leandercosta/scrumrun prompt vault "OPENAI_API_KEY:sk-local-dev --add"
-npx github:leandercosta/scrumrun prompt goal-new "Continue evolving this legacy product"
-npx github:leandercosta/scrumrun prompt sprint-new "Implement tenant-safe CSV export"
+npx github:leandercosta/scrumrun prompt goal-set "Continue evolving this legacy product"
+npx github:leandercosta/scrumrun prompt sprint-add "Implement tenant-safe CSV export"
 npx github:leandercosta/scrumrun prompt sprint-run "Sprint 01"
 npx github:leandercosta/scrumrun prompt backlog-add "Sprint 01"
 ```
@@ -1072,6 +1145,8 @@ Moves an old flat ScrumRun project into the v2 `.scrumrun/` layout.
 ```bash
 npx github:leandercosta/scrumrun migrate
 ```
+
+Besides migrating the old flat layout, this refreshes the portable core and merges missing configuration defaults without replacing project-owned operational files.
 
 ### `doctor`
 

@@ -1,6 +1,9 @@
 # ScrumRun Config - {{PROJECT_NAME}}
 
 Language: English
+Interaction Mode: guided
+Execution Approval: always
+Quick Tasks: ask
 
 ## Preferences
 

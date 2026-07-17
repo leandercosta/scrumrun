@@ -27,9 +27,12 @@ If the current AI client does not support `/sc-*` slash commands, read `.scrumru
 
 If the user asks for work without mentioning ScrumRun, still follow ScrumRun because this project was initialized with it.
 
+Unless `.scrumrun/config.md` sets `Interaction Mode: strict`, treat natural-language requests for fixes, features, refactors, investigations, or product changes as ScrumRun intake. Classify the request, recommend the safest workflow, and obtain the approval required by `.scrumrun/config.md` before creating operational records or changing application code. The user does not need to know or invoke a slash command.
+
 ## Absolute Safety Rules
 
 - Do not start a sprint unless the owner explicitly asks for that sprint.
+- Do not convert an intake recommendation into a backlog item, sprint, feature lane, fix, or code change until the configured approval gate is satisfied.
 - Before executing any main-goal sprint, check `.scrumrun/goals/main/history.md`.
 - Before executing any feature sprint, check that feature lane's `history.md`.
 - If a sprint is `completed`, ask whether to audit, rerun/fix, or continue to the next sprint.

@@ -1,6 +1,6 @@
 ---
-description: Propose, approve, reject, edit, rename, insight, remove, resume, or list project knowledge used before sprint planning
-argument-hint: topic (with --deep), or action: approve <id>, reject <id>, remove <id>, K-<id> --edit, K-<id> --rename "title", K-<id> --insight <text>, K-<id> --resume, list
+description: Add, approve, reject, update, rename, annotate, remove, show, or list project knowledge
+argument-hint: --add <topic>, --approve <id>, --reject <id>, --update <id>, --rename <id> "title", --insight <id> <text>, --remove <id>, --show [id], --list
 ---
 
 Manage ScrumRun project knowledge in `.scrumrun/knowledge.md`: $ARGUMENTS
@@ -13,12 +13,15 @@ Identifiers:
 
 Flags (may be combined):
 
+- `--add`: investigate a topic and create a pending proposal. A bare topic is a legacy alias.
+- `--approve`: approve one pending proposal with explicit owner consent. Positional `approve` is a legacy alias.
+- `--reject`: reject one pending proposal. Positional `reject` is a legacy alias.
 - `--deep` (`-d`): study the topic deeply and add a code map (see below).
-- `--edit` (`-e`): rewrite an existing `K-NNN` entry; see edit mode.
+- `--update` (`--edit`, `-e` legacy aliases): rewrite an existing `K-NNN` entry; see edit mode.
 - `--rename` (`-rn`): change only the title of an existing `K-NNN` entry; the id never changes.
 - `--insight` (`-i`): append a dated reasoning to an existing `K-NNN` entry without rewriting it.
 - `--remove` (`-r`, or `--delete`): delete an existing `K-NNN` entry.
-- `--resume` (`-s`): render knowledge as a clean, readable summary; read-only.
+- `--show` (`--resume`, `-s` legacy aliases): render knowledge as a clean, readable summary; read-only.
 
 Modes:
 
@@ -62,7 +65,7 @@ For the whole base (no id), group entries under Approved, Pending, and Rejected,
 
 Rules:
 
-1. Approved knowledge can influence `/sc-challenge`, `/sc-sprint --new`, `/sc-sprint --run`, and feature planning.
+1. Approved knowledge can influence `/sc-challenge`, `/sc-sprint --add`, `/sc-sprint --run`, and feature planning.
 2. Pending proposals are not planning truth. Mention them only as unapproved context.
 3. Rejected proposals must not be used for planning except to avoid repeating a known bad assumption.
 4. Editing an approved entry returns it to pending for re-approval; never silently keep edited content as approved.

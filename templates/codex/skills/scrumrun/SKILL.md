@@ -11,6 +11,8 @@ If a project contains `.scrumrun/core.md` or an `AGENTS.md` that says the projec
 
 ScrumRun separates project rules, the main goal, and isolated feature lanes. A feature lane is isolated from the main goal history, but it still respects project rules, architecture, map, review agents, and safety requirements.
 
+ScrumRun provides controlled autonomy: autonomy to investigate and recommend, guardrails to act. Never confuse a confident classification with permission to create records or modify application code.
+
 ## Command Shape
 
 Commands are consolidated by noun; the action is a flag. A bare base command (no flag) lists the available actions for that group and stops without guessing. Every long flag has a short alias.
@@ -20,6 +22,35 @@ Commands are consolidated by noun; the action is a flag. A bare base command (no
 /sc-sprint -r Sprint 01           (short alias)
 /sc-sprint                        (no flag -> list this group's actions)
 ```
+
+## Canonical Action Grammar
+
+Use the same long flag for the same semantic action across every command:
+
+- `--add`: create or append a collection item;
+- `--set`: define or replace a singleton value;
+- `--update`: change an existing resource without replacing its identity;
+- `--remove`: delete a resource;
+- `--list`: list resources;
+- `--show`: display one resource or current state;
+- `--run`: execute approved work;
+- `--audit`: verify work;
+- `--approve` / `--reject`: resolve pending proposals.
+
+Accept legacy `--new`, bare knowledge topics, and positional `approve`/`reject` for compatibility, but always generate and recommend canonical long flags. Historical short aliases may conflict, so never reinterpret them silently; prefer long flags in instructions and handoffs.
+
+## Automatic Intake Protocol
+
+When ScrumRun is initialized and `Interaction Mode` is not `strict`, automatically run intake when the user describes a fix, feature, refactor, investigation, risk, or product idea in natural language, even if no `/sc-*` command was named. Explicit `/sc-intake` invokes the same protocol.
+
+1. Determine desired outcome, urgency, scope, risk, uncertainty, and relationship to the main goal.
+2. Read the minimum canonical context and relevant history required for reliable classification. Relevant history is mandatory.
+3. Recommend exactly one route: quick task, knowledge/discovery, main sprint, corrective fix, backlog, isolated feature lane, or reject/defer.
+4. In `guided` mode, explain the recommendation and provide at most two useful alternatives.
+5. Apply `Interaction Mode`, `Execution Approval`, and `Quick Tasks` from `.scrumrun/config.md`.
+6. Ask one clear approval question when the configured policy requires it; otherwise state which configured policy authorizes the transition.
+
+Intake is read-only. Do not create planning records, modify application code, or execute work during intake. An ambiguous acknowledgement is not execution approval.
 
 ## File Layout
 
@@ -161,6 +192,10 @@ Show ScrumRun commands grouped by workflow.
 
 If a command or topic is provided, focus on that topic and include examples. Read `.scrumrun/config.md` if it exists to honor the response language. Do not modify files.
 
+## `/sc-intake`
+
+Explicitly invoke Automatic Intake Protocol for the supplied natural-language request. This is primarily a fallback for clients that do not activate ScrumRun automatically. Return the classification, recommendation, evidence, risks or unknowns, useful alternatives allowed by the interaction mode, and one approval question. Do not modify files or create operational records.
+
 ## `/sc-vault`
 
 Manage `.scrumrun/vault.local.md`, a plaintext local development vault for dev-only credentials and test values.
@@ -192,23 +227,23 @@ Use this when the user wants the agent to understand a specific topic, flow, rul
 
 Modes:
 
-- `/sc-know <topic>`: investigate and create a pending knowledge proposal with the next `K-NNN` id.
-- `/sc-know <topic> --deep` (`-d`): same, plus a code map with key functions or symbols, `file:line` references, entry points, call sites, and relevant types or storage.
+- `/sc-know --add <topic>` (`--new` and a bare topic are legacy aliases): investigate and create a pending knowledge proposal with the next `K-NNN` id.
+- `/sc-know --add <topic> --deep` (`-d`): same, plus a code map with key functions or symbols, `file:line` references, entry points, call sites, and relevant types or storage.
 - `/sc-know K-<id> --edit [text]` (`-e`): rewrite an existing entry under the same id; with no text, reuse its current topic and re-investigate; combine with `-d` to rewrite it deeply. The result is pending and must be re-approved.
 - `/sc-know K-<id> --rename "title"` (`-rn`): change only the entry's title; the `K-NNN` id is permanent and never changes.
 - `/sc-know K-<id> --insight <text>` (`-i`): append a dated reasoning to an existing entry without rewriting it or changing its status; insights accumulate as advisory context, not verified planning truth.
 - `/sc-know K-<id> --remove` (`-r`, or `--delete`): delete that knowledge entry from whichever section it is in.
 - `/sc-know K-<id> --resume` (`-s`): render that entry as a clean, readable summary (read-only); with no id, summarize the whole base.
-- `/sc-know approve K-<id>`: move a pending proposal into `Approved Knowledge` only with explicit user approval.
-- `/sc-know reject K-<id>`: move a pending proposal into `Rejected Proposals`.
-- `/sc-know list`: show approved, pending, and rejected knowledge.
+- `/sc-know --approve K-<id>`: move a pending proposal into `Approved Knowledge` only with explicit user approval.
+- `/sc-know --reject K-<id>`: move a pending proposal into `Rejected Proposals`.
+- `/sc-know --list`: show approved, pending, and rejected knowledge.
 
 Rules:
 
 1. Read `.scrumrun/golden-rules.md`, `.scrumrun/config.md`, `.scrumrun/map.md`, `.scrumrun/project.md`, `.scrumrun/knowledge.md`, relevant history files, and source files needed to verify the topic.
 2. New knowledge starts as a pending proposal, not approved truth.
 3. Each proposal must include its `K-NNN` id, title, user insight, verified facts with file references, assumptions, uncertainty, risks if wrong, affected modules, and suggested future use. With `--deep`, also include a code map: key functions or symbols with `file:line` references, entry points, call sites, and relevant types or storage. Function and symbol names are the stable anchor; line numbers are point-in-time.
-4. Only `Approved Knowledge` can influence `/sc-challenge`, `/sc-sprint --new`, `/sc-sprint --run`, and feature planning.
+4. Only `Approved Knowledge` can influence `/sc-challenge`, `/sc-sprint --add`, `/sc-sprint --run`, and feature planning.
 5. Pending proposals are unapproved context. Rejected proposals must not be used for planning except to avoid repeating a known bad assumption.
 6. Editing an approved entry returns it to pending for re-approval; never silently keep edited content as approved.
 7. Do not change application code, create sprints, add backlog items, or update sprint history.
@@ -255,7 +290,7 @@ Do not create backlog items, sprint plans, feature lanes, code changes, commits,
 
 Manage project goal lanes. A bare `/sc-goal` lists the actions below.
 
-- `--new` (`-n`) `<goal>`: plan or replace the main project goal in `.scrumrun/goals/main/sprint.md`. Read `AGENTS.md`, `.scrumrun/golden-rules.md`, `.scrumrun/config.md`, `.scrumrun/map.md`, `.scrumrun/project.md`, `.scrumrun/knowledge.md`, `.scrumrun/agents.md`, and `.scrumrun/goals/main/history.md`; use only `Approved Knowledge`. Detect the stack first, then ask blocking architecture questions (stack, architecture style, auth, hosting/infrastructure, external services, testing strategy, monitoring/logging) before writing the plan. Update `.scrumrun/project.md`, the main sprint plan, and `.scrumrun/goals/main/decisions.md`. Do not implement code. If config says `Sprint Automation: backlog` or `bypass`, treat suggested sprints as backlog candidates and do not generate or run plans automatically unless the user asks for `/sc-sprint --new` or `/sc-backlog --add`.
+- `--set` (`--new`, `-n` legacy aliases) `<goal>`: plan or replace the main project goal in `.scrumrun/goals/main/sprint.md`. Read `AGENTS.md`, `.scrumrun/golden-rules.md`, `.scrumrun/config.md`, `.scrumrun/map.md`, `.scrumrun/project.md`, `.scrumrun/knowledge.md`, `.scrumrun/agents.md`, and `.scrumrun/goals/main/history.md`; use only `Approved Knowledge`. Detect the stack first, then ask blocking architecture questions (stack, architecture style, auth, hosting/infrastructure, external services, testing strategy, monitoring/logging) before writing the plan. Update `.scrumrun/project.md`, the main sprint plan, and `.scrumrun/goals/main/decisions.md`. Do not implement code. If config says `Sprint Automation: backlog` or `bypass`, treat suggested sprints as backlog candidates and do not generate or run plans automatically unless the user asks for `/sc-sprint --add` or `/sc-backlog --add`.
 - `--show` (`-s`) `[focus]`: show `.scrumrun/project.md`, the main sprint plan, history, and decisions in a concise status view. Do not modify files.
 - `--list` (`-l`) `[filter]`: list goal lanes under `.scrumrun/goals/`; the default lane is `main`. Do not modify files.
 
@@ -263,7 +298,7 @@ Manage project goal lanes. A bare `/sc-goal` lists the actions below.
 
 Manage isolated feature lanes outside the main goal history. A bare `/sc-feature` lists the actions below.
 
-- `--new` (`-n`) `<description>`: create a lane under `.scrumrun/features/<slug>/` with `feature.md`, `sprint.md`, `history.md`, and `decisions.md`. Infer a lowercase slug; if it already exists, ask whether to show, revise, or use a different slug. The brief includes name, reason, scope, out of scope, dependencies, risks, and assumptions; the sprint plan includes per-sprint goal, scope, deliverables, acceptance criteria, dependencies, suggested verification, and review checkpoints. Never modify the main sprint plan or main history.
+- `--add` (`--new`, `-n` legacy aliases) `<description>`: create a lane under `.scrumrun/features/<slug>/` with `feature.md`, `sprint.md`, `history.md`, and `decisions.md`. Infer a lowercase slug; if it already exists, ask whether to show, revise, or use a different slug. The brief includes name, reason, scope, out of scope, dependencies, risks, and assumptions; the sprint plan includes per-sprint goal, scope, deliverables, acceptance criteria, dependencies, suggested verification, and review checkpoints. Never modify the main sprint plan or main history.
 - `--list` (`-l`) `[filter]`: list lanes with status, next sprint, blockers, and open decisions. Do not modify files.
 - `--show` (`-s`) `<slug>`: read one lane's four files and show a concise status view. Do not modify files.
 - `--run` (`-r`) `<slug> <sprint>`: run one lane sprint. Read global ScrumRun files and the lane files, check feature history first; if the sprint is completed, partial, or blocked, stop and ask. Otherwise follow the sprint protocol, run review agents, and update only the feature lane history. Never update main goal history.
@@ -275,7 +310,7 @@ Manage main-goal sprints. A bare `/sc-sprint` lists the actions below. Use only 
 
 Important: `sprint.md` is the planned catalog; `history.md` is the executed truth. Sprint execution status (completed, partial, blocked, pending) is determined solely from `history.md`. Never infer status from `sprint.md` alone. Every status query must cross-reference both files.
 
-- `--new` (`-n`) `[*] <name>`: create a main-goal sprint in `.scrumrun/goals/main/sprint.md`; prefix the name with `*` to mark priority; assign the next sprint number; add goal, scope, acceptance criteria, dependencies, suggested verification, and review checkpoints.
+- `--add` (`--new`, `-n` legacy aliases) `[*] <name>`: create a main-goal sprint in `.scrumrun/goals/main/sprint.md`; prefix the name with `*` to mark priority; assign the next sprint number; add goal, scope, acceptance criteria, dependencies, suggested verification, and review checkpoints.
 - `--list` (`-l`): summarize main-goal sprint status from the sprint plan and history. Do not modify files.
 - `--status` (`-st`) `[id]`: read the main sprint plan and history, then output only a compact Markdown table with exactly `Sprint | Breve descricao | Status`. With an id, show only that sprint; without an id, show one row per sprint. Use brief title/goal descriptions and emoji statuses: `✅ feito`, `🚧 parcial`, `⛔ bloqueado`, or `⏳ pendente`. Do not add surrounding narrative. Do not modify files.
 - `--show` (`-s`) `<id>`: show the sprint with a prominent plain-language Goal section, scope, acceptance criteria, priority, status, and history entry. Do not modify files.
@@ -323,6 +358,9 @@ Manage preferences in `.scrumrun/config.md`. A bare `/sc-config` lists the actio
 
 - `--show` (`-s`): read and display config, including `Language` and `Sprint Automation` (valid values include `backlog` and legacy `bypass`).
 - `--lang` (`-l`) `<language>`: set `Language: <language>` for all ScrumRun responses; preserve unrelated preferences.
+- `--interaction` (`-i`) `<guided|concise|autonomous-planning|strict>`: control automatic intake response style; `strict` disables automatic intake.
+- `--approval` (`-a`) `<always|implementation-only>`: require approval before all operational records and implementation, or only before application changes.
+- `--quick-tasks` (`-q`) `<ask|allow|backlog>`: ask before low-risk quick tasks, permit them after classification, or park them in backlog.
 
 ## `/sc-map`
 
