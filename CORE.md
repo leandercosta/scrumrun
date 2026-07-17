@@ -191,7 +191,7 @@ Explain ScrumRun commands and workflows. Read `.scrumrun/config.md` first to hon
 Initialize ScrumRun. In CLI form, run:
 
 ```bash
-npx github:leandercosta/scrumrun init
+npx scrumrun@latest init
 ```
 
 Default init is local: it creates `AGENTS.md` and `.scrumrun/`, then adds them to `.git/info/exclude` when Git is present. This keeps ScrumRun out of commits unless the owner chooses `--shared`.

@@ -38,9 +38,9 @@ Usage:
   sr-claude doctor
 
 Examples:
-  npx github:leandercosta/scrumrun sr-claude install
-  npx github:leandercosta/scrumrun sr-claude update
-  npx github:leandercosta/scrumrun sr-claude doctor
+  npx --package=scrumrun@latest sr-claude install
+  npx --package=scrumrun@latest sr-claude update
+  npx --package=scrumrun@latest sr-claude doctor
 `);
 }
 

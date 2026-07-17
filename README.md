@@ -3,7 +3,7 @@
 > A protocol for AI-assisted software development.
 > Sprints, decisions, invariants, history — auditable and portable across agents.
 
-**Method:** `1.0` (draft) · **CLI/Skill:** `1.4.2` · **License:** MIT
+**Method:** `1.0` (draft) · **CLI/Skill:** `1.5.0` · **License:** MIT
 
 ScrumRun gives AI coding agents a stable memory, an explicit approval model, and a state machine for the work they do. The method is documented so any markdown-capable agent can follow it. Client-specific integrations (Claude Code, Codex, OpenCode) are optimizations, not requirements.
 
@@ -12,7 +12,7 @@ ScrumRun gives AI coding agents a stable memory, an explicit approval model, and
 ## Install
 
 ```bash
-npx github:leandercosta/scrumrun init
+npx scrumrun@latest init
 ```
 
 Local by default: creates `AGENTS.md` and `.scrumrun/`, adds them to `.git/info/exclude`. Use `--shared` to commit them.

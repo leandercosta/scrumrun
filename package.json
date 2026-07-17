@@ -10,8 +10,13 @@
     "bin",
     "templates",
     "CORE.md",
+    "SPEC.md",
+    "DECISIONS.md",
     "README.md"
   ],
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
   "keywords": [
     "ai",
     "scrum",
@@ -20,7 +25,22 @@
     "agents",
     "sprints"
   ],
-  "author": "Leander Costa",
+  "author": {
+    "name": "Leander Costa",
+    "email": "leander.dev@proton.me",
+    "url": "https://github.com/leandercosta"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandercosta/scrumrun.git"
+  },
+  "homepage": "https://github.com/leandercosta/scrumrun#readme",
+  "bugs": {
+    "url": "https://github.com/leandercosta/scrumrun/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=18"
