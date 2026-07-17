@@ -6,6 +6,7 @@ const os = require("os");
 
 const root = path.resolve(__dirname, "..");
 const templates = path.join(root, "templates");
+const { version } = require(path.join(root, "package.json"));
 
 const COMMANDS = [
   "sc-help",
@@ -35,6 +36,7 @@ function usage() {
   console.log(`ScrumRun
 
 Usage:
+  scrumrun --version
   scrumrun install [all|codex|opencode|claude] [--force]
   scrumrun update  [all|codex|opencode|claude]
   scrumrun init [--local|--shared] [--no-agent-hint] [--force]
@@ -1118,6 +1120,8 @@ const noAgentHint = args.includes("--no-agent-hint") || args.includes("-n");
 
 if (!command || command === "--help" || command === "-h") {
   usage();
+} else if (command === "--version" || command === "-v") {
+  console.log(`ScrumRun ${version}`);
 } else if (command === "install" || command === "update") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
   install(target, true);

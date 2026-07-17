@@ -17,6 +17,22 @@ npx scrumrun@latest init
 
 Local by default: creates `AGENTS.md` and `.scrumrun/`, adds them to `.git/info/exclude`. Use `--shared` to commit them.
 
+### Migrating from the GitHub installer
+
+Older installations used `npx github:leandercosta/scrumrun`. Replace the installed client commands and skill with the npm release by running once:
+
+```bash
+npx scrumrun@latest update all
+```
+
+This overwrites only the ScrumRun integrations for Codex, Claude Code, and OpenCode. It does not remove or reset project data, `.scrumrun/`, `AGENTS.md`, knowledge, history, decisions, backlog, or the local vault.
+
+From then on, use `npx scrumrun@latest ...`. Projects using the legacy pre-`.scrumrun/` file layout can additionally run:
+
+```bash
+npx scrumrun@latest migrate
+```
+
 ---
 
 ## Usage
