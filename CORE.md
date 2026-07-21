@@ -26,6 +26,8 @@ The command manifest at `lib/commands/manifest.js` generates client prompts, com
 
 ## Entity model
 
+The exact machine contract is `lib/v2/schema.js`; `docs/SCHEMA.md` is its generated human-readable form. This guide explains how to operate that contract and must not redefine its status sets or cardinalities.
+
 ```text
 FEAT-003
    └── TASK-018

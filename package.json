@@ -9,6 +9,7 @@
   "files": [
     "bin",
     "lib",
+    "scripts",
     "templates",
     "CORE.md",
     "SPEC.md",
@@ -20,7 +21,9 @@
     "docs"
   ],
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "docs:contract": "node scripts/generate-contract-docs.js",
+    "check:contract": "node scripts/generate-contract-docs.js --check",
+    "test": "node scripts/generate-contract-docs.js --check && node --test tests/*.test.js",
     "benchmark": "node --test tests/performance.test.js"
   },
   "keywords": [

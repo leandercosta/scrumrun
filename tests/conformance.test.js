@@ -6,7 +6,8 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { nouns } = require("../lib/commands/manifest");
-const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib/v2/artifacts");
+const { ArtifactRepository } = require("../lib/v2/artifacts");
+const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib/v2/schema");
 const { INVARIANTS, auditProject } = require("../lib/v2/conformance");
 
 const root = path.resolve(__dirname, "..");
@@ -81,4 +82,21 @@ test("artifact conformance review passes a clean v2 project and fails unsafe can
   const unsafe = auditProject(project);
   assert.equal(unsafe.passed, false);
   assert.ok(unsafe.findings.some((finding) => finding.code === "ARTIFACT_PATH"));
+});
+
+test("artifact conformance enforces Run attempts, Task/Sprint agreement, and Sprint membership projection", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-conformance-relations-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
+  repository.write({ ...common, id: "SPRINT-001", kind: "sprint", status: "running" }, "# Batch\n\n## Tasks\n\n- TASK-999");
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "running", sprint: "SPRINT-001" }, "# Work");
+  repository.write({ ...common, id: "RUN-001", kind: "run", status: "executing", task: "TASK-001", sprint: null, attempt: 1 }, "# First attempt");
+  repository.write({ ...common, id: "RUN-002", kind: "run", status: "executing", task: "TASK-001", sprint: "SPRINT-001", attempt: 3 }, "# Third attempt");
+
+  const audit = auditProject(project);
+  assert.equal(audit.passed, false);
+  assert.ok(audit.findings.some((finding) => finding.code === "RUN_SPRINT_MISMATCH"));
+  assert.ok(audit.findings.some((finding) => finding.code === "RUN_ATTEMPT_SEQUENCE"));
+  assert.ok(audit.findings.some((finding) => finding.code === "SPRINT_MEMBERSHIP_MISMATCH"));
 });

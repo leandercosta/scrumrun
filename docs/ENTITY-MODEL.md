@@ -1,5 +1,7 @@
 # ScrumRun 2.0 Entity Model
 
+This document explains the model. Exact ids, directories, initial states, transitions, structural cardinalities, truth ownership, and authority boundaries are generated from `lib/v2/schema.js` into [`SCHEMA.md`](SCHEMA.md). Do not maintain another hand-written schema table here.
+
 ## Core distinction
 
 | Entity | Question | Lifetime |
@@ -23,19 +25,7 @@ Task is always the executable unit. A Task may be independent of a Sprint. Sprin
 
 ## Canonical artifacts
 
-| Kind | ID | Directory | Initial status |
-|---|---|---|---|
-| Feature | `FEAT-NNN` | `features/` | backlog/proposed |
-| Task | `TASK-NNN` | `tasks/` | backlog/proposed/running after approval |
-| Sprint | `SPRINT-NNN` | `sprints/` | proposed |
-| Run | `RUN-NNN` | `runs/` | executing |
-| Review | `REV-NNN` | `reviews/` | proposed |
-| Knowledge | `K-NNN` | `memory/knowledge/` | candidate |
-| Decision | `DEC-NNN` | `memory/decisions/` | open |
-| Insight | `INS-NNN` | `memory/insights/` | candidate |
-| Dossier | `DOS-NNN` | `memory/dossiers/` | active with evidence |
-
-All carry `id`, `kind`, `status`, `created`, `updated`, and `method: 2.0.0`. Relations live in frontmatter for structural ownership and in `## Relations` for extensible graph edges.
+All artifacts carry `id`, `kind`, `status`, `created`, `updated`, and `method`. Relations live in frontmatter for structural ownership and in `## Relations` for extensible graph edges. The generated [`SCHEMA.md`](SCHEMA.md) is the authoritative inventory.
 
 ## Operational flow
 

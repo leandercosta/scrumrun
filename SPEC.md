@@ -2,7 +2,7 @@
 
 Version: `2.0.0` · Status: release candidate
 
-`SPEC.md` defines the normative ScrumRun method. `CORE.md` is its operational runtime guide. If they conflict, this specification wins and the guide must be corrected.
+`SPEC.md` defines normative meanings and invariants. `lib/v2/schema.js` defines the machine-enforced ids, paths, statuses, transitions, structural relations, and truth ownership metadata; `lib/commands/manifest.js` defines command grammar. `CORE.md` is the operational runtime guide. Generated `docs/SCHEMA.md` must match the executable schema byte-for-byte. A conflict is a conformance failure: semantics defer to SPEC, mechanically enforced values defer to the schema, grammar defers to the command manifest, and the conflicting representation must be corrected.
 
 ## 1. Purpose and principles
 
@@ -34,6 +34,8 @@ The method is built on five principles:
 | Semantic index | Ignored SQLite projection of canonical artifacts, code symbols, and relations. |
 
 A fix is a Task with `type: fix`. A backlog is a view of Tasks with `status: backlog`; neither is a separate canonical entity.
+
+Exact status sets, transitions, directories, cardinalities, and truth-ownership boundaries are generated in [`docs/SCHEMA.md`](docs/SCHEMA.md); they are not duplicated manually here.
 
 ## 3. Canonical project model
 

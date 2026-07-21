@@ -59,7 +59,7 @@ Creation options include `--title`, `--content`, repeated `--evidence`, repeated
 /sc config init --local|--shared|--lean|--no-agent-hint|--force
 /sc config update [all|codex|opencode|claude] [--migrate]
 /sc config migrate --to 2 --dry-run|--apply|--rollback
-/sc config doctor [all|codex|opencode|claude]
+/sc config doctor [all|codex|opencode|claude] [--strict]
 /sc config uninstall --force
 /sc config help <topic>
 ```

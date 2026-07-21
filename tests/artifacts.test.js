@@ -86,7 +86,8 @@ test("run state machine follows executing to validating to learning to completed
     created: "2026-07-21",
     updated: "2026-07-21",
     method: METHOD_VERSION,
-    task: "TASK-001"
+    task: "TASK-001",
+    attempt: 1
   };
   run = transitionArtifact(run, "validating", "2026-07-21");
   run = transitionArtifact(run, "learning", "2026-07-21");
@@ -102,7 +103,7 @@ test("artifact repository builds explicit Feature Task Sprint Run graph edges", 
   repository.write({ ...common, id: "FEAT-001", kind: "feature", status: "active" }, "# Feature");
   repository.write({ ...common, id: "SPRINT-001", kind: "sprint", status: "running" }, "# Sprint");
   repository.write({ ...common, id: "TASK-001", kind: "task", status: "running", feature: "FEAT-001", sprint: "SPRINT-001" }, "# Task");
-  repository.write({ ...common, id: "RUN-001", kind: "run", status: "executing", task: "TASK-001", sprint: "SPRINT-001" }, "# Run");
+  repository.write({ ...common, id: "RUN-001", kind: "run", status: "executing", task: "TASK-001", sprint: "SPRINT-001", attempt: 1 }, "# Run");
 
   const graph = repository.graph();
   assert.equal(graph.nodes.length, 4);
