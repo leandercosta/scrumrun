@@ -39,7 +39,7 @@ Usage:
   scrumrun migrate --to 2 --dry-run
   scrumrun migrate --to 2 --apply
   scrumrun migrate --to 2 --rollback
-  scrumrun doctor [all|codex|opencode|claude]
+  scrumrun doctor [all|codex|opencode|claude] [--strict]
   scrumrun uninstall [--force]
 
 Examples:
@@ -287,7 +287,7 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
       console.log("\nThe project remains unchanged. Apply the verified plan with: npx scrumrun@latest update --migrate");
       return { status: "ready" };
     }
-    const result = applyMigration(process.cwd());
+    const result = applyMigration(process.cwd(), { plan: preview.plan });
     console.log("\nApplied the verified ScrumRun v1 → v2 project migration.");
     console.log(`Source fingerprint: ${result.manifest.sourceInventory.rootSha256}`);
     console.log("Rollback remains available with: npx scrumrun@latest migrate --to 2 --rollback");
@@ -2125,40 +2125,63 @@ function runMigration(parts) {
   }
 }
 
-function doctor(target = "all", { compatibility = false } = {}) {
+function doctor(target = "all", { compatibility = false, strict = false } = {}) {
   const home = os.homedir();
   const checks = [];
   const commands = compatibility ? [...COMMANDS, ...COMPATIBILITY_COMMANDS] : COMMANDS;
+  const skillContent = fs.readFileSync(path.join(templates, "shared", "skills", "scrumrun", "SKILL.md"), "utf8");
+
+  function commandContent(command) {
+    return command === "sc" ? renderRootPrompt() : renderCompatibilityPrompt(command);
+  }
 
   if (target === "all" || target === "codex") {
     for (const command of commands) {
-      checks.push([`Codex prompt ${command}`, path.join(home, ".codex", "prompts", `${command}.md`)]);
+      checks.push([`Codex prompt ${command}`, path.join(home, ".codex", "prompts", `${command}.md`), commandContent(command)]);
     }
-    checks.push(["Codex skill scrumrun", path.join(home, ".codex", "skills", "scrumrun", "SKILL.md")]);
+    checks.push(["Codex skill scrumrun", path.join(home, ".codex", "skills", "scrumrun", "SKILL.md"), skillContent]);
   }
 
   if (target === "all" || target === "claude") {
     for (const command of commands) {
-      checks.push([`Claude command ${command}`, path.join(home, ".claude", "commands", `${command}.md`)]);
+      checks.push([`Claude command ${command}`, path.join(home, ".claude", "commands", `${command}.md`), commandContent(command)]);
     }
-    checks.push(["Claude skill scrumrun", path.join(home, ".claude", "skills", "scrumrun", "SKILL.md")]);
+    checks.push(["Claude skill scrumrun", path.join(home, ".claude", "skills", "scrumrun", "SKILL.md"), skillContent]);
   }
 
   if (target === "all" || target === "opencode") {
     for (const command of commands) {
-      checks.push([`OpenCode command ${command}`, path.join(home, ".config", "opencode", "commands", `${command}.md`)]);
+      checks.push([`OpenCode command ${command}`, path.join(home, ".config", "opencode", "commands", `${command}.md`), commandContent(command)]);
     }
-    checks.push(["OpenCode skill scrumrun", path.join(home, ".config", "opencode", "skills", "scrumrun", "SKILL.md")]);
+    checks.push(["OpenCode skill scrumrun", path.join(home, ".config", "opencode", "skills", "scrumrun", "SKILL.md"), skillContent]);
   }
 
   const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
   const nodeOk = nodeMajor > 22 || (nodeMajor === 22 && nodeMinor >= 13);
   console.log(`${nodeOk ? "ok " : "miss"} Node.js >=22.13.0: ${process.versions.node}`);
   let ok = nodeOk;
-  for (const [label, file] of checks) {
-    const exists = fs.existsSync(file);
-    ok = ok && exists;
-    console.log(`${exists ? "ok " : "miss"} ${label}: ${file}`);
+  for (const [label, file, expected] of checks) {
+    const safeFile = fs.existsSync(file) && fs.lstatSync(file).isFile() && !fs.lstatSync(file).isSymbolicLink();
+    const current = safeFile ? fs.readFileSync(file, "utf8") : null;
+    const matches = safeFile && current === expected;
+    ok = ok && matches;
+    const state = !safeFile ? "miss" : matches ? "ok " : "stale";
+    const hashes = safeFile && !matches
+      ? ` (expected ${crypto.createHash("sha256").update(expected).digest("hex").slice(0, 12)}, found ${crypto.createHash("sha256").update(current).digest("hex").slice(0, 12)})`
+      : "";
+    console.log(`${state} ${label}: ${file}${hashes}`);
+  }
+  if (strict) {
+    const scrumDir = path.join(process.cwd(), ".scrumrun");
+    if (!fs.existsSync(scrumDir)) {
+      ok = false;
+      console.log(`miss ScrumRun project audit: ${scrumDir}`);
+    } else {
+      const audit = auditProject(process.cwd());
+      ok = ok && audit.passed && audit.findings.length === 0;
+      console.log(`${audit.passed && audit.findings.length === 0 ? "ok " : "fail"} ScrumRun project audit: ${audit.findings.length} finding(s)`);
+      for (const item of audit.findings) console.log(`  ${item.severity} ${item.code}: ${item.message}`);
+    }
   }
   process.exitCode = ok ? 0 : 1;
 }
@@ -2222,13 +2245,13 @@ if (!command || command === "--help" || command === "-h") {
   runMigration(args.slice(1));
 } else if (command === "doctor") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  doctor(target, { compatibility: args.includes("--compat") });
+  doctor(target, { compatibility: args.includes("--compat"), strict: args.includes("--strict") });
 } else if (command === "claude") {
   const sub = args[1];
   if (sub === "install" || sub === "update") {
     installClaude(true, { compatibility: sub === "update" });
   } else if (sub === "doctor") {
-    doctor("claude", { compatibility: args.includes("--compat") });
+    doctor("claude", { compatibility: args.includes("--compat"), strict: args.includes("--strict") });
   } else {
     console.error("Usage: scrumrun claude [install|update|doctor]");
     process.exitCode = 1;
@@ -2238,7 +2261,7 @@ if (!command || command === "--help" || command === "-h") {
   if (sub === "install" || sub === "update") {
     installCodex(true, { compatibility: sub === "update" });
   } else if (sub === "doctor") {
-    doctor("codex", { compatibility: args.includes("--compat") });
+    doctor("codex", { compatibility: args.includes("--compat"), strict: args.includes("--strict") });
   } else {
     console.error("Usage: scrumrun codex [install|update|doctor]");
     process.exitCode = 1;
@@ -2248,7 +2271,7 @@ if (!command || command === "--help" || command === "-h") {
   if (sub === "install" || sub === "update") {
     installOpenCode(true, { compatibility: sub === "update" });
   } else if (sub === "doctor") {
-    doctor("opencode", { compatibility: args.includes("--compat") });
+    doctor("opencode", { compatibility: args.includes("--compat"), strict: args.includes("--strict") });
   } else {
     console.error("Usage: scrumrun opencode [install|update|doctor]");
     process.exitCode = 1;

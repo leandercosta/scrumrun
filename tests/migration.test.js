@@ -198,12 +198,12 @@ test("dual-layout reader projects v1 in memory and reads canonical v2 after appl
 
   run(dir, "migrate", "--to", "2", "--apply");
   const migrated = readProjectModel(dir);
-  assert.equal(migrated.layout, "mixed");
+  assert.equal(migrated.layout, "v2");
   assert.equal(migrated.source, "canonical-v2");
   assert.equal(migrated.graph.nodes.length, projected.graph.nodes.length);
 });
 
-test("migration apply creates linked v2 artifacts while preserving every v1 source", () => {
+test("migration apply creates linked v2 artifacts and archives every v1 source byte-exactly", () => {
   const dir = makeV1Project();
   const scrum = path.join(dir, ".scrumrun");
   const sourceFiles = [
@@ -224,7 +224,13 @@ test("migration apply creates linked v2 artifacts while preserving every v1 sour
   assert.match(read(dir, "core.md"), /Method version: `2\.0\.0`/);
   assert.match(read(dir, "config.md"), /Method Version: 2\.0\.0/);
   assert.match(read(dir, "project.md"), /Method: 2\.0\.0/);
-  for (const [relative, content] of originals) assert.equal(read(dir, relative), content, `${relative} changed`);
+  for (const [relative, content] of originals) {
+    assert.equal(read(dir, path.join(".migration", "v1-to-v2", "backup", relative)), content, `${relative} backup changed`);
+  }
+  for (const relative of ["golden-rules.md", "goals/main/sprint.md", "goals/main/history.md", "goals/main/decisions.md", "knowledge.md"]) {
+    assert.equal(fs.existsSync(path.join(scrum, relative)), false, `${relative} remained active`);
+  }
+  assert.equal(read(dir, "vault.local.md"), originals.get("vault.local.md"));
 
   const taskFiles = fs.readdirSync(path.join(scrum, "tasks")).filter((name) => name.endsWith(".md"));
   const sprintFiles = fs.readdirSync(path.join(scrum, "sprints")).filter((name) => name.endsWith(".md"));
@@ -320,6 +326,87 @@ test("minimal lean v1 layout migrates without inventing tasks or sprints", () =>
   assert.equal(read(dir, "guardrails.md"), "# ScrumRun Guardrails\n\nGenerated v1 view.\n");
 });
 
+test("hybrid incomplete-v2 migration reuses canonical work and repairs deterministic schema aliases", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-hybrid-migrate-"));
+  const scrum = path.join(dir, ".scrumrun");
+  write(scrum, ".DS_Store", "local metadata\n");
+  write(scrum, "goals/main/sprint.md", "# Legacy plan\n\n## Sprint 01 - Existing delivery\n\nStatus: completed.\n");
+  write(scrum, "guardrails.md", "# ScrumRun Project Guardrails\n\n### GR-001 - Preserve work\n\nNever overwrite owner work.\n");
+  write(scrum, "sprints/SPRINT-001.md", `---
+id: SPRINT-001
+kind: sprint
+status: completed
+created: 2026-07-21
+updated: 2026-07-21
+method: 2.0.0
+---
+
+# Existing delivery
+
+## Tasks
+
+- TASK-001
+`);
+  write(scrum, "tasks/TASK-001.md", `---
+id: TASK-001
+kind: task
+type: feature
+status: completed
+created: 2026-07-21
+updated: 2026-07-21
+method: 2.0.0
+sprint: SPRINT-001
+---
+
+# Existing task
+`);
+  write(scrum, "runs/RUN-001.md", `---
+id: RUN-001
+kind: run
+status: completed
+created: 2026-07-21
+updated: 2026-07-21
+method: 2.0.0
+task: TASK-001
+sprint: SPRINT-001
+attempt: 1
+---
+
+# Existing run
+`);
+  write(scrum, "memory/decisions/DEC-001.md", `---
+id: DEC-001
+kind: decision
+status: confirmed
+created: 2026-07-21
+updated: 2026-07-21
+method: 2.0.0
+source: TASK-001
+---
+
+# Preserve the existing model
+`);
+  const before = inventoryTree(scrum);
+  const preview = run(dir, "migrate", "--to", "2", "--dry-run");
+  assert.match(preview, /Source layout: hybrid-v1-v2/);
+  assert.match(preview, /represented-by-existing-v2/);
+  assert.equal(inventoryTree(scrum).rootSha256, before.rootSha256);
+
+  run(dir, "migrate", "--to", "2", "--apply");
+
+  assert.equal(JSON.parse(read(dir, "method.json")).migrated_from, "hybrid-v1-v2");
+  assert.deepEqual(fs.readdirSync(path.join(scrum, "tasks")), ["TASK-001.md"]);
+  assert.deepEqual(fs.readdirSync(path.join(scrum, "sprints")), ["SPRINT-001.md"]);
+  assert.deepEqual(fs.readdirSync(path.join(scrum, "runs")), ["RUN-001.md"]);
+  assert.equal(fs.existsSync(path.join(scrum, "goals")), false);
+  assert.equal(fs.existsSync(path.join(scrum, ".DS_Store")), false);
+  assert.equal(read(dir, ".migration/v1-to-v2/backup/.DS_Store"), "local metadata\n");
+  assert.match(read(dir, "guardrails.md"), /^## GR-001/m);
+  assert.match(read(dir, "memory/decisions/DEC-001.md"), /^status: resolved$/m);
+  assert.match(read(dir, "memory/decisions/DEC-001.md"), /^- TASK-001$/m);
+  assert.equal(auditProject(dir).passed, true, JSON.stringify(auditProject(dir).findings));
+});
+
 test("rollback failure restores the complete migrated tree", () => {
   const dir = makeV1Project();
   const scrum = path.join(dir, ".scrumrun");
@@ -338,14 +425,48 @@ test("rollback refuses to erase post-migration canonical or vault changes", () =
   run(dir, "migrate", "--to", "2", "--apply");
   fs.appendFileSync(path.join(scrum, "vault.local.md"), "ROTATED=yes\n");
   write(scrum, "tasks/TASK-999.md", "new work that did not exist at migration time\n");
+  write(scrum, "goals/main/history.md", "legacy path recreated after migration\n");
 
   assert.throws(
     () => rollbackMigration(dir),
     (error) => error.message.includes("legacy source changed after migration: vault.local.md")
       && error.message.includes("new post-migration file would be lost: tasks/TASK-999.md")
+      && error.message.includes("archived legacy path was recreated after migration: goals/main/history.md")
   );
   assert.ok(fs.existsSync(path.join(scrum, "method.json")));
   assert.match(read(dir, "vault.local.md"), /ROTATED=yes/);
+});
+
+test("migration stage rejects active-memory evidence that escapes through a project symlink", (t) => {
+  const dir = makeV1Project();
+  const scrum = path.join(dir, ".scrumrun");
+  const outside = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-migrate-evidence-")), "outside.md");
+  fs.writeFileSync(outside, "external evidence\n");
+  try {
+    fs.symlinkSync(outside, path.join(dir, "evidence.md"));
+  } catch (error) {
+    t.skip(`symlinks unavailable: ${error.message}`);
+    return;
+  }
+  write(scrum, "memory/decisions/DEC-001.md", `---
+id: DEC-001
+kind: decision
+status: resolved
+created: 2026-07-21
+updated: 2026-07-21
+method: 2.0.0
+---
+
+# Unsafe evidence
+
+## Evidence
+
+- evidence.md
+`);
+  const before = inventoryTree(scrum);
+  assert.throws(() => applyMigration(dir), /unsafe evidence reference evidence\.md/);
+  assert.equal(inventoryTree(scrum).rootSha256, before.rootSha256);
+  assert.equal(fs.existsSync(path.join(scrum, "method.json")), false);
 });
 
 test("partial v1 layout is preserved and ambiguous history becomes an explicit warning", () => {

@@ -138,6 +138,27 @@ test("doctor checks the canonical root by default and compatibility only on requ
   assert.match(output, /Node\.js >=22\.13\.0/);
   assert.match(output, /Codex prompt sc:/);
   assert.doesNotMatch(output, /sc-sprint/);
+
+  fs.appendFileSync(path.join(home, ".codex", "skills", "scrumrun", "SKILL.md"), "\nobsolete local content\n");
+  let stale = "";
+  assert.throws(() => run(["doctor", "codex"], {
+    env: { ...process.env, HOME: home },
+    stdio: ["ignore", "pipe", "pipe"]
+  }), (error) => {
+    stale = `${error.stdout || ""}${error.stderr || ""}`;
+    return true;
+  });
+  assert.match(stale, /stale Codex skill scrumrun/);
+  assert.match(stale, /expected [a-f0-9]{12}, found [a-f0-9]{12}/);
+});
+
+test("doctor --strict also requires a warning-free canonical project audit", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-doctor-strict-home-"));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-doctor-strict-project-"));
+  run(["install", "codex"], { env: { ...process.env, HOME: home } });
+  run(["init", "--shared", "--force"], { cwd: project });
+  const output = run(["doctor", "codex", "--strict"], { cwd: project, env: { ...process.env, HOME: home } });
+  assert.match(output, /ok\s+ScrumRun project audit: 0 finding\(s\)/);
 });
 
 test("sr-claude compatibility binary delegates to the root installer", () => {

@@ -51,7 +51,9 @@ After apply, inspect:
 .scrumrun/memory/
 ```
 
-The `.migration/` directory is ignored. The manifest records the original tree fingerprint, every generated file hash, mappings, and warnings. The backup contains the byte-exact original tree.
+The `.migration/` directory is ignored. The manifest records the original tree fingerprint, every generated file hash, mappings, archived paths, and warnings. The backup contains the byte-exact original tree. After apply, legacy-only aggregate files exist only in that backup, so the active tree has one unambiguous v2 layout.
+
+Incomplete hybrid trees are supported. If canonical `TASK-NNN`, `SPRINT-NNN`, or `RUN-NNN` artifacts already represent a legacy entry, the report marks it `represented-by-existing-v2` and does not create a duplicate. Deterministic pre-release aliases such as a Decision with `status: confirmed` may be normalized to the declared v2 status while the original bytes remain in the backup. Anything ambiguous is blocked or warned instead of guessed.
 
 ## Mapping rules
 
@@ -76,6 +78,7 @@ Ambiguous records remain preserved and produce warnings. The migrator never inve
 ```bash
 npx scrumrun@latest status
 npx scrumrun@latest sc review artifact --run
+npx scrumrun@latest doctor codex --strict
 npx scrumrun@latest sc knowledge map --build
 npx scrumrun@latest sc knowledge study <topic-or-symbol>
 ```
@@ -103,4 +106,4 @@ Do not delete `.scrumrun/.migration/` until the migration has been accepted and 
 
 Apply transforms a staging copy and validates it before an atomic directory switch. Injected and real failures before/during the switch restore the v1 tree. If a process is interrupted, do not manually merge staging directories: rerun the dry-run, inspect `.scrumrun` and sibling `.scrumrun-v2-*`/`.scrumrun-v1-*` temporary paths, and recover using the verified backup/manifest.
 
-If the preflight reports a malformed `method.json`, a symlink, an unresolved collision, or secret-like content outside the vault, fix that blocker in v1 and repeat the dry-run. No canonical migration writes occur while blocked.
+If the preflight reports a malformed `method.json`, a symlink, an unresolved collision, an active memory record without deterministic evidence, or secret-like content outside the vault, fix that blocker and repeat the dry-run. No canonical migration writes occur while blocked.

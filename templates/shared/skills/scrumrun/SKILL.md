@@ -136,7 +136,7 @@ scrumrun migrate --to 2 --rollback
 
 Inside a v1 project, `npx scrumrun@latest update` runs a read-only preflight. `update --migrate` explicitly approves application of that verified plan and keeps rollback available.
 
-Dry-run must not write project data. Apply requires a hashed inventory, byte-exact local backup, staged validation, atomic switch, mapping report, and idempotent replay. Ambiguous records are preserved and warned, never guessed. Vault content remains local and is never rendered. Rollback must refuse if it would erase post-migration changes.
+Dry-run must not write project data. Apply requires a hashed inventory, byte-exact local backup, staged validation, atomic switch, mapping report, and idempotent replay. Incomplete hybrid trees reuse existing evidenced v2 relations rather than duplicating them; legacy-only aggregates leave the active tree but remain byte-exact in the ignored backup. Ambiguous records are preserved and warned, never guessed. Vault content remains local and is never rendered. Rollback must refuse if it would erase post-migration changes.
 
 ## Command grammar
 
@@ -180,7 +180,7 @@ Review is read-only unless the user separately authorizes fixes.
 - `init`: initialize ScrumRun without overwriting existing state silently.
 - `update`: refresh integrations and preflight v1 read-only; apply only with explicit `--migrate`.
 - `migrate`: invoke the explicit migration workflow.
-- `doctor`: verify installed root command and skill.
+- `doctor`: verify installed root command and skill content; `--strict` also requires a warning-free project artifact audit.
 - `uninstall`: preview by default; delete only recognized ScrumRun files with explicit `--force`.
 - `help`: show grammar or one focused topic.
 

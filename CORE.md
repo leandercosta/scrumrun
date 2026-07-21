@@ -220,6 +220,8 @@ scrumrun migrate --to 2 --rollback
 - ordinary install/update never applies a migration; update performs a read-only v1 preflight, and only explicit `update --migrate` applies its verified plan;
 - dry-run writes no project data;
 - apply inventories source hashes, creates a byte-exact local backup, transforms in staging, validates, and activates by atomic directory swap;
+- incomplete hybrid v1/v2 trees reuse existing evidenced canonical relations instead of creating duplicate Tasks/Runs;
+- legacy-only aggregates leave the active v2 tree after apply and remain byte-exact in the ignored backup;
 - the mapping report relates every inferred v1 block to its v2 destination while every original file remains covered by the backup inventory;
 - replay is idempotent;
 - ambiguous mappings are preserved and warned, never guessed;
@@ -270,7 +272,7 @@ Review is read-only unless fixes are separately authorized. Report findings by s
 - `init --local|--shared|--force`
 - `update all|codex|opencode|claude [--migrate]`
 - `migrate --to 2 --dry-run|--apply|--rollback`
-- `doctor all|codex|opencode|claude`
+- `doctor all|codex|opencode|claude [--strict]`
 - `uninstall --force`
 - `help <topic>`
 
