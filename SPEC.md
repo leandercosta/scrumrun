@@ -254,7 +254,9 @@ The migrator must:
 - keep a byte-exact ignored backup;
 - transform in staging and validate before an atomic switch;
 - map each source block to a destination or explicit warning;
-- preserve original v1 files, vault contents, knowledge states, and failed attempts;
+- preserve original v1 files byte-exactly in the ignored backup while removing legacy-only aggregates from the active v2 tree;
+- detect incomplete hybrid v1/v2 layouts and reuse proven canonical Task/Sprint/Run relations instead of duplicating them;
+- normalize only deterministic schema aliases and require resolvable evidence for active migrated memory;
 - be idempotent;
 - reject symlinks, malformed markers, ambiguous destructive guesses, and concurrent source changes;
 - rollback only when doing so cannot erase post-migration work.

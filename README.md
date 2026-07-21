@@ -112,7 +112,15 @@ npx scrumrun@latest migrate --to 2 --apply
 npx scrumrun@latest migrate --to 2 --rollback
 ```
 
-Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It preserves original files and vault contents. Ambiguous history remains an explicit warning; the migrator never invents a Sprint or Run.
+Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It also recognizes incomplete hybrid v1/v2 trees, reuses already-linked canonical work, and normalizes only deterministic schema aliases. Legacy-only files leave the active tree but remain byte-exact in the ignored backup; vault contents remain local. Ambiguous history remains an explicit warning, and the migrator never invents a Sprint or Run.
+
+After migration or an integration update, verify both installed assets and project state:
+
+```bash
+npx scrumrun@latest doctor codex --strict
+```
+
+`doctor` compares managed prompt/skill contents with the package, so an obsolete installation is reported as `stale` rather than `ok` merely because the file exists.
 
 ## Canonical tree
 

@@ -15,6 +15,8 @@ All notable changes follow Semantic Versioning.
 
 - Explicit, hashed, staged, idempotent, reversible v1→v2 migration.
 - Read-only update migration preflight and explicit `update --migrate` integration for ongoing projects.
+- Hybrid incomplete-v2 recovery that reuses existing Task/Sprint/Run links, archives legacy aggregates, and normalizes deterministic pre-release aliases without duplicating work.
+- Content-hash verification for installed prompts/skills and `doctor --strict` project conformance checks.
 - Atomic Task/Run approval and recoverable Run lifecycle/retries.
 - Evidence-backed Knowledge, Decisions, Insights, and Dossiers with validity/review metadata.
 - Disposable SQLite FTS/graph index and bounded semantic queries.
@@ -27,6 +29,7 @@ All notable changes follow Semantic Versioning.
 - Reject traversal/symlink canonical paths, duplicate/mismatched frontmatter, unsafe overwrites, and malformed method state.
 - Block secret-like content at intake, memory, migration, context, and indexing boundaries; vault values remain excluded.
 - Serialize concurrent canonical memory mutations with disposable locks.
+- Scan secret-like content in all supported text migration inputs, including files larger than 1 MiB.
 
 ### Compatibility
 
