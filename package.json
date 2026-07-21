@@ -1,21 +1,27 @@
 {
   "name": "scrumrun",
-  "version": "1.5.2",
-  "description": "ScrumRun: portable sprint-driven AI workflow for real software projects.",
+  "version": "2.0.0",
+  "description": "Evidence-driven Agile runtime and semantic project memory for AI coding agents.",
   "bin": {
     "scrumrun": "bin/scrumrun.js",
     "sr-claude": "bin/claude-install.js"
   },
   "files": [
     "bin",
+    "lib",
     "templates",
     "CORE.md",
     "SPEC.md",
     "DECISIONS.md",
-    "README.md"
+    "README.md",
+    "MIGRATION-1-to-2.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "docs"
   ],
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "benchmark": "node --test tests/performance.test.js"
   },
   "keywords": [
     "ai",
@@ -23,7 +29,8 @@
     "codex",
     "opencode",
     "agents",
-    "sprints"
+    "sprints",
+    "semantic-memory"
   ],
   "author": {
     "name": "Leander Costa",
@@ -43,6 +50,6 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13.0"
   }
 }

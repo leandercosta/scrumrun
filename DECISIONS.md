@@ -18,7 +18,7 @@ Date: YYYY-MM-DD
 ---
 
 ## ADR-001 — Markdown as the sole persistence format
-Status: accepted
+Status: superseded in part by ADR-017
 Date: 2026-07-17
 
 **Context** — ScrumRun needs a persistence layer for state that is (a) portable across AI agents, (b) diffable via git, (c) readable by humans without tooling, (d) editable by hand in an emergency.
@@ -39,7 +39,7 @@ Date: 2026-07-17
 
 **Decision** — Approval gates are synchronous checkpoints requiring explicit owner response. There is intentionally no config option to grant blanket implementation permission (see I-01, I-06).
 
-**Consequences** — Slower than fully autonomous execution. But every code change has a recorded owner decision. Cost: friction on trivial tasks — mitigated by the `Quick Tasks: allow` policy, which still cannot override golden rules.
+**Consequences** — Slower than fully autonomous execution. But every code change has a recorded owner decision. Cost: friction on trivial tasks — mitigated by concise quick-task planning, never by removing the approval gate or bypassing Guardrails.
 
 **Alternatives considered** — Async approval (approve later): breaks the "audit trail matches execution" property. Silent execution with rollback: rollback is not a substitute for consent.
 
@@ -74,7 +74,7 @@ Date: 2026-07-17
 ---
 
 ## ADR-005 — Main goal and feature lanes are physically separate
-Status: accepted
+Status: superseded by ADR-015
 Date: 2026-07-17
 
 **Context** — Feature ideas frequently arrive mid-sprint. Merging them into main sprint history dilutes the narrative of the main goal and makes historical audit harder.
@@ -88,12 +88,12 @@ Date: 2026-07-17
 ---
 
 ## ADR-006 — Golden rules cannot be silently bypassed
-Status: accepted
+Status: superseded by ADR-016
 Date: 2026-07-17
 
 **Context** — Configuration flags that disable safety features are the most common source of preventable damage in AI-assisted workflows.
 
-**Decision** — Active golden rules have highest precedence. There is no command flag, no config option, and no intake path that disables them. Retirement requires explicit owner action and is logged (see I-03, I-08).
+**Decision** — Active project rules have highest precedence. There is no command flag, no config option, and no intake path that disables them. Retirement requires explicit owner action and is logged. ADR-016 later renamed and consolidated this authority as canonical Guardrails.
 
 **Consequences** — Guarantees that "add rule X" produces durable behavior. Cost: cannot temporarily suspend a rule — must retire, act, re-add. Intentional friction.
 
@@ -102,7 +102,7 @@ Date: 2026-07-17
 ---
 
 ## ADR-007 — `context.md` is never authoritative
-Status: accepted
+Status: superseded by ADR-017
 Date: 2026-07-17
 
 **Context** — Token economy pressure encourages agents to trust cached summaries. A summary that is 90% accurate is a summary that will mislead 10% of the time on production decisions.
@@ -116,7 +116,7 @@ Date: 2026-07-17
 ---
 
 ## ADR-008 — Fixes and sprints coexist as distinct kinds
-Status: accepted
+Status: superseded by ADR-015
 Date: 2026-07-17
 
 **Context** — A production bug is not a full sprint. Forcing every corrective action through the sprint protocol (plan, review, complete) adds overhead disproportionate to the risk.
@@ -185,15 +185,15 @@ Date: 2026-07-17
 
 ---
 
-## ADR-013 — Six-command grammar (planned, not yet implemented)
-Status: proposed
+## ADR-013 — Root command with five domain nouns
+Status: accepted
 Date: 2026-07-17
 
 **Context** — Twenty `sc-*` commands accumulated organically. Overlap between commands (study/know/map/context, sprint/fix/feature/backlog/goal) suggests the grammar has grown by addition rather than design.
 
-**Decision** — Consolidate the 20 verbs into 6 nouns: `/sc`, `/sc plan`, `/sc knowledge`, `/sc rules`, `/sc review`, `/sc config`. Legacy commands become invisible aliases for one release cycle, then removed.
+**Decision** — Expose one root command, `/sc`, with five domain nouns: `plan`, `knowledge`, `rules`, `review`, and `config`. Actions remain canonical long flags. Client integrations are generated from one command manifest. Legacy commands are real compatibility adapters during migration, never prompts that merely tell the user to invoke another command.
 
-**Consequences** — Grammar reflects method structure (§4 composition). Discoverability improves without hiding power. Cost: one-time migration effort for existing users — currently only the author.
+**Consequences** — The installed surface becomes genuinely smaller and the grammar reflects method structure. One manifest prevents drift between clients, help, tests, and documentation. Cost: v1 installations require an explicit migration path.
 
 **Alternatives considered** — Keep 20 with better docs: does not address root cause (design accretion). Reduce to 2 (only intake + one power command): loses the ability to script determin­istically.
 
@@ -210,3 +210,87 @@ Date: 2026-07-17
 **Consequences** — Method is usable in the owner's native language without translation overhead. Cost: docs and examples may lag between languages — accepted.
 
 **Alternatives considered** — Auto-detect from user input: unreliable across sessions and mixed-language inputs.
+
+---
+
+## ADR-015 — Task, Sprint, Feature, and Run are separate entities
+Status: accepted
+Date: 2026-07-21
+
+**Context** — Earlier ScrumRun versions treated a sprint as the smallest executable unit. That conflated a task with an Agile timebox, made retries overwrite operational meaning, and forced agents to infer relationships from large Markdown catalogs.
+
+**Decision** — Task is the atomic unit of intended work. Sprint is a timebox or delivery batch that references tasks. Feature is a long-lived initiative that can span tasks and sprints. Run is one concrete execution attempt of a task. All relations use stable ids: `FEAT-NNN`, `TASK-NNN`, `SPRINT-NNN`, and `RUN-NNN`.
+
+**Consequences** — Agents can traverse an explicit graph, retry a task without erasing failed attempts, distinguish product intent from execution, and attach decisions/insights to the correct granularity. Cost: migration must split legacy sprint records into the new entities without inventing false detail.
+
+**Alternatives considered** — Keep sprint as the atomic work item: simpler storage but semantically incorrect and weak for retries. Nest task files under features/sprints: creates duplicated ownership and fragile moves.
+
+---
+
+## ADR-016 — Guardrails are canonical and lean is a read policy
+Status: accepted
+Date: 2026-07-21
+
+**Context** — A generated `guardrails.md` sourced from `golden-rules.md` duplicated the most important rules and could drift or point to missing canonical files in lean mode.
+
+**Decision** — `.scrumrun/guardrails.md` is the single canonical project-policy artifact and replaces `golden-rules.md`. Universal method invariants remain in `core.md`; owner/project constraints live in `guardrails.md`; operational preferences live in `config.md`. Lean mode changes the initial read set, not the completeness of stored truth.
+
+**Consequences** — The normal agent hot path is `AGENTS.md → guardrails.md → state.md`, with `core.md` and targeted canonical artifacts loaded only when needed. Cost: v1 golden rules require a lossless migration into guardrails.
+
+**Alternatives considered** — Keep both files: preserves v1 paths but creates ambiguous precedence and drift. Make guardrails generated: fast to read but unsafe as an authority.
+
+---
+
+## ADR-017 — Semantic memory uses Markdown truth and a derived index
+Status: accepted
+Date: 2026-07-21
+
+**Context** — Semantic code memory needs fast relationship queries, while ScrumRun's portability requires human-readable, diffable, tool-independent truth.
+
+**Decision** — Knowledge, architectural decisions, insights, dossiers, tasks, sprints, features, and runs remain canonical Markdown artifacts. SQLite under `.scrumrun/.cache/` stores only rebuildable indexes, code symbols, derived relations, and temporary context packages. Deleting the cache must never delete authored knowledge.
+
+**Consequences** — Agents get graph-speed retrieval without locking project memory to a database. Confirmed insights require evidence; AI extraction creates candidates only. Cost: rebuild and equivalence tests become release requirements.
+
+**Alternatives considered** — SQLite as canonical storage: faster writes but opaque diffs and weaker portability. Markdown-only scanning: portable but increasingly slow and token-heavy.
+
+---
+
+## ADR-018 — ScrumRun v2 persists only after approval
+Status: accepted
+Date: 2026-07-21
+
+**Context** — Contextualization, risk assessment, classification, and planning must inspect significant project state, but intake is required to remain side-effect free.
+
+**Decision** — `RECEIVED → CONTEXTUALIZING → POLICY → RISK → CLASSIFICATION → PLANNING → AWAITING_APPROVAL` is transient. Context packages may exist only in ignored disposable cache. Explicit approval creates or updates the canonical Task and starts a Run. A Run then moves through `executing → validating → learning → completed|failed|blocked`.
+
+**Consequences** — Intake remains read-only while approved execution becomes fully auditable. Retries create new runs for the same task. Learning proposes `K`, `DEC`, or `INS` records but never confirms them automatically.
+
+**Alternatives considered** — Persist every received request: stronger raw audit but violates read-only intake and retains unapproved user content. Reuse task status for attempts: loses retry history.
+
+---
+
+## ADR-019 — v1-to-v2 migration is explicit, lossless, and reversible
+Status: accepted
+Date: 2026-07-21
+
+**Context** — ScrumRun 1.x stores atomic work as sprint entries inside aggregate Markdown files. ScrumRun 2.0 separates Feature, Task, Sprint, Run, and Memory. Blindly renaming files would either lose history or invent relationships that never existed.
+
+**Decision** — `scrumrun migrate --to 2` is an explicit workflow with `--dry-run`, content-hashed inventory, local backup, staged transformation, validation, atomic application, mapping report, idempotent replay, and `--rollback`. Ordinary updates never auto-migrate project data. An update may perform a read-only preflight; only the explicit `update --migrate` flag applies the verified plan. Legacy sprint entries become Tasks; historical attempts become Runs; a v2 Sprint is created only when v1 evidence supports a real grouping/timebox. Uncertain mappings are preserved and flagged, never guessed.
+
+**Consequences** — Every source block is traceable to a destination id and users can recover the complete v1 tree. Cost: the v2 artifact kernel must ship with dual-layout readers and realistic migration fixtures before the new layout becomes default.
+
+**Alternatives considered** — In-place rewrite: smaller implementation but unsafe and hard to audit. Preserve v1 forever: avoids migration risk but prevents a coherent v2 domain model.
+
+---
+
+## ADR-020 — Ongoing projects preflight migration during update
+Status: accepted
+Date: 2026-07-21
+
+**Context** — Existing users naturally run `npx scrumrun@latest update` to receive new client commands. If project migration is completely separate, an ongoing v1 project can receive a v2 command surface without noticing that its canonical layout still needs review.
+
+**Decision** — When `update` runs inside a v1 project, it automatically executes the v1→v2 dry-run and prints its verified inventory, mappings, warnings, and blockers. The preflight is read-only. Project state changes only when the owner supplies `--migrate`, which applies the same verified migration workflow and preserves standalone rollback.
+
+**Consequences** — Ongoing projects cannot silently miss the required migration, while automation and cautious users retain a zero-write default. Cost: update output is longer inside a v1 project and the update command must remain migration-aware.
+
+**Alternatives considered** — Automatically applying during every update: rejected because updating client integrations is not implicit consent to rewrite project state. Keeping update unaware: safer in isolation but makes partial upgrades easy and confusing.

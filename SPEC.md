@@ -1,324 +1,311 @@
 # ScrumRun Method Specification
 
-Version: `method 1.0` · Status: draft for review
+Version: `2.0.0` · Status: release candidate
 
-This document is the formal specification of the ScrumRun method. `CORE.md` is the operational guide agents follow at runtime. `SPEC.md` is the source of truth for state machines, invariants, and composition rules.
+`SPEC.md` defines the normative ScrumRun method. `CORE.md` is its operational runtime guide. If they conflict, this specification wins and the guide must be corrected.
 
-If a conflict exists between `CORE.md` and `SPEC.md`, `SPEC.md` wins and `CORE.md` must be updated.
+## 1. Purpose and principles
 
----
+ScrumRun is an evidence-driven Agile runtime for AI-assisted software work. It keeps intent, execution, decisions, and learning distinct while preserving a small daily interface.
 
-## 1. Terminology
+The method is built on five principles:
 
-| Term | Definition |
+1. no canonical write before explicit approval;
+2. Task is the atomic work unit; Sprint is only a timebox or delivery batch;
+3. every execution attempt is a separate Run;
+4. Markdown is canonical and generated indexes are disposable;
+5. knowledge becomes active truth only through evidence and review.
+
+## 2. Terminology
+
+| Term | Meaning |
 |---|---|
-| **Method** | The ScrumRun protocol itself, versioned separately from tooling. |
-| **Artifact** | A `.md` file under `.scrumrun/` that represents state or intent. |
-| **Goal** | The primary long-lived outcome of the project. Exactly one main goal per project. |
-| **Sprint** | A bounded unit of work under the main goal. |
-| **Feature lane** | An isolated planning surface for work that should not pollute the main goal. |
-| **Fix** | A corrective action for a defect or regression. Lighter than a sprint. |
-| **Backlog item** | A candidate for future work. Not active, not committed. |
-| **Decision** | A pending question that blocks or shapes execution. |
-| **Golden rule** | An absolute constraint. Cannot be silently overridden. |
-| **Knowledge fact** | A short, approved statement about the project used during planning. |
-| **Dossier** | A deep, topic-focused study persisted as a durable document. |
-| **Review agent** | A reusable review persona with defined scope and prompt. |
-| **Intake** | The natural-language classifier that routes requests to workflows. |
-| **Approval gate** | A synchronous checkpoint requiring explicit owner consent. |
+| Feature | Long-lived initiative explaining why related work matters. |
+| Task | Atomic intended work: what must be changed or learned. |
+| Sprint | Explicit timebox or delivery batch grouping Tasks: when work is grouped. |
+| Run | One concrete attempt to execute a Task: how it happened. |
+| Review | Scoped validation evidence for a Run, artifact, migration, or release. |
+| Knowledge | Reviewed project fact. |
+| Decision | Explicit normative choice and its evidence. |
+| Insight | Contextual explanation, trade-off, warning, or rationale. |
+| Dossier | Curated topic/module memory with evidence and review metadata. |
+| Guardrail | Mandatory project policy that configuration cannot weaken. |
+| Context package | Bounded, temporary evidence assembled for one request. |
+| Semantic index | Ignored SQLite projection of canonical artifacts, code symbols, and relations. |
 
----
+A fix is a Task with `type: fix`. A backlog is a view of Tasks with `status: backlog`; neither is a separate canonical entity.
 
-## 2. Artifact Catalog
+## 3. Canonical project model
 
-Every artifact lives at a canonical path and carries mandatory frontmatter. Files without valid frontmatter are treated as untrusted context.
+```text
+.scrumrun/
+  core.md
+  guardrails.md
+  config.md
+  project.md
+  method.json
+  state.md                         # generated view
+  map.md                           # generated view
+  features/FEAT-NNN.md
+  tasks/TASK-NNN.md
+  sprints/SPRINT-NNN.md
+  runs/RUN-NNN.md
+  reviews/REV-NNN.md
+  memory/
+    knowledge/K-NNN.md
+    decisions/DEC-NNN.md
+    insights/INS-NNN.md
+    dossiers/DOS-NNN.md
+  .cache/                          # ignored and disposable
+    semantic-index.sqlite
+    contexts/
+  vault.local.md                   # optional, ignored, never indexed/rendered
+```
 
-### 2.1 Frontmatter schema (universal)
+`guardrails.md` is the only canonical project-policy file. A v1 `golden-rules.md` may remain as migrated source evidence, but it is never a competing v2 authority.
+
+### 3.1 Universal frontmatter
+
+Every canonical entity file must contain:
 
 ```yaml
 ---
-id: <artifact-id>          # e.g. SPR-042, FIX-007, KNOW-K-013
-kind: sprint|fix|feature|goal|backlog|decision|golden|knowledge|dossier|agent|review
-status: <see state machine per kind>
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
-method: 1.0                # method version at time of creation
+id: TASK-018
+kind: task
+status: running
+created: 2026-07-21
+updated: 2026-07-21
+method: 2.0.0
 ---
 ```
 
-### 2.2 Path map
+IDs, filenames, kind, status, real ISO dates, and method version must agree. Unknown fields and authored prose are preserved. Duplicate fields, malformed frontmatter, unsafe paths, and symlinked canonical paths are invalid.
 
-| Kind | Path |
+### 3.2 Stable identifiers
+
+| Kind | Identifier |
 |---|---|
-| goal (main) | `.scrumrun/goals/main/sprint.md` |
-| goal history | `.scrumrun/goals/main/history.md` |
-| goal decisions | `.scrumrun/goals/main/decisions.md` |
-| feature | `.scrumrun/features/<slug>/feature.md` |
-| feature sprint | `.scrumrun/features/<slug>/sprint.md` |
-| feature history | `.scrumrun/features/<slug>/history.md` |
-| feature decisions | `.scrumrun/features/<slug>/decisions.md` |
-| fix | `.scrumrun/fixes.md` (append-only) |
-| backlog | `.scrumrun/backlog.md` |
-| golden rules | `.scrumrun/golden-rules.md` |
-| knowledge facts | `.scrumrun/knowledge.md` |
-| dossier | `.scrumrun/knowledge/dossiers/<slug>.md` |
-| map | `.scrumrun/map.md` |
-| context | `.scrumrun/context.md` |
-| config | `.scrumrun/config.md` |
-| agents | `.scrumrun/agents.md` |
-| reviews | `.scrumrun/reviews/<id>.md` |
-| vault (local) | `.scrumrun/vault.local.md` |
+| Feature | `FEAT-NNN` |
+| Task | `TASK-NNN` |
+| Sprint | `SPRINT-NNN` |
+| Run | `RUN-NNN` |
+| Review | `REV-NNN` |
+| Knowledge | `K-NNN` |
+| Decision | `DEC-NNN` |
+| Insight | `INS-NNN` |
+| Dossier | `DOS-NNN` |
 
----
+Relations use stable IDs or qualified code subjects. Example:
 
-## 3. State Machines
-
-### 3.1 Sprint
-
-```
-proposed ──approve──▶ approved ──run──▶ running ──complete──▶ done
-   │                     │                 │
-   │                     └──backlog──▶ shelved
-   │                                       │
-   └──reject──▶ rejected                   └──abort──▶ aborted
-                                     
-   running ──block──▶ blocked ──unblock──▶ running
+```text
+FEAT-003
+   └── TASK-018
+          ├── executed_by → RUN-044
+          ├── included_in → SPRINT-012
+          ├── constrained_by → DEC-018
+          └── generated → INS-041
 ```
 
-**Transitions:**
-- `proposed → approved`: owner approval required.
-- `approved → running`: explicit `--run` or intake execution consent.
-- `running → done`: all acceptance criteria met AND review agents passed.
-- `running → blocked`: unresolved decision, missing dependency, or golden rule fire.
-- `running → aborted`: owner-initiated cancellation. Requires reason in history.
-- `approved → shelved`: sent to backlog before execution.
+## 4. State machines
 
-**Invariant references:** I-01, I-02, I-05, I-07.
+Only the following transitions are valid.
 
-### 3.2 Fix
+### Feature
 
-```
-proposed ──approve──▶ approved ──run──▶ running ──complete──▶ done
-                                           │
-                                           └──escalate──▶ (becomes sprint)
+```text
+backlog → proposed|active|cancelled
+proposed → active|cancelled
+active → paused|completed|cancelled
+paused → active|cancelled
 ```
 
-Fix is lighter than sprint: no formal review agents required unless the affected area has agents configured. If scope grows during execution, `escalate` promotes to sprint with the same id lineage recorded in history.
+### Task
 
-### 3.3 Feature lane
-
-```
-proposed ──approve──▶ active ──archive──▶ archived
-                        │
-                        └──merge-to-main──▶ merged
-```
-
-A feature lane is a container for sprints. Its sprints follow the sprint state machine independently. `merge-to-main` folds accepted sprints into main goal history.
-
-### 3.4 Backlog item
-
-```
-added ──promote──▶ (becomes sprint|fix|feature)
-   │
-   └──drop──▶ dropped
+```text
+backlog → proposed|running|cancelled
+proposed → running|cancelled
+running → validating|failed|blocked|cancelled
+validating → learning|failed|blocked
+learning → completed|failed|blocked
+partial|failed|blocked → running|cancelled
 ```
 
-Backlog items have no execution state. Promotion creates a new artifact.
+### Sprint
 
-### 3.5 Decision
-
-```
-open ──resolve──▶ resolved
-  │
-  └──defer──▶ deferred
-```
-
-An open decision that blocks a running sprint moves the sprint to `blocked` (see 3.1).
-
-### 3.6 Knowledge fact
-
-```
-proposed ──approve──▶ approved ──deprecate──▶ deprecated
-    │
-    └──reject──▶ rejected (kept for anti-repetition)
+```text
+proposed → running|cancelled
+running → partial|completed|blocked|cancelled
+partial → running|completed|cancelled
+blocked → running|cancelled
 ```
 
-Only `approved` facts are planning truth. `rejected` facts are preserved to prevent re-proposing the same bad assumption.
+### Run
 
-### 3.7 Dossier
-
-```
-drafted ──approve──▶ current ──update──▶ current ──deprecate──▶ deprecated
-```
-
-Every `update` records the previous `commit` hash. A dossier older than the current HEAD by more than N commits (configurable) is marked stale in `context.md`.
-
-### 3.8 Golden rule
-
-```
-proposed ──approve──▶ active ──retire──▶ retired
+```text
+executing → validating|failed|blocked
+validating → learning|failed|blocked
+learning → completed|failed|blocked
+partial → executing|failed|blocked
+blocked → executing|failed
 ```
 
-Active golden rules cannot be silently bypassed (see I-08). Retirement requires explicit owner action and is logged.
+A failed or blocked Run is never reused as a new attempt. Retrying its Task creates a new `RUN-NNN` with an incremented attempt and preserves the previous Run byte-for-byte.
 
----
+### Review and memory
 
-## 4. Composition Rules
-
-Which artifact can generate which:
-
-| From ↓ / Generates → | Sprint | Fix | Feature | Backlog | Decision | Knowledge | Dossier |
-|---|---|---|---|---|---|---|---|
-| Intake | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Goal (`--set`) | ✓ | — | — | ✓ | ✓ | — | — |
-| Sprint (running) | — | ✓ | — | ✓ | ✓ | ✓ | — |
-| Fix (running) | ✓ (escalate) | — | — | — | ✓ | ✓ | — |
-| Feature (active) | ✓ | ✓ | — | ✓ | ✓ | ✓ | — |
-| Study | — | — | — | ✓ | — | ✓ | ✓ |
-| Review | — | ✓ | — | ✓ | ✓ | ✓ | — |
-
-Blocking relationships:
-
-- An `open` decision **linked** to a sprint blocks that sprint.
-- A `proposed` golden rule does not block anything.
-- An `active` golden rule blocks any transition that would violate it.
-- A `stale` dossier does not block, but must be surfaced in intake responses.
-
----
-
-## 5. Precedence
-
-When guidance conflicts, apply in this strict order:
-
-```
-1. Golden rules (active)
-2. Open decisions linked to current work
-3. Approved knowledge facts
-4. Current sprint / feature plan
-5. Backlog priority
-6. Dossiers and map
-7. context.md (never authoritative)
+```text
+Review:    proposed → running; running → passed|failed
+           failed → running|archived; passed → archived
+Knowledge: candidate → approved|rejected; approved → deprecated|invalidated
+           rejected → candidate; deprecated → approved
+Decision:  open → resolved|deprecated|invalidated; resolved → deprecated|invalidated
+           deprecated → open
+Insight:   candidate → confirmed|invalidated
+           confirmed → stale|deprecated|invalidated
+           stale → confirmed|deprecated|invalidated; deprecated → confirmed
+Dossier:   active → stale|deprecated|archived; stale → active|deprecated|archived
+           deprecated → archived
 ```
 
-Higher precedence always wins. Lower precedence never silently overrides.
+Confirmation/resolution requires at least one resolvable evidence reference. An active Dossier requires evidence at creation; refreshing an already active Dossier records verification without changing its state. AI extraction may create candidates only.
 
----
+## 5. Request and execution protocol
 
-## 6. Invariants
-
-Numbered for stable reference. Every implementation must uphold all of these.
-
-- **I-01** — No sprint may transition from `proposed` to `running` without explicit owner approval.
-- **I-02** — No code changes may occur outside a `running` sprint, a `running` fix, or an explicitly authorized quick task.
-- **I-03** — An active golden rule cannot be bypassed by any command, flag, or config. Retirement is the only path.
-- **I-04** — Intake is read-only. Intake cannot create, modify, or delete artifacts. Intake cannot modify code.
-- **I-05** — Main goal history and feature lane history are physically separate files and never merge automatically.
-- **I-06** — Approval is synchronous and explicit. Ambiguous acknowledgements (e.g., "ok", "sure") do not constitute approval unless the owner has enabled `Quick Tasks: allow` for that class of action.
-- **I-07** — Every state transition writes exactly one entry to the relevant history file. History is append-only.
-- **I-08** — Golden rules are checked before every planning or execution workflow. A rule fire during a running sprint moves that sprint to `blocked`.
-- **I-09** — `context.md` is never authoritative. All planning must verify against canonical artifacts and source.
-- **I-10** — Only `approved` knowledge facts inform planning. `pending` and `rejected` facts are context, not truth.
-- **I-11** — Secrets from `vault.local.md` must never appear in history, knowledge, backlog, reviews, commits, or logs.
-- **I-12** — Every artifact carries `id`, `kind`, `status`, `created`, `updated`, and `method` frontmatter fields.
-- **I-13** — A dossier update must record the source commit hash for drift detection.
-- **I-14** — Quick tasks may be executed with `Quick Tasks: allow`, but never bypass golden rules, security checks, or explicit user constraints.
-- **I-15** — Rejecting a knowledge fact preserves it in `rejected` state to prevent re-proposing the same assumption.
-
----
-
-## 7. Intake Protocol (Formal)
-
-Intake is the single natural-language entry point. Formal steps:
-
-1. **Load minimum context:** `core.md`, `golden-rules.md`, `config.md`, `context.md`, and the header of `map.md`.
-2. **Interpret intent** using the desired outcome, not keyword matching.
-3. **Determine risk class:** trivial / bounded / cross-cutting / sensitive.
-4. **Load conditional context** based on risk class:
-   - trivial: current sprint header only.
-   - bounded: current sprint + relevant dossier + relevant knowledge facts.
-   - cross-cutting: full sprint plan + all decisions + map.
-   - sensitive: everything in cross-cutting + full history relevant to affected modules.
-5. **Classify** into one of: `quick-task`, `discovery`, `sprint`, `fix`, `feature`, `backlog`, `reject`, `clarify`.
-6. **Compose response:**
-   - Recommendation with rationale.
-   - Up to two alternatives with tradeoffs.
-   - Risks and unknowns.
-   - Explicit approval request.
-7. **Wait for approval.** No side effects until owner responds.
-
-Response format is machine-parseable enough to be logged verbatim in `history.md` if the request is approved.
-
----
-
-## 8. Approval Semantics
-
-Approval is a first-class concept and comes in three kinds:
-
-| Kind | What it permits |
-|---|---|
-| **Planning approval** | Create planning records (sprint plan, fix plan, backlog item, dossier draft). |
-| **Execution approval** | Change application code, run tests, execute review agents. |
-| **Structural approval** | Modify golden rules, retire rules, change config, delete artifacts. |
-
-Config policy `Execution Approval: always` requires both planning AND execution approvals separately. `implementation-only` collapses them for the recommended path but still requires an explicit yes before code changes.
-
-There is intentionally no mode that grants blanket implementation permission.
-
----
-
-## 9. History Semantics
-
-`history.md` files are append-only. Every entry has:
-
-```
-## <YYYY-MM-DD HH:MM> · <id> · <transition>
-- Owner: <name or "agent-approved">
-- Reason: <one line>
-- Files touched: <optional list>
-- Commit: <optional hash>
+```text
+RECEIVED
+  → CONTEXTUALIZING (Project Scan + History Engine + Decision Engine)
+  → CONTEXT_PACKAGE
+  → POLICY
+  → RISK
+  → CLASSIFICATION
+  → PLANNING
+  → AWAITING_APPROVAL
+  → EXECUTING
+  → VALIDATING
+  → LEARNING
+  → COMPLETED | FAILED | BLOCKED
 ```
 
-History is the audit substrate. It answers "what happened, when, and why" without requiring `git log`.
+Everything through `AWAITING_APPROVAL` is read-only. It may exist in process memory or ignored cache only. A valid approval token binds the normalized request, policy result, classification, risk, issuance time, and canonical context fingerprint.
 
----
+Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent.
 
-## 10. Method Versioning
+Run transitions synchronously update the linked Task and append transition evidence. A paired write failure restores both files. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
 
-`method` version is separate from `cli` and `skill` versions.
+## 6. Policy and precedence
 
-- **Patch** (`1.0.x`): clarifications, non-normative additions.
-- **Minor** (`1.x.0`): additive changes (new artifact kind, new state, new invariant).
-- **Major** (`x.0.0`): breaking changes (removed states, changed invariants, changed frontmatter schema, changed path map).
+When guidance conflicts, apply this order:
 
-Every method-version change ships with `MIGRATION-<from>-to-<to>.md`.
+1. current explicit owner constraints;
+2. universal method invariants in `core.md`/this specification;
+3. active project Guardrails;
+4. resolved Decisions and confirmed, non-stale Memory relevant to the subject;
+5. the approved Task and active Run;
+6. Sprint/Feature grouping context;
+7. generated `state.md`, `map.md`, context packages, and indexes as navigation only.
 
-Tooling versions may change freely. `skill 1.4.2` and `cli 1.4.2` can implement `method 1.0`. A future `skill 2.0.0` can still implement `method 1.0`.
+Configuration controls preferences but cannot weaken higher levels. Missing or stale context must be surfaced, never rendered as certainty.
 
----
+## 7. Semantic memory and code intelligence
 
-## 11. Conformance
+Memory records include subject, source, evidence, validity window, confidence where useful, review trigger, and last-verified commit. Insight types may include placement rationale, design constraint, known trade-off, failure history, usage warning, compatibility reason, business rule, performance reason, security reason, and testing note.
 
-An implementation is ScrumRun-compatible if it:
+The derived graph may contain:
 
-1. Honors every invariant in §6.
-2. Implements the state machines in §3 for every artifact it exposes.
-3. Enforces precedence in §5.
-4. Provides intake per §7 or refuses to accept natural-language requests entirely.
-5. Writes history per §9.
-6. Declares the `method` version it targets.
+```text
+defined_in
+depends_on
+used_by
+protected_by
+constrained_by
+introduced_by
+modified_by
+has_insight
+evidenced_by
+```
 
-A conformance test suite lives at `tests/conformance/` and MUST pass for any release claiming compatibility.
+JavaScript/TypeScript symbols carry a qualified id, path, kind, line, content fingerprint, commit, and adapter identity. A move with the same fingerprint may be remapped. A rename/removal that cannot be proved is retained as orphaned context. Code or evidence drift marks linked memory stale in the projection; it never silently rewrites canonical Markdown.
 
----
+Queries must explain content/relation matches, return evidence/provenance, distinguish candidate/confirmed/stale/inactive/orphaned truth, cap result and relation counts, and exclude rejected/deprecated/invalidated records by default.
 
-## 12. Open Questions
+The agreed v1 control-context baseline is 48,000 characters. A fresh lean v2 intake control package, excluding the user's request, must remain at or below 12,000 characters (25%). Default semantic retrieval returns at most 10 records and 40 relations per record; hard caps are 100/100.
 
-Items to resolve before `method 1.0` freezes. Tracked as `⚠️ revisitar` per plan discipline.
+## 8. Generated views and cache
 
-- ⚠️ Should `blocked` be a real state or a decoration on `running`?
-- ⚠️ How is a dossier "stale threshold" measured — commits since capture, or file-level touch?
-- ⚠️ Should quick tasks generate a lightweight artifact (e.g., `tasks.md` line) or only a history entry?
-- ⚠️ Precedence between two active golden rules that conflict — defined explicit order, or rejection at rule creation?
-- ⚠️ Do feature lane sprints inherit main goal golden rules automatically, or opt-in?
+`state.md`, `map.md`, context packages, and `.cache/semantic-index.sqlite` are non-authoritative projections. They carry source fingerprints or are treated as stale. Deleting `.cache/` must not remove authored knowledge, and rebuilding it from unchanged sources must yield equivalent query results.
 
-Resolution goes to `DECISIONS.md` as an ADR when closed.
+The index must never scan or store `vault.local.md`. Source scanning is bounded, skips dependencies/build output and symlinks, and uses replaceable language adapters.
+
+## 9. Migration from v1
+
+Migration is explicit and reversible:
+
+```text
+scrumrun migrate --to 2 --dry-run
+scrumrun migrate --to 2 --apply
+scrumrun migrate --to 2 --rollback
+```
+
+`npx scrumrun@latest update` performs the same read-only preflight when run inside a v1 project and leaves project data untouched. `update --migrate` is an explicit request to apply the verified plan; it is not implicit migration.
+
+The migrator must:
+
+- hash every source file and block;
+- keep a byte-exact ignored backup;
+- transform in staging and validate before an atomic switch;
+- map each source block to a destination or explicit warning;
+- preserve original v1 files, vault contents, knowledge states, and failed attempts;
+- be idempotent;
+- reject symlinks, malformed markers, ambiguous destructive guesses, and concurrent source changes;
+- rollback only when doing so cannot erase post-migration work.
+
+Legacy sprint entries become Tasks. History entries become Runs only with an evidenced Task relation. A Sprint is created only from real grouping/timebox evidence. Feature lanes become Features, fixes become `type: fix` Tasks, backlog items become backlog Tasks, extracted insights remain candidates, and golden rules become stable-id Guardrails.
+
+## 10. Normative invariants
+
+- **I-01** No canonical artifact or code write occurs before explicit approval.
+- **I-02** Approval creates a linked Task/Run pair atomically or creates nothing.
+- **I-03** Task is atomic work; Sprint only groups Tasks with real batch/timebox evidence.
+- **I-04** Every retry creates a new Run and preserves earlier attempts.
+- **I-05** Only declared state transitions are accepted and paired transitions are recoverable.
+- **I-06** `guardrails.md` is canonical project policy and configuration cannot weaken it.
+- **I-07** Markdown is canonical; SQLite and generated views are disposable projections.
+- **I-08** AI-created facts/insights remain candidates until explicit human confirmation.
+- **I-09** Confirmed claims have resolvable evidence and review metadata.
+- **I-10** Rejected, deprecated, and invalidated memory is auditable but not active truth; stale memory is labeled.
+- **I-11** Vault values never enter context, artifacts, indexes, reports, logs, commits, or approval tokens.
+- **I-12** Canonical artifacts have valid, matching id/kind/status/date/method frontmatter.
+- **I-13** Missing/stale projections are surfaced and never treated as authoritative.
+- **I-14** Context and semantic retrieval are bounded and explain why evidence matched.
+- **I-15** Migration is explicit; dry-run and ordinary update perform no project writes.
+- **I-16** Migration preserves hashed source coverage, backup, mapping, idempotency, and safe rollback.
+- **I-17** Migration warnings preserve ambiguity; they never invent Sprints, Runs, approval, or truth.
+- **I-18** Partial writes, conflicting overwrites, unsafe paths, and symlink traversal fail without corrupting canonical state.
+- **I-19** Code intelligence is derived, adapter-based, fingerprinted, and cannot silently confirm memory.
+- **I-20** Post-validation learning proposes candidates and never blocks Task/Run completion.
+
+## 11. Command grammar
+
+The only canonical root is:
+
+```text
+/sc <noun> <subject> <action> [args]
+```
+
+Exactly five nouns exist: `plan`, `knowledge`, `rules`, `review`, and `config`. The implementation manifest is the command source of truth for help and client adapters. Fresh installs expose `/sc`; generated v1 aliases may remain for one compatibility cycle and must execute the canonical route.
+
+Unknown syntax fails deterministically and never guesses a mutation.
+
+## 12. Conformance and compatibility
+
+An implementation may claim ScrumRun method 2.0.0 only when it:
+
+1. passes positive and negative tests for I-01 through I-20;
+2. enforces every exposed state machine and schema;
+3. proves read-only intake and dry-run migration through full-tree fingerprints;
+4. proves migration failure recovery, rollback safety, and vault exclusion;
+5. proves cache deletion/rebuild equivalence and inactive-memory filtering;
+6. bounds context/retrieval and records benchmark budgets;
+7. declares method `2.0.0` and requires Node.js `>=22.13.0` for the native SQLite index.
+
+Method changes follow semantic versioning. Breaking entity, path, invariant, or state changes require a major version and a migration guide.

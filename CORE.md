@@ -1,381 +1,290 @@
-# ScrumRun Core
+# ScrumRun Core 2.0
 
-ScrumRun is a portable workflow for using AI agents on software projects without relying on a specific AI client.
+ScrumRun is a portable, evidence-driven Agile runtime for AI agents. It makes intended work, execution attempts, decisions, and project learning explicit without turning the project into a ceremony engine.
 
-ScrumRun provides controlled autonomy: AI has room to investigate, reason, and recommend, while explicit operating rules prevent it from confusing confidence with permission. In short, autonomy to think, guardrails to act.
+Method version: `2.0.0`
 
-Slash commands are optional shortcuts. If the current AI client does not support ScrumRun commands, read this file and execute the matching workflow manually.
+## One command
 
-After ScrumRun is initialized in a project, this file is mandatory project methodology. Any AI agent working in the project must follow it before planning, changing, auditing, or reviewing work.
-
-## Operating Rule
-
-Before planning, changing, auditing, or reviewing work, read these files when they exist:
-
-1. `.scrumrun/core.md`
-2. `.scrumrun/golden-rules.md`
-3. `.scrumrun/config.md`
-4. `.scrumrun/token-policy.md`
-5. `.scrumrun/context.md`
-6. `.scrumrun/map.md`
-7. `.scrumrun/project.md`
-8. `.scrumrun/knowledge.md`
-9. `.scrumrun/runbook.md`
-10. `.scrumrun/backlog.md`
-11. `.scrumrun/goals/main/sprint.md`
-12. `.scrumrun/features/*/feature.md`
-13. `.scrumrun/features/*/sprint.md`
-14. `.scrumrun/agents.md`
-15. `.scrumrun/goals/main/history.md`
-16. `.scrumrun/goals/main/decisions.md`
-17. `.scrumrun/features/*/history.md`
-18. `.scrumrun/features/*/decisions.md`
-
-Golden rules have the highest priority. If a golden rule conflicts with any other instruction, the golden rule wins.
-
-Only approved knowledge is planning truth. Pending knowledge is unverified context. Rejected knowledge must not be used except to avoid repeating a known bad assumption.
-
-`context.md` is a token-saving snapshot, not canonical truth. Use it to decide what to read next, then verify against canonical ScrumRun files and source code before planning, editing, reviewing, or marking work done.
-
-If the current AI client does not support slash commands, do not invent a different workflow. Use the command equivalents in this file.
-
-If this file was loaded from `AGENTS.md`, treat it as the active project methodology.
-
-If the user asks for work without mentioning ScrumRun, still follow ScrumRun because the project was initialized with it.
-
-## Natural-Language Intake
-
-The owner does not need to choose a ScrumRun command. A request such as "I have a checkout bug" or "we need passkeys" automatically starts intake.
-
-Intake must:
-
-1. understand the desired outcome rather than matching keywords alone;
-2. inspect the minimum canonical context and relevant history needed for a reliable classification;
-3. classify the request as a quick task, knowledge/discovery, main sprint, corrective fix, backlog candidate, isolated feature lane, or reject/defer;
-4. explain the recommended route, important risks and unknowns, plus no more than two useful alternatives;
-5. ask for approval according to `.scrumrun/config.md`;
-6. invoke the chosen workflow only after approval.
-
-Intake is read-only until approval. It must not create planning records, modify application code, run a sprint, or treat an ambiguous acknowledgement as execution consent.
-
-Default preferences are:
+The canonical command is:
 
 ```text
-Interaction Mode: guided
-Execution Approval: always
-Quick Tasks: ask
+/sc <noun> <subject> <action> [args]
 ```
 
-`guided` presents a recommendation and useful alternatives. `concise` presents only the classification and recommendation. `autonomous-planning` may create planning records when the approval policy permits it, but still may not implement without explicit execution approval. `strict` requires explicit ScrumRun commands and disables automatic intake.
+The five nouns are:
 
-`Execution Approval: always` requires approval before creating operational records and again before implementation when those are separate steps. `implementation-only` permits the recommended planning record after intake but still requires explicit approval before changing application code. There is intentionally no mode that silently authorizes implementation.
+- `plan` — Features, Tasks, Sprints, Runs, intake, and challenge;
+- `knowledge` — facts, Decisions, Insights, dossiers, context, map, study, and vault;
+- `rules` — guardrails and reviewers;
+- `review` — code, artifact, migration, and release gates;
+- `config` — project preferences, lifecycle, migration, doctor, and help.
 
-`Quick Tasks: ask` asks before small low-risk changes. `allow` permits a clearly scoped low-risk quick task after classification, but never bypasses golden rules, security checks, or explicit user constraints. `backlog` parks quick tasks instead of executing them.
+Incomplete syntax lists only valid next tokens. Unknown syntax never guesses or mutates.
 
-## Command Grammar
+The command manifest at `lib/commands/manifest.js` generates client prompts, compatibility adapters, help, and grammar tests. Fresh v2 integrations install only `/sc`. A v1 upgrade may install generated compatibility adapters for one release cycle.
 
-Commands use one canonical verb for the same semantic action:
+## Entity model
 
-- `--add`: create or append a collection item, such as a sprint, feature, backlog item, rule, agent, fix, vault entry, or knowledge proposal;
-- `--set`: define or replace a singleton value, such as the main goal or language;
-- `--update`: change an existing resource without replacing its identity;
-- `--remove`: delete an existing resource;
-- `--list`: list multiple resources;
-- `--show`: display one resource or the current state;
-- `--run`: execute approved work;
-- `--audit`: verify completed or current work;
-- `--approve` / `--reject`: resolve a pending proposal.
+```text
+FEAT-003
+   └── TASK-018
+          ├── executed_by → RUN-044
+          ├── included_in → SPRINT-012
+          ├── constrained_by → DEC-018
+          └── generated → INS-041
+```
 
-Legacy forms such as `--new`, bare knowledge topics, and positional `approve`/`reject` remain accepted as compatibility aliases, but agents should recommend and generate only the canonical forms. Short aliases that historically conflict keep their legacy meaning; prefer long flags in generated instructions.
+- Feature (`FEAT-NNN`) is the long-lived initiative: why the work matters.
+- Task (`TASK-NNN`) is the atomic intended change: what must be done.
+- Sprint (`SPRINT-NNN`) is a real timebox or delivery batch: when related Tasks are grouped.
+- Run (`RUN-NNN`) is one concrete execution attempt: how a Task actually happened.
+- Review (`REV-NNN`) records a scoped quality gate.
+- Memory records what the project knows and why: Knowledge (`K-NNN`), Decision (`DEC-NNN`), Insight (`INS-NNN`), and Dossier (`DOS-NNN`).
 
-## Project Layout
+A Task may exist without a Sprint. A retry creates a new Run and never overwrites the previous attempt. A fix is a Task with `type: fix`; backlog is a generated view of Tasks with `status: backlog`.
+
+## Canonical project tree
 
 ```text
 AGENTS.md
 .scrumrun/
   core.md
+  guardrails.md
   config.md
-  token-policy.md
-  context.md
-  golden-rules.md
-  map.md
-  agents.md
-  runbook.md
   project.md
-  backlog.md
-  knowledge.md
-  vault.local.md
-  goals/
-    main/
-      sprint.md
-      history.md
-      decisions.md
+  state.md                         # generated, not authoritative
+  map.md                           # generated, not authoritative
+  method.json
+  tasks/
+    TASK-NNN.md
+  sprints/
+    SPRINT-NNN.md
   features/
-    <feature>/
-      feature.md
-      sprint.md
-      history.md
-      decisions.md
+    FEAT-NNN.md
+  runs/
+    RUN-NNN.md
+  memory/
+    knowledge/
+      K-NNN.md
+    decisions/
+      DEC-NNN.md
+    insights/
+      INS-NNN.md
+    dossiers/
+      DOS-NNN.md
   reviews/
+    REV-NNN.md
+  .cache/                          # ignored and disposable
+    semantic-index.sqlite
+    contexts/
 ```
 
-## Safety Rules
+Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
-- Do not start implementation unless the owner explicitly asks for it.
-- Never modify read-only source paths.
-- Never commit real secrets.
-- Never print `.scrumrun/vault.local.md` values in normal summaries, history, knowledge, backlog, reviews, commits, or logs.
-- Runtime values must come from environment/config, not hardcoded strings.
-- Keep main goal history and feature lane history separate.
-- Before running a sprint, check the relevant history file.
-- If a sprint is completed, partial, or blocked, stop and ask whether to audit, resume, fix, rerun, or move on.
+`vault.local.md`, migration backups, and caches are local-only. Their values never appear in logs, history, reviews, memory, reports, commits, or normal responses.
 
-## Context Economy Protocol
+## Authority and read policy
 
-This protocol reduces token waste while preserving correctness.
+Apply project context in this order:
+
+1. owner/system instructions;
+2. universal method invariants in this guide and `SPEC.md`;
+3. `guardrails.md`;
+4. relevant confirmed Decisions and approved Knowledge;
+5. active Feature, Task, Sprint, and Run;
+6. relevant history and evidence;
+7. generated `state.md`, `map.md`, and cache projections.
+
+Normal read path:
+
+1. `AGENTS.md`;
+2. `.scrumrun/guardrails.md`;
+3. `.scrumrun/state.md`;
+4. only the canonical ids and evidence relevant to current work;
+5. `.scrumrun/core.md` when method details or exceptional transitions are needed.
+
+Lean mode is this bounded read policy; it is not permission to omit canonical truth.
+
+`guardrails.md` is the sole canonical project-policy file. `golden-rules.md` is a v1 migration source/compatibility pointer, not a competing authority. `config.md` stores interaction preferences and cannot weaken guardrails.
+
+## Request lifecycle
+
+Everything before approval is transient and read-only:
 
 ```text
-AGENTS.md
-  -> core.md
-  -> golden-rules.md
-  -> config.md
-  -> token-policy.md
-  -> context.md
-  -> map.md
-  -> project.md
-  -> knowledge.md
-  -> runbook.md
-  -> current backlog / sprint / feature files
-  -> agents.md
-  -> relevant history + decisions
-  -> targeted source files
+USER REQUEST
+     ↓
+RECEIVED
+     ↓
+CONTEXTUALIZING
+  ├── Project Scan
+  ├── History Engine
+  └── Decision Engine
+     ↓
+CONTEXT PACKAGE
+     ↓
+POLICY ENGINE
+     ↓
+RISK ASSESSMENT
+     ↓
+CLASSIFICATION
+     ↓
+PLANNING
+     ↓
+AWAITING APPROVAL
+```
+
+Intake must:
+
+1. understand outcome, urgency, scope, risk, uncertainty, and current-work relationship;
+2. retrieve only relevant project/code/history/decision evidence;
+3. apply guardrails before making a recommendation;
+4. classify as standalone Task, Sprint batch, Feature, discovery, fix Task, backlog Task, quick Task, or reject/defer;
+5. recommend one route and, in guided mode, at most two useful alternatives;
+6. ask one explicit approval question before execution; config may change presentation, never remove the gate.
+
+Before approval, do not create canonical files, update status, edit application code, or retain request content outside ignored disposable context cache. Ambiguous acknowledgement is not approval.
+
+## Execution lifecycle
+
+Explicit approval creates or updates the Task and creates a Run:
+
+```text
+executing
+  → validating
+  → learning
+  → completed
+       ↘ failed
+       ↘ blocked
 ```
 
 Rules:
 
-1. Safety beats token economy.
-2. Use `context.md` as a reading guide, never as proof.
-3. Prefer targeted file/range/symbol reads over broad dumps.
-4. Summarize large logs, generated files, old reviews, and old unrelated history.
-5. If a skipped source could affect correctness or safety, read it.
-6. Update `context.md` after study, challenge intake, sprint planning, sprint execution, review, or important knowledge/decision changes.
+- one Run belongs to one Task;
+- one Task may have multiple immutable attempts;
+- every state transition writes exactly one append-only history event;
+- validation must match the risk and acceptance criteria;
+- configured reviews run before completion;
+- learning proposes memory candidates after validation and never auto-confirms AI inference;
+- complete a Sprint only when all its included Tasks meet the Sprint exit gate;
+- do not mark work complete merely because time or token budget ended.
 
-## Sprint Protocol
+Canonical mutations are schema-validated, lossless, and atomic. Preserve unknown fields, prose, and unrelated owner edits. A failed mutation must leave canonical state unchanged or recoverable.
 
-Every sprint follows:
+## Semantic memory
 
-1. Entenda
-2. Avalie Impactos
-3. Tire Duvidas
-4. Execute
-5. Teste
+### Knowledge
 
-Do not skip the first three steps. They are what prevent confident but unsafe execution.
+Verified descriptive facts about the project. Only `approved` Knowledge may guide execution as truth.
 
-## Command Equivalents
+### Decision
 
-Use these workflows even when slash commands are unavailable.
+Normative constraints such as “pricing calculations must remain on the backend.” Decisions carry status, scope, evidence/source, validity conditions, and review triggers.
 
-### `/sc-intake`
+### Insight
 
-Explicitly invoke the natural-language intake protocol. This is useful when an AI client does not automatically detect ScrumRun from `AGENTS.md`.
+Explanatory context such as placement rationale, tradeoff, business rule, failure history, performance reason, security reason, usage warning, or testing note. Insights are not automatically Decisions.
 
-Analyze the request, recommend a route, and ask for approval. Do not create records or execute work during intake.
+AI extraction creates `candidate` Insights. Confirmation requires explicit human approval or trusted evidence. Supported states are `candidate`, `confirmed`, `stale`, `deprecated`, and `invalidated`.
 
-### `/sc-help`
+### Dossier
 
-Explain ScrumRun commands and workflows. Read `.scrumrun/config.md` first to honor the response language. Do not modify files.
+A durable evidence bundle about a topic/module, with last-verified source/commit and staleness information.
 
-### `/sc-init`
-
-Initialize ScrumRun. In CLI form, run:
-
-```bash
-npx scrumrun@latest init
-```
-
-Default init is local: it creates `AGENTS.md` and `.scrumrun/`, then adds them to `.git/info/exclude` when Git is present. This keeps ScrumRun out of commits unless the owner chooses `--shared`.
-
-### `/sc-study`
-
-Perform a deep, read-only project study.
-
-Inspect:
-
-- product purpose and stack;
-- package managers, frameworks, runtime versions, and local commands;
-- architecture, entry points, routing, controllers, services, jobs, and modules;
-- auth, authorization, roles, permissions, policies, guards, and access boundaries;
-- data model, migrations, seeds, storage, queues, caches, and external state;
-- env/config, secret handling, integrations, webhooks, and provider boundaries;
-- deployment, infrastructure, CI, test strategy, and observability clues;
-- golden rules, approved knowledge, backlog, current sprint plan, history, and decisions;
-- security risks, performance hotspots, brittle areas, unknowns, and next backlog candidates.
-
-Return evidence with file references. If something cannot be verified, say it is unknown and explain what evidence is missing. Do not modify files. Recommend sprint candidates as backlog candidates unless the user explicitly asks to create or run a sprint.
-
-### `/sc-know`
-
-Investigate a specific topic and write a pending knowledge proposal in `.scrumrun/knowledge.md` using the next `K-NNN` id.
-
-Each entry should include:
-
-- title;
-- user insight;
-- verified facts with file references;
-- assumptions and uncertainty;
-- risks if wrong;
-- affected modules;
-- suggested future use.
-
-With deep knowledge, also include key functions, symbols, entry points, call sites, and relevant types/storage.
-
-Do not treat new or edited knowledge as approved. Ask the owner to approve or reject it.
-
-### `/sc-challenge`
-
-Analyze a user challenge after study and recommend the safest path.
-
-Read project files, approved knowledge, backlog, sprint plan, history, decisions, feature lanes, and relevant source code. History reading is mandatory when history exists.
-
-Return:
-
-- challenge understanding;
-- approved knowledge used;
-- evidence with file references;
-- history findings;
-- impact analysis;
-- risks and unknowns;
-- options;
-- recommendation;
-- suggested next command or manual workflow.
-
-Valid recommendations include creating a small sprint, adding to backlog, creating a feature lane, running discovery first, or rejecting/defering the request.
-
-Do not create backlog items, sprints, feature lanes, code changes, commits, tests, or history entries unless the user explicitly asks.
-
-### `/sc-goal`
-
-Manage the main project goal in `.scrumrun/goals/main/`.
-
-When setting or changing the goal with `--set`, read project rules, map, approved knowledge, review agents, main history, and decisions. Detect the stack first, ask blocking architecture questions, then update `.scrumrun/project.md`, `.scrumrun/goals/main/sprint.md`, and `.scrumrun/goals/main/decisions.md`.
-
-Do not implement code.
-
-### `/sc-feature`
-
-Create or manage isolated feature lanes under `.scrumrun/features/<slug>/`.
-
-Feature lanes must have separate `feature.md`, `sprint.md`, `history.md`, and `decisions.md`. They must respect project rules and approved knowledge but must not pollute main goal history.
-
-### `/sc-sprint`
-
-Manage or run main-goal sprints.
-
-For a sprint added with `--add`, append it to `.scrumrun/goals/main/sprint.md` with goal, scope, acceptance criteria, dependencies, suggested verification, and review checkpoints.
-
-For sprint execution:
-
-1. Read `AGENTS.md`, core, golden rules, config, map, project, knowledge, runbook, sprint or feature plan, agents, history, and decisions.
-2. Use only approved knowledge.
-3. Check whether the sprint is completed, partial, or blocked.
-4. Follow Entenda -> Avalie Impactos -> Tire Duvidas -> Execute -> Teste.
-5. Run configured review agents.
-6. Fix findings before marking complete.
-7. Update main history and decisions.
-
-If the owner asks to send a sprint to backlog, add it to `.scrumrun/backlog.md` and stop without executing.
-
-### `/sc-backlog`
-
-Manage `.scrumrun/backlog.md`.
-
-Backlog items are candidates, not active work. Adding to backlog must not change sprint status, run tests, execute agents, or modify application code.
-
-### `/sc-fix`
-
-Manage `.scrumrun/fixes.md`.
-
-Record what went wrong and what was done with `--add`. Browse the fix log with `--list` and `--show`. If patterns repeat, use `--insight` to create durable knowledge. `/sc-sprint --fix` auto-registers entries.
-
-### `/sc-agent`
-
-Manage review agents in `.scrumrun/agents.md` or run them against a sprint. Agent findings should be recorded in the relevant history file.
-
-### `/sc-review`
-
-Run a code review. Findings must be ordered by severity and include file/line references. Do not modify code unless explicitly asked.
-
-### `/sc-config`
-
-Manage `.scrumrun/config.md`, including response language and sprint automation preferences.
-
-### `/sc-golden`
-
-Manage `.scrumrun/golden-rules.md`. Golden rules are absolute and must be checked before every planning or execution workflow.
-
-### `/sc-map`
-
-Build or view `.scrumrun/map.md`. The map is a navigation aid, not source of truth. Verify files before editing.
-
-### `/sc-context`
-
-Manage `.scrumrun/context.md`, the token-safe project snapshot, and `.scrumrun/token-policy.md`, the context economy rules.
-
-Actions:
-
-- `/sc-context --build` (`-b`): create or fully refresh the snapshot from canonical ScrumRun files and targeted source inspection.
-- `/sc-context --update` (`-u`) `[reason]`: update only changed sections after study, challenge, planning, execution, review, or knowledge changes.
-- `/sc-context --show` (`-s`): show the current snapshot without modifying files.
-- `/sc-context --clear` (`-c`): reset the snapshot to a stale placeholder so future agents know it must be rebuilt.
-- `/sc-context --policy` (`-p`): show token economy rules and explain how they apply to the current task.
-
-Never let `context.md` override golden rules, approved knowledge, history, decisions, or source code.
-
-### `/sc-decisions`
-
-Resolve open decisions one at a time in the relevant decisions/history file.
-
-### `/sc-vault`
-
-Manage `.scrumrun/vault.local.md`, a plaintext local development vault.
-
-This file is for development-only credentials and local test values. It is not encrypted and is not a production secret manager. Values must never be committed or copied into normal ScrumRun records.
-
-## Manual Usage Without Installation
-
-If commands are unavailable, ask the agent to do this:
+Useful graph relations include:
 
 ```text
-Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /sc-study.
-Do not modify files.
+defined_in
+depends_on
+used_by
+constrained_by
+introduced_by
+modified_by
+has_insight
+protected_by
 ```
 
-Or:
+Context retrieval must explain why a record matched and label stale evidence. Invalidated/rejected memory is preserved for audit but never injected as active truth.
+
+## Migration contract
+
+Migration is explicit:
 
 ```text
-Read .scrumrun/core.md and follow ScrumRun.
-I want the equivalent of /sc-challenge:
-<challenge>
-Show options and recommendation only. Do not execute.
+scrumrun migrate --to 2 --dry-run
+scrumrun migrate --to 2 --apply
+scrumrun migrate --to 2 --rollback
 ```
 
-Or:
+- ordinary install/update never applies a migration; update performs a read-only v1 preflight, and only explicit `update --migrate` applies its verified plan;
+- dry-run writes no project data;
+- apply inventories source hashes, creates a byte-exact local backup, transforms in staging, validates, and activates by atomic directory swap;
+- the mapping report relates every inferred v1 block to its v2 destination while every original file remains covered by the backup inventory;
+- replay is idempotent;
+- ambiguous mappings are preserved and warned, never guessed;
+- vault contents remain unchanged and are never rendered;
+- rollback verifies the backup and refuses if it would erase post-migration work.
 
-```text
-Read .scrumrun/core.md and follow ScrumRun.
-Run the equivalent of /sc-sprint --run Sprint 01.
-Follow the sprint protocol and update history when done.
-```
+Legacy sprint plan entries normally become Tasks. History attempts become Runs when a Task link is evidenced. A v2 Sprint is created only with actual timebox/batch evidence. Feature lanes become Features; backlog entries become backlog Tasks; fixes become fix Tasks; Knowledge states are preserved; extracted Insights remain candidates; golden rules become stable-id Guardrails.
 
-## Bootstrap Prompt
+## Command reference
 
-For AI clients that do not reliably read project instructions automatically, paste this at the start of the session:
+### `/sc plan`
 
-```text
-Read AGENTS.md and .scrumrun/core.md before doing anything else.
-Follow ScrumRun exactly.
-If slash commands are unavailable, execute the equivalent workflow from .scrumrun/core.md manually.
-Do not plan, edit, run, or review work until you have applied the ScrumRun safety rules, project files, approved knowledge, sprint history, and decision history.
-```
+- `task --add|--list|--show|--run|--audit|--cancel|--retry`
+- `sprint --add|--list|--show|--start|--complete|--block`
+- `feature --add|--list|--show|--activate|--complete`
+- `run --list|--show|--validate|--learn|--complete|--resume|--fail|--block`
+- `intake <request>`
+- `challenge <question>`
+
+### `/sc knowledge`
+
+- `fact --add|--list|--show|--approve|--reject|--deprecate|--invalidate`
+- `decision --add|--list|--show|--resolve|--deprecate|--invalidate`
+- `insight --propose|--list|--show|--confirm|--stale|--reject|--deprecate|--invalidate`
+- `dossier --add|--list|--show|--refresh|--stale|--deprecate|--archive`
+- `context --build|--update|--show|--clear`
+- `map --build|--show`
+- `study <focus>`
+- `vault --add|--list|--show|--remove|--path`
+
+### `/sc rules`
+
+- `guardrail --add|--list|--show|--retire`
+- `reviewer --add|--list|--show|--run`
+
+### `/sc review`
+
+- `code --run`
+- `artifact --run`
+- `migration --run`
+- `release --run`
+
+Review is read-only unless fixes are separately authorized. Report findings by severity with evidence.
+
+### `/sc config`
+
+- `project --show|--language|--interaction|--approval|--quick-tasks`
+- `init --local|--shared|--force`
+- `update all|codex|opencode|claude [--migrate]`
+- `migrate --to 2 --dry-run|--apply|--rollback`
+- `doctor all|codex|opencode|claude`
+- `uninstall --force`
+- `help <topic>`
+
+## Stable invariants
+
+- Intake is read-only.
+- No execution without explicit valid approval.
+- Guardrails cannot be bypassed; they may only be superseded/retired with history.
+- Task is atomic; Sprint is grouping; Run is an attempt.
+- Retries preserve prior Runs.
+- History is append-only.
+- Only approved/confirmed, non-stale memory guides work as truth.
+- AI proposals never self-confirm.
+- Generated views/caches never override canonical Markdown.
+- Vault values never leave the local vault boundary.
+- Migration never guesses or runs implicitly; `update --migrate` is explicit migration approval.
+- Review does not imply authorization to fix.

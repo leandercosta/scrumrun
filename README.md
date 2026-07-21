@@ -1,138 +1,187 @@
 # ScrumRun
 
-> A protocol for AI-assisted software development.
-> Sprints, decisions, invariants, history — auditable and portable across agents.
+> A simple, fast, evidence-driven Agile runtime for AI coding agents.
 
-**Method:** `1.0` (draft) · **CLI/Skill:** `1.5.0` · **License:** MIT
+ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-ScrumRun gives AI coding agents a stable memory, an explicit approval model, and a state machine for the work they do. The method is documented so any markdown-capable agent can follow it. Client-specific integrations (Claude Code, Codex, OpenCode) are optimizations, not requirements.
+**Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
----
+## The model
+
+```text
+Feature = why the initiative matters
+Task    = what atomic work must be done
+Sprint  = when Tasks are grouped as a timebox/batch
+Run     = how one concrete attempt happened
+Memory  = what the project learned and why
+```
+
+```text
+FEAT-003
+   └── TASK-018
+          ├── executed_by → RUN-044
+          ├── included_in → SPRINT-012
+          ├── constrained_by → DEC-018
+          └── generated → INS-041
+```
+
+A Task does not need a Sprint. A retry creates a new Run. A fix is a Task with `type: fix`; backlog is a view of backlog Tasks.
 
 ## Install
 
 ```bash
+npx scrumrun@latest install
 npx scrumrun@latest init
 ```
 
-Local by default: creates `AGENTS.md` and `.scrumrun/`, adds them to `.git/info/exclude`. Use `--shared` to commit them.
+`install` adds the client integration; `init` creates the project tree. Initialization is local by default: `.scrumrun/` and the generated agent hint are added to `.git/info/exclude`. Use `--shared` when the team wants to commit the project memory.
 
-### Migrating from the GitHub installer
+ScrumRun installs one canonical agent command:
 
-Older installations used `npx github:leandercosta/scrumrun`. Replace the installed client commands and skill with the npm release by running once:
+```text
+/sc <noun> <subject> <action> [args]
+```
+
+The five nouns are `plan`, `knowledge`, `rules`, `review`, and `config`.
+
+## Daily flow
+
+Natural language is the normal entry point:
+
+```text
+Move calculateFinalPrice to checkout.
+Fix duplicate charges after refresh.
+Study why pricing depends on TaxCalculator.
+```
+
+ScrumRun runs a read-only pipeline before asking for approval:
+
+```text
+RECEIVED → CONTEXTUALIZING → POLICY → RISK → CLASSIFICATION
+         → PLANNING → AWAITING_APPROVAL
+```
+
+Explicit approval atomically creates a Task and a Run. Execution then follows:
+
+```text
+EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
+```
+
+Nothing canonical is persisted before approval. Failed retries remain available as separate Runs.
+
+## Semantic project memory
+
+Canonical memory is human-readable Markdown:
+
+- `K-NNN` — reviewed facts;
+- `DEC-NNN` — normative decisions;
+- `INS-NNN` — contextual rationale, constraints, warnings, and trade-offs;
+- `DOS-NNN` — curated topic/module dossiers.
+
+The agent can answer questions such as:
+
+- Why is this function in this module?
+- Which Decision constrains it?
+- Who depends on it?
+- Which test protects it?
+- What is likely to break if it changes?
+
+AI extraction creates candidates only. Confirmation requires resolvable evidence. Stale and invalidated memory is labeled; rejected/deprecated/invalidated records are excluded from active truth by default.
+
+The fast graph/search layer is `.scrumrun/.cache/semantic-index.sqlite`. It is ignored and disposable: deleting it never deletes knowledge. The current JavaScript/TypeScript adapter derives qualified symbols plus `defined_in`, `depends_on`, `used_by`, and `protected_by` relations.
+
+## Migrating an ongoing v1 project
+
+Update the client integrations and automatically run a read-only migration preflight:
 
 ```bash
-npx scrumrun@latest update all
+npx scrumrun@latest update
 ```
 
-This overwrites only the ScrumRun integrations for Codex, Claude Code, and OpenCode. It does not remove or reset project data, `.scrumrun/`, `AGENTS.md`, knowledge, history, decisions, backlog, or the local vault.
-
-From then on, use `npx scrumrun@latest ...`. Projects using the legacy pre-`.scrumrun/` file layout can additionally run:
+This shows the source inventory, proposed mappings, and blockers without changing project data. Apply only the verified plan with:
 
 ```bash
-npx scrumrun@latest migrate
+npx scrumrun@latest update --migrate
 ```
 
----
+The standalone workflow remains available:
 
-## Usage
-
-Once initialized, talk to your agent in natural language:
-
-```
-add a save button to the profile form
-checkout charges twice after refresh
-study the payments module
-run the next sprint
+```bash
+npx scrumrun@latest migrate --to 2 --dry-run
+npx scrumrun@latest migrate --to 2 --apply
+npx scrumrun@latest migrate --to 2 --rollback
 ```
 
-The agent runs intake (read-only), classifies the request, proposes a route, and asks for approval before touching artifacts or code. No configuration silently grants blanket implementation permission.
+Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It preserves original files and vault contents. Ambiguous history remains an explicit warning; the migrator never invents a Sprint or Run.
 
-If you prefer explicit commands, they exist. The canonical grammar uses long flags (`--add`, `--run`, `--audit`, `--approve`). See `CORE.md` for the full reference.
+## Canonical tree
 
----
+```text
+.scrumrun/
+  core.md
+  guardrails.md
+  config.md
+  project.md
+  method.json
+  state.md                         # generated
+  map.md                           # generated
+  features/FEAT-NNN.md
+  tasks/TASK-NNN.md
+  sprints/SPRINT-NNN.md
+  runs/RUN-NNN.md
+  reviews/REV-NNN.md
+  memory/
+    knowledge/K-NNN.md
+    decisions/DEC-NNN.md
+    insights/INS-NNN.md
+    dossiers/DOS-NNN.md
+  .cache/semantic-index.sqlite     # generated, ignored
+  vault.local.md                   # optional, ignored, never indexed
+```
 
-## How it works
+`guardrails.md` is canonical project policy. `config.md` contains preferences and cannot weaken it. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority.
 
-Three surfaces, physically separated:
+## Useful commands
 
-- **Project rules** — golden rules and configuration that every agent honors.
-- **Main goal** — the primary plan, its sprints, decisions, and history.
-- **Feature lanes** — isolated planning that does not pollute the main goal.
+```bash
+# inspect the grammar
+npx scrumrun@latest commands
 
-Every artifact is a `.md` file under `.scrumrun/` with mandatory frontmatter. State transitions are explicit and recorded in `history.md` (append-only). `context.md` is a token-safe snapshot used as a reading guide — never as authoritative truth.
+# plan without writes, then approve the emitted token
+npx scrumrun@latest sc plan intake "Fix pricing rounding"
+npx scrumrun@latest sc plan intake --approve <token>
 
-Fifteen numbered invariants (`I-01`…`I-15`) define behavior that cannot be silently overridden. Golden rules have highest precedence. Intake is strictly read-only. Approval is synchronous and explicit.
+# memory lifecycle
+npx scrumrun@latest sc knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts
+npx scrumrun@latest sc knowledge insight --confirm INS-001
+npx scrumrun@latest sc knowledge study calculateFinalPrice
 
----
+# rebuild or inspect the derived graph
+npx scrumrun@latest sc knowledge map --build
+npx scrumrun@latest sc knowledge map --show
+```
+
+The command manifest in `lib/commands/manifest.js` generates help and compatibility adapters, preventing client grammar drift.
 
 ## Documentation
 
 | File | Purpose |
 |---|---|
-| [`CORE.md`](./CORE.md) | Operational guide agents follow at runtime. |
-| [`SPEC.md`](./SPEC.md) | Formal method specification — state machines, invariants, composition rules. |
-| [`DECISIONS.md`](./DECISIONS.md) | ADRs explaining why the method is the way it is. |
-| `.scrumrun/config.md` | Owner preferences (language, approval policy, quick-task policy). |
-| `.scrumrun/golden-rules.md` | Absolute constraints for the project. |
+| [`CORE.md`](./CORE.md) | Operational runtime guide for agents. |
+| [`SPEC.md`](./SPEC.md) | Normative 2.0 state machines, invariants, and conformance rules. |
+| [`DECISIONS.md`](./DECISIONS.md) | Architectural decisions and trade-offs. |
+| `MIGRATION-1-to-2.md` | Upgrade, verification, rollback, and recovery guide. |
 
-For AI clients that do not auto-read project instructions, paste this at the start of a session:
+ScrumRun remains client-independent: any agent that reads Markdown can follow `CORE.md`; Codex, Claude Code, and OpenCode integrations are accelerators.
 
+## Development
+
+```bash
+npm test
+npm pack --dry-run
 ```
-Read AGENTS.md and .scrumrun/core.md before doing anything else.
-Follow ScrumRun exactly.
-```
 
----
-
-## Portability
-
-ScrumRun is designed to outlive specific AI clients. Any agent that reads markdown and follows instructions can implement it by reading `CORE.md`. Slash commands and skills are conveniences, not dependencies.
-
-Compatibility matrix (planned, `method 1.0`):
-
-| Agent | Slash commands | Skill | Manual (CORE.md) |
-|---|---|---|---|
-| Claude Code | ✓ | ✓ | ✓ |
-| Codex | ✓ | — | ✓ |
-| OpenCode | ✓ | — | ✓ |
-| Any markdown-capable agent | — | — | ✓ |
-
-A conformance test suite is planned under `tests/conformance/` for verifying implementations against the invariants in `SPEC.md`.
-
----
-
-## Versioning
-
-Three independent version numbers:
-
-- **`method`** — the protocol itself. Major bumps only on breaking spec changes.
-- **`cli`** — the installer and command surface.
-- **`skill`** — the agent-facing instructions.
-
-Tooling can iterate freely. Adopters pin the method version and update tooling with confidence. Every method change ships with a migration guide.
-
----
-
-## Status
-
-- ✅ Portable `CORE.md` for cross-agent execution
-- ✅ Natural-language intake with approval gates
-- ✅ Sprint, feature lane, fix, backlog, decision, knowledge artifacts
-- ✅ Golden rules with unbypassable precedence
-- ✅ Formal `SPEC.md` and `DECISIONS.md` (method 1.0 draft)
-- 🚧 Command grammar consolidation (20 commands → 6, see ADR-013)
-- 🚧 Method versioning separated from CLI
-- 🚧 Portability matrix + conformance test suite
-- 🚧 Landing page at [`scrumrun.dev`](https://scrumrun.dev)
-
----
-
-## Contributing
-
-The method is public and versioned. Proposals that change spec, invariants, or state machines require an ADR entry in `DECISIONS.md`. Tooling changes follow standard PR flow.
-
----
+The release gates cover artifact/state conformance, read-only intake, migration failure recovery, semantic cache equivalence, code graph behavior, vault exclusion, and CLI compatibility.
 
 ## License
 
