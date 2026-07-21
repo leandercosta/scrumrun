@@ -17,6 +17,7 @@ All notable changes follow Semantic Versioning.
 - Read-only update migration preflight and explicit `update --migrate` integration for ongoing projects.
 - Hybrid incomplete-v2 recovery that reuses existing Task/Sprint/Run links, archives legacy aggregates, and normalizes deterministic pre-release aliases without duplicating work.
 - Content-hash verification for installed prompts/skills and `doctor --strict` project conformance checks.
+- One frozen executable schema for artifact ids, directories, initial states, transitions, structural cardinalities, truth ownership, and authority boundaries, with generated drift-checked documentation.
 - Atomic Task/Run approval and recoverable Run lifecycle/retries.
 - Evidence-backed Knowledge, Decisions, Insights, and Dossiers with validity/review metadata.
 - Disposable SQLite FTS/graph index and bounded semantic queries.

@@ -27,6 +27,8 @@ FEAT-003
 
 A Task does not need a Sprint. A retry creates a new Run. A fix is a Task with `type: fix`; backlog is a view of backlog Tasks.
 
+See [`docs/SCHEMA.md`](docs/SCHEMA.md) for the generated executable contract and [`docs/ENTITY-MODEL.md`](docs/ENTITY-MODEL.md) for the conceptual guide.
+
 ## Install
 
 ```bash
