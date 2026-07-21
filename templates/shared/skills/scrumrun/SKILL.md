@@ -91,12 +91,14 @@ During execution:
 2. preserve existing owner work and unrelated dirty files;
 3. enforce guardrails before every material mutation;
 4. validate in proportion to risk;
-5. record exactly one history event per state transition;
+5. record exactly one structured `RUN-NNN-EVT-NNN` event per state transition, with RFC3339 time, actor, reason, and typed evidence;
 6. run configured reviewers;
 7. extract candidate learning only after validation;
 8. complete the Run, then Task, and only then the Sprint when its whole batch is done.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
+
+Run is the sole operational-history authority. Task synchronizes current status without copying Run events. Validation, learning, completion, failure, block, and resume require a reason or structured evidence; completion also requires evidenced validation and learning. Early v2 prose Runs are migrated explicitly, with deterministic chains recovered and uncertain history represented as an evidenced snapshot.
 
 ## Semantic memory
 
@@ -136,7 +138,7 @@ scrumrun migrate --to 2 --rollback
 
 Inside a v1 project, `npx scrumrun@latest update` runs a read-only preflight. `update --migrate` explicitly approves application of that verified plan and keeps rollback available.
 
-Dry-run must not write project data. Apply requires a hashed inventory, byte-exact local backup, staged validation, atomic switch, mapping report, and idempotent replay. Incomplete hybrid trees reuse existing evidenced v2 relations rather than duplicating them; legacy-only aggregates leave the active tree but remain byte-exact in the ignored backup. Ambiguous records are preserved and warned, never guessed. Vault content remains local and is never rendered. Rollback must refuse if it would erase post-migration changes.
+Dry-run must not write project data. Apply requires a hashed inventory, byte-exact local backup, staged validation, atomic switch, mapping report, and idempotent replay. Incomplete hybrid trees reuse existing evidenced v2 relations rather than duplicating them; early v2 prose Runs upgrade to ledger schema 1 only through the same explicit apply gate. Legacy-only aggregates leave the active tree but remain byte-exact in the ignored backup. Ambiguous records are preserved as warnings or evidenced snapshots, never guessed. Vault content remains local and is never rendered. Rollback must refuse if it would erase post-migration changes.
 
 ## Command grammar
 

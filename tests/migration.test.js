@@ -269,7 +269,12 @@ test("migration apply is idempotent and rollback restores the exact v1 fingerpri
   const applied = inventoryTree(scrum);
   const second = run(dir, "migrate", "--to", "2", "--apply");
   assert.match(second, /already migrated/);
-  assert.equal(inventoryTree(scrum).rootSha256, applied.rootSha256);
+  const replayed = inventoryTree(scrum);
+  assert.equal(replayed.rootSha256, applied.rootSha256, JSON.stringify({
+    added: replayed.files.filter((entry) => !applied.files.some((before) => before.path === entry.path)),
+    removed: applied.files.filter((entry) => !replayed.files.some((after) => after.path === entry.path)),
+    changed: replayed.files.filter((entry) => applied.files.some((before) => before.path === entry.path && before.sha256 !== entry.sha256))
+  }, null, 2));
   run(dir, "sc", "knowledge", "map", "--build");
 
   const rollback = run(dir, "migrate", "--to", "2", "--rollback");

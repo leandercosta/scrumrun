@@ -10,6 +10,7 @@ const bin = path.join(root, "bin", "scrumrun.js");
 const { ArtifactRepository, METHOD_VERSION } = require("../lib/v2/artifacts");
 const { inventoryTree } = require("../lib/v2/migration");
 const { buildContextPackage } = require("../lib/runtime/context");
+const { parseRunLedger, validateRunLedger } = require("../lib/runtime/run-ledger");
 const { planRequest } = require("../lib/runtime/request-engine");
 const { approveRequest, retryTask, stateIsStale, transitionRun } = require("../lib/runtime/orchestrator");
 
@@ -93,7 +94,7 @@ test("approval failure injection rolls back both canonical artifacts", () => {
   assert.equal(repository(dir).list("run").length, 0);
 });
 
-test("Run lifecycle synchronizes Task status and appends one transition event", () => {
+test("Run lifecycle synchronizes Task status and appends one canonical ledger event", () => {
   const dir = makeProject();
   const approved = approveRequest(dir, planRequest(dir, "Implement deterministic totals").approvalToken);
   transitionRun(dir, approved.run.id, "validating", { note: "Unit tests passed." });
@@ -104,10 +105,11 @@ test("Run lifecycle synchronizes Task status and appends one transition event", 
 
   assert.equal(completed.run.status, "completed");
   assert.equal(completed.task.status, "completed");
-  assert.equal((runArtifact.body.match(/^## Transition \d{4}/gm) || []).length, 3);
-  assert.equal((taskArtifact.body.match(/^## Transition \d{4}/gm) || []).length, 3);
-  assert.match(runArtifact.body, /executing-to-validating/);
-  assert.match(runArtifact.body, /learning-to-completed/);
+  assert.equal(parseRunLedger(runArtifact.body).events.length, 4);
+  assert.deepEqual(validateRunLedger(runArtifact.record, runArtifact.body).errors, []);
+  assert.equal((taskArtifact.body.match(/^## Transition /gm) || []).length, 0);
+  assert.match(runArtifact.body, /"from": "executing"/);
+  assert.match(runArtifact.body, /"to": "completed"/);
 });
 
 test("paired transition failure restores both Run and Task byte-for-byte", () => {
@@ -119,7 +121,7 @@ test("paired transition failure restores both Run and Task byte-for-byte", () =>
   const runBefore = fs.readFileSync(runFile, "utf8");
   const taskBefore = fs.readFileSync(taskFile, "utf8");
 
-  assert.throws(() => transitionRun(dir, approved.run.id, "validating", { failurePoint: "after-1" }), /Injected transition failure/);
+  assert.throws(() => transitionRun(dir, approved.run.id, "validating", { note: "Tests passed.", failurePoint: "after-1" }), /Injected transition failure/);
 
   assert.equal(fs.readFileSync(runFile, "utf8"), runBefore);
   assert.equal(fs.readFileSync(taskFile, "utf8"), taskBefore);
@@ -148,6 +150,6 @@ test("CLI intake output can be explicitly approved and then advanced", () => {
   const approval = execFileSync(process.execPath, [bin, "sc", "plan", "intake", "--approve", token], { cwd: dir, encoding: "utf8" });
   const runId = (approval.match(/→ (RUN-\d+)/) || [])[1];
   assert.ok(runId);
-  const validation = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--validate", runId], { cwd: dir, encoding: "utf8" });
+  const validation = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--validate", runId, "--test", "npm test passed"], { cwd: dir, encoding: "utf8" });
   assert.match(validation, new RegExp(`${runId}: validating`));
 });

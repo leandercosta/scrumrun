@@ -165,7 +165,9 @@ Rules:
 
 - one Run belongs to one Task;
 - one Task may have multiple immutable attempts;
-- every state transition writes exactly one append-only history event;
+- every state transition writes exactly one append-only `RUN-NNN-EVT-NNN` JSON event with RFC3339 time, actor, reason, and typed evidence;
+- the Run ledger is operational history; Task synchronizes current status without copying the Run event;
+- validation, learning, completion, failure, block, and resume require a reason or evidence;
 - validation must match the risk and acceptance criteria;
 - configured reviews run before completion;
 - learning proposes memory candidates after validation and never auto-confirms AI inference;
@@ -220,6 +222,7 @@ scrumrun migrate --to 2 --rollback
 ```
 
 - ordinary install/update never applies a migration; update performs a read-only v1 preflight, and only explicit `update --migrate` applies its verified plan;
+- early v2 Run prose is also preflighted read-only and upgraded explicitly to ledger schema 1 with byte-exact backup and safe rollback;
 - dry-run writes no project data;
 - apply inventories source hashes, creates a byte-exact local backup, transforms in staging, validates, and activates by atomic directory swap;
 - incomplete hybrid v1/v2 trees reuse existing evidenced canonical relations instead of creating duplicate Tasks/Runs;

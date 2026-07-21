@@ -1,4 +1,7 @@
 {
   "method": "2.0.0",
-  "layout": "v2"
+  "layout": "v2",
+  "schemas": {
+    "run_ledger": 1
+  }
 }

@@ -2,6 +2,19 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased
+
+### Added
+
+- Canonical Run ledger schema with stable event ids, RFC3339 timestamps, actors, reasons, and typed evidence.
+- Explicit early-v2 Run-ledger preflight/apply/rollback through `migrate --to 2` and `update --migrate`.
+- Conformance checks that reconstruct Run state and detect event-order, evidence, timestamp, and frontmatter drift.
+
+### Changed
+
+- Run is now the sole operational-history authority; Task status is synchronized without duplicated transition prose.
+- Run completion requires evidenced validation, learning, and completion transitions.
+
 ## 2.0.0 - 2026-07-21
 
 ### Breaking

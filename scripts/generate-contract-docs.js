@@ -8,6 +8,9 @@ const {
   ARTIFACT_TYPES,
   AUTHORITY,
   METHOD_VERSION,
+  RUN_EVENT_TYPES,
+  RUN_EVIDENCE_KINDS,
+  RUN_LEDGER_VERSION,
   SCALAR_FIELDS,
   STRUCTURAL_RELATIONS,
   TRUTH_OWNERSHIP
@@ -75,6 +78,14 @@ Task is the atomic unit. A Task may have zero or one Sprint. A Task may have man
 ${scalarRows.join("\n")}
 
 Native creation uses the declared initial statuses. Migration may restore a historical non-initial status only with provenance and validation.
+
+## Run event ledger
+
+Newly authored Runs use \`ledger: ${RUN_LEDGER_VERSION}\`. Their \`## Events\` section contains append-only JSON event blocks with stable ids in the form \`RUN-NNN-EVT-NNN\`.
+
+Every event requires \`schema\`, \`id\`, contiguous \`sequence\`, RFC3339 \`occurred_at\`, \`timestamp_precision\`, \`actor\`, \`from\`, \`to\`, \`reason\`, and structured \`evidence\`. Event types are ${RUN_EVENT_TYPES.map((value) => `\`${value}\``).join(", ")}. Evidence kinds are ${RUN_EVIDENCE_KINDS.map((value) => `\`${value}\``).join(", ")}.
+
+A native ledger begins with \`created → executing\`; an evidenced migration \`snapshot\` may establish one historical baseline without inventing missing transitions. Event order, transition legality, final status, updated date, and completion evidence are machine-validated. Run owns the event history; Task stores its intended scope and synchronized current status without copying Run events.
 
 ## Truth questions
 
