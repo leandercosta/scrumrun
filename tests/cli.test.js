@@ -10,7 +10,7 @@ test("package exposes the expected CLI", () => {
 
   assert.equal(pkg.name, "scrumrun");
   assert.equal(pkg.bin.scrumrun, "bin/scrumrun.js");
-  assert.equal(pkg.engines.node, ">=18");
+  assert.equal(pkg.engines.node, ">=22.13.0");
 });
 
 test("CLI help uses the public npm command", () => {

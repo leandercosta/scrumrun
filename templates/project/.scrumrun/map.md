@@ -1,20 +1,8 @@
-# Project Map - {{PROJECT_NAME}}
+# ScrumRun Map - {{PROJECT_NAME}}
 
 Generated: {{DATE}}
+Authority: none; rebuild from canonical artifacts and source code.
 
-## Purpose
+## Active Graph
 
-This file is a compact navigation aid for agents. It is not a source of truth. Verify paths before editing code.
-
-## Top-Level Structure
-
-- `AGENTS.md` — root agent instructions.
-- `.scrumrun/` — ScrumRun project memory, plans, histories, decisions, and reviews.
-
-## Important Commands
-
-- Pending: run `/scr-map --build` after project files exist.
-
-## Notes
-
-- Update this file when important folders, modules, commands, routes, or config files are added or moved.
+- Pending: no Features, Tasks, Sprints, Runs, Memory, or Reviews yet.
