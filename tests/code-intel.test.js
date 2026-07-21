@@ -10,6 +10,7 @@ const { graphIndex, queryIndex, rebuildIndex } = require("../lib/memory/index");
 const { createMemory, transitionMemory } = require("../lib/memory/service");
 const { ArtifactRepository, METHOD_VERSION } = require("../lib/v2/artifacts");
 const { transitionRun } = require("../lib/runtime/orchestrator");
+const { appendRunEvent, createRunBody } = require("../lib/runtime/run-ledger");
 
 function write(root, relative, content) {
   const file = path.join(root, relative);
@@ -148,7 +149,14 @@ test("post-validation extraction creates candidate insights and never blocks lea
   const repository = new ArtifactRepository(path.join(root, ".scrumrun"));
   const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
   repository.write({ ...common, id: "TASK-001", kind: "task", type: "feature", status: "validating" }, "# Validate pricing");
-  repository.write({ ...common, id: "RUN-001", kind: "run", status: "validating", task: "TASK-001", attempt: 1 }, `# Pricing run
+  const executing = { ...common, id: "RUN-001", kind: "run", status: "executing", task: "TASK-001", attempt: 1, ledger: 1 };
+  const validating = { ...executing, status: "validating" };
+  const initialBody = createRunBody(executing, { title: "Pricing run", occurredAt: "2026-07-21T08:00:00.000Z" }).body;
+  const validatingBody = appendRunEvent(executing, initialBody, validating, {
+    note: "Pricing validation passed.",
+    occurredAt: "2026-07-21T09:00:00.000Z"
+  }).body;
+  repository.write(validating, `${validatingBody}
 
 ## Learning Candidates
 
@@ -156,7 +164,7 @@ test("post-validation extraction creates candidate insights and never blocks lea
 - malformed candidate that must not block the Run
 `);
 
-  const result = transitionRun(root, "RUN-001", "learning");
+  const result = transitionRun(root, "RUN-001", "learning", { note: "Candidate extraction reviewed." });
   assert.equal(result.run.status, "learning");
   assert.deepEqual(result.learning.created, ["INS-001"]);
   assert.equal(result.learning.warnings.length, 1);

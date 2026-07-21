@@ -9,6 +9,12 @@ const root = path.resolve(__dirname, "..");
 const templates = path.join(root, "templates");
 const { version } = require(path.join(root, "package.json"));
 const { applyMigration, dryRunMigration, rollbackMigration } = require(path.join(root, "lib", "v2", "migration"));
+const {
+  applyRunLedgerMigration,
+  planRunLedgerMigration,
+  reportRunLedgerMigration,
+  rollbackRunLedgerMigration
+} = require(path.join(root, "lib", "v2", "run-ledger-migration"));
 const { ARTIFACT_TYPES, ArtifactRepository } = require(path.join(root, "lib", "v2", "artifacts"));
 const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.join(root, "lib", "commands", "manifest"));
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
@@ -267,7 +273,27 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
   const marker = path.join(scrumDir, "method.json");
   if (fs.existsSync(marker)) {
     try {
-      if (JSON.parse(fs.readFileSync(marker, "utf8")).method === "2.0.0") return { status: "already-v2" };
+      if (JSON.parse(fs.readFileSync(marker, "utf8")).method === "2.0.0") {
+        const preview = planRunLedgerMigration(process.cwd());
+        if (preview.status === "current") return { status: "already-v2" };
+        console.log("\n## Project schema migration preflight\n");
+        console.log(reportRunLedgerMigration(preview).trimEnd());
+        if (preview.status === "blocked") {
+          for (const error of preview.errors) console.error(`BLOCKED: ${error}`);
+          process.exitCode = 1;
+          return { status: "blocked" };
+        }
+        if (!apply) {
+          console.log("\nThe project remains unchanged. Apply the verified plan with: npx scrumrun@latest update --migrate");
+          return { status: "ready" };
+        }
+        const result = applyRunLedgerMigration(process.cwd());
+        refreshState(path.join(process.cwd(), ".scrumrun"));
+        console.log("\nApplied the verified ScrumRun Run ledger schema migration.");
+        console.log(`Source fingerprint: ${result.plan.fingerprint}`);
+        console.log("Rollback remains available with: npx scrumrun@latest migrate --to 2 --rollback");
+        return { status: result.status, result };
+      }
     } catch {
       console.error("Project migration preflight failed: .scrumrun/method.json is malformed.");
       process.exitCode = 1;
@@ -1167,6 +1193,48 @@ function memoryOptions(args) {
   };
 }
 
+function runTransitionOptions(args) {
+  const evidenceFlags = new Map([
+    ["--command", "command"],
+    ["--test", "test"],
+    ["--file", "file"],
+    ["--review", "review"],
+    ["--decision", "decision"],
+    ["--insight", "insight"],
+    ["--risk", "risk"]
+  ]);
+  const referenceKinds = new Set(["file", "review", "decision", "insight"]);
+  const evidence = [];
+  const noteParts = [];
+  let note = null;
+  let actor = "agent";
+  let occurredAt = null;
+  for (let index = 2; index < args.length; index++) {
+    const token = args[index];
+    const value = args[index + 1] && !args[index + 1].startsWith("--") ? args[index + 1] : null;
+    if (token === "--note" || token === "--actor" || token === "--at" || token === "--evidence" || evidenceFlags.has(token)) {
+      if (!value) throw new Error(`${token} requires a value.`);
+      index++;
+      if (token === "--note") note = value;
+      else if (token === "--actor") actor = value;
+      else if (token === "--at") occurredAt = value;
+      else if (token === "--evidence") {
+        const separator = value.indexOf(":");
+        const kind = separator > 0 ? value.slice(0, separator) : "note";
+        const content = separator > 0 ? value.slice(separator + 1) : value;
+        evidence.push(referenceKinds.has(kind) ? { kind, ref: content } : { kind, summary: content });
+      } else {
+        const kind = evidenceFlags.get(token);
+        evidence.push(referenceKinds.has(kind) ? { kind, ref: value } : { kind, summary: value });
+      }
+      continue;
+    }
+    if (token.startsWith("--")) throw new Error(`Unknown Run evidence option: ${token}`);
+    noteParts.push(token);
+  }
+  return { note: note || noteParts.join(" ").trim() || null, evidence, actor, occurredAt };
+}
+
 function printMemoryArtifact(artifact) {
   if (!artifact) return false;
   console.log(readIfExists(artifact.file));
@@ -1311,7 +1379,7 @@ function executeRootRoute(route) {
       "--block": "blocked"
     };
     if (transitions[routeArgs[0]]) {
-      const result = transitionRun(process.cwd(), routeArgs[1], transitions[routeArgs[0]], { note: routeArgs.slice(2).join(" ") || null });
+      const result = transitionRun(process.cwd(), routeArgs[1], transitions[routeArgs[0]], runTransitionOptions(routeArgs));
       console.log(`${result.run.id}: ${result.run.status}; ${result.task.id}: ${result.task.status}.`);
       if (result.learning) {
         if (result.learning.created.length) console.log(`Learning candidates: ${result.learning.created.join(", ")}.`);
@@ -2097,6 +2165,33 @@ function runMigration(parts) {
     return;
   }
   try {
+    const ledgerManifest = path.join(process.cwd(), ".scrumrun", ".migration", "run-ledger-v1", "manifest.json");
+    if (v2Project() && actions[0] !== "--rollback") {
+      if (actions[0] === "--dry-run") {
+        const plan = planRunLedgerMigration(process.cwd());
+        console.log(reportRunLedgerMigration(plan).trimEnd());
+        if (plan.status === "blocked") process.exitCode = 1;
+      } else {
+        const result = applyRunLedgerMigration(process.cwd());
+        if (result.status === "current") {
+          console.log("ScrumRun project is already migrated to method 2.0.0 and the current Run ledger; no files changed.");
+        } else {
+          refreshState(path.join(process.cwd(), ".scrumrun"));
+          console.log(result.output.trimEnd());
+          console.log("Rollback remains available with: scrumrun migrate --to 2 --rollback");
+        }
+      }
+      return;
+    }
+    if (actions[0] === "--rollback" && fs.existsSync(ledgerManifest)) {
+      const manifest = JSON.parse(fs.readFileSync(ledgerManifest, "utf8"));
+      if (["applied", "prepared"].includes(manifest.status)) {
+        const result = rollbackRunLedgerMigration(process.cwd());
+        refreshState(path.join(process.cwd(), ".scrumrun"));
+        console.log(`Rolled back ScrumRun Run ledger migration: ${result.status}.`);
+        return;
+      }
+    }
     if (actions[0] === "--dry-run") {
       const result = dryRunMigration(process.cwd());
       console.log(result.output.trimEnd());

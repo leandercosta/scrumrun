@@ -1,6 +1,6 @@
 # ScrumRun Method Specification
 
-Version: `2.0.0` · Status: release candidate
+Version: `2.0.0` · Status: stable
 
 `SPEC.md` defines normative meanings and invariants. `lib/v2/schema.js` defines the machine-enforced ids, paths, statuses, transitions, structural relations, and truth ownership metadata; `lib/commands/manifest.js` defines command grammar. `CORE.md` is the operational runtime guide. Generated `docs/SCHEMA.md` must match the executable schema byte-for-byte. A conflict is a conformance failure: semantics defer to SPEC, mechanically enforced values defer to the schema, grammar defers to the command manifest, and the conflicting representation must be corrected.
 
@@ -108,6 +108,14 @@ FEAT-003
           └── generated → INS-041
 ```
 
+### 3.3 Run event ledger
+
+A newly authored Run declares `ledger: 1` and owns exactly one append-only operational event stream under `## Events`. Event ids are stable and scoped to the Run (`RUN-044-EVT-001`, `RUN-044-EVT-002`, ...). Each JSON event records a contiguous sequence, RFC3339 timestamp, timestamp precision, actor, source and destination states, reason, and typed evidence.
+
+Native Runs begin with `created → executing`. A migration may instead create one evidenced `snapshot` as the historical baseline when the source proves a recorded status but not its full transition path. A snapshot exposes that uncertainty and never fabricates intermediate states.
+
+The ledger is the execution authority. Task retains approved scope and synchronized current status, but does not copy Run events. Conformance reconstructs the Run state from its ledger and rejects missing or duplicate ids, invalid ordering, time reversal, illegal transitions, frontmatter drift, missing evidence, and unevidenced completion.
+
 ## 4. State machines
 
 Only the following transitions are valid.
@@ -192,7 +200,7 @@ Everything through `AWAITING_APPROVAL` is read-only. It may exist in process mem
 
 Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent.
 
-Run transitions synchronously update the linked Task and append transition evidence. A paired write failure restores both files. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
+Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. Validation, learning, completion, failure, block, and resume transitions require a reason or typed evidence. Task status changes without receiving a duplicate narrative history. A paired write failure restores both files. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
 
 ## 6. Policy and precedence
 
@@ -250,6 +258,8 @@ scrumrun migrate --to 2 --rollback
 
 `npx scrumrun@latest update` performs the same read-only preflight when run inside a v1 project and leaves project data untouched. `update --migrate` is an explicit request to apply the verified plan; it is not implicit migration.
 
+Inside an early v2 project, the same commands preflight and explicitly upgrade legacy Run prose to ledger schema 1. Deterministic transition chains are recovered; incomplete history becomes an evidenced snapshot. Apply keeps byte-exact ignored backups, verifies hashes, is idempotent, and supports rollback that refuses to erase later Run changes.
+
 The migrator must:
 
 - hash every source file and block;
@@ -271,7 +281,7 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 - **I-02** Approval creates a linked Task/Run pair atomically or creates nothing.
 - **I-03** Task is atomic work; Sprint only groups Tasks with real batch/timebox evidence.
 - **I-04** Every retry creates a new Run and preserves earlier attempts.
-- **I-05** Only declared state transitions are accepted and paired transitions are recoverable.
+- **I-05** Only declared, ordered, evidenced state transitions are accepted; Run event ids are unique and paired transitions are recoverable.
 - **I-06** `guardrails.md` is canonical project policy and configuration cannot weaken it.
 - **I-07** Markdown is canonical; SQLite and generated views are disposable projections.
 - **I-08** AI-created facts/insights remain candidates until explicit human confirmation.
@@ -308,8 +318,9 @@ An implementation may claim ScrumRun method 2.0.0 only when it:
 2. enforces every exposed state machine and schema;
 3. proves read-only intake and dry-run migration through full-tree fingerprints;
 4. proves migration failure recovery, rollback safety, and vault exclusion;
-5. proves cache deletion/rebuild equivalence and inactive-memory filtering;
-6. bounds context/retrieval and records benchmark budgets;
-7. declares method `2.0.0` and requires Node.js `>=22.13.0` for the native SQLite index.
+5. reconstructs every native Run status from a valid, evidenced ledger and detects tampering;
+6. proves cache deletion/rebuild equivalence and inactive-memory filtering;
+7. bounds context/retrieval and records benchmark budgets;
+8. declares method `2.0.0` and requires Node.js `>=22.13.0` for the native SQLite index.
 
 Method changes follow semantic versioning. Breaking entity, path, invariant, or state changes require a major version and a migration guide.

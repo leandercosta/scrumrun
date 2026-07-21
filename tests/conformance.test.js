@@ -9,6 +9,8 @@ const { nouns } = require("../lib/commands/manifest");
 const { ArtifactRepository } = require("../lib/v2/artifacts");
 const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib/v2/schema");
 const { INVARIANTS, auditProject } = require("../lib/v2/conformance");
+const { planRequest } = require("../lib/runtime/request-engine");
+const { approveRequest, transitionRun } = require("../lib/runtime/orchestrator");
 
 const root = path.resolve(__dirname, "..");
 const bin = path.join(root, "bin", "scrumrun.js");
@@ -99,4 +101,20 @@ test("artifact conformance enforces Run attempts, Task/Sprint agreement, and Spr
   assert.ok(audit.findings.some((finding) => finding.code === "RUN_SPRINT_MISMATCH"));
   assert.ok(audit.findings.some((finding) => finding.code === "RUN_ATTEMPT_SEQUENCE"));
   assert.ok(audit.findings.some((finding) => finding.code === "SPRINT_MEMBERSHIP_MISMATCH"));
+});
+
+test("artifact conformance validates Run event continuity, evidence, and final status", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-conformance-ledger-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const approved = approveRequest(project, planRequest(project, "Implement deterministic totals").approvalToken);
+  transitionRun(project, approved.run.id, "validating", { note: "Unit tests passed." });
+  assert.equal(auditProject(project).passed, true);
+
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const run = repository.read("run", approved.run.id);
+  const content = fs.readFileSync(run.file, "utf8").replace('"from": "executing"', '"from": "learning"');
+  fs.writeFileSync(run.file, content);
+  const audit = auditProject(project);
+  assert.equal(audit.passed, false);
+  assert.ok(audit.findings.some((finding) => finding.code === "RUN_LEDGER_INVALID" && /\.from must be executing/.test(finding.message)));
 });

@@ -71,6 +71,8 @@ EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 
 Nothing canonical is persisted before approval. Failed retries remain available as separate Runs.
 
+Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
+
 ## Semantic project memory
 
 Canonical memory is human-readable Markdown:
@@ -114,7 +116,7 @@ npx scrumrun@latest migrate --to 2 --apply
 npx scrumrun@latest migrate --to 2 --rollback
 ```
 
-Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It also recognizes incomplete hybrid v1/v2 trees, reuses already-linked canonical work, and normalizes only deterministic schema aliases. Legacy-only files leave the active tree but remain byte-exact in the ignored backup; vault contents remain local. Ambiguous history remains an explicit warning, and the migrator never invents a Sprint or Run.
+Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It also recognizes incomplete hybrid v1/v2 trees, reuses already-linked canonical work, and normalizes only deterministic schema aliases. Early v2 Run prose is preflighted and upgraded to the structured ledger by the same explicit `update --migrate` gate; ambiguous paths become evidenced snapshots instead of invented transitions. Legacy-only files leave the active tree but remain byte-exact in the ignored backup; vault contents remain local. Ambiguous history remains an explicit warning, and the migrator never invents a Sprint or Run.
 
 After migration or an integration update, verify both installed assets and project state:
 
