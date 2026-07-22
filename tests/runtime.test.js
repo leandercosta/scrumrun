@@ -10,6 +10,7 @@ const bin = path.join(root, "bin", "scrumrun.js");
 const { ArtifactRepository, METHOD_VERSION } = require("../lib/v2/artifacts");
 const { inventoryTree } = require("../lib/v2/migration");
 const { buildContextPackage } = require("../lib/runtime/context");
+const { canonicalFingerprint } = require("../lib/runtime/canonical-snapshot");
 const { parseRunLedger, validateRunLedger } = require("../lib/runtime/run-ledger");
 const { planRequest } = require("../lib/runtime/request-engine");
 const { approveRequest, retryTask, stateIsStale, transitionRun } = require("../lib/runtime/orchestrator");
@@ -72,8 +73,48 @@ test("explicit approval creates exactly one linked Task and Run and is idempoten
   assert.equal(repo.list("run").length, 1);
   assert.match(fs.readFileSync(path.join(dir, ".scrumrun", "state.md"), "utf8"), new RegExp(`${first.task.id}.*running`));
   assert.equal(stateIsStale(path.join(dir, ".scrumrun")), false);
+  const state = fs.readFileSync(path.join(dir, ".scrumrun", "state.md"), "utf8");
+  assert.match(state, /^Projection schema: 1$/m);
+  assert.match(state, /^Generated: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/m);
+  assert.match(state, /^Watch fingerprint: [a-f0-9]{64}$/m);
+  assert.equal((state.match(/^Source fingerprint:\s*([a-f0-9]{64})$/m) || [])[1], buildContextPackage(dir, "Check state consistency").fingerprint);
   fs.appendFileSync(path.join(dir, ".scrumrun", "project.md"), "\nNew canonical context.\n");
   assert.equal(stateIsStale(path.join(dir, ".scrumrun")), true);
+});
+
+test("state staleness uses metadata fast path with hash fallback", () => {
+  const dir = makeProject();
+  const approved = approveRequest(dir, planRequest(dir, "Create state evidence").approvalToken);
+  const scrumDir = path.join(dir, ".scrumrun");
+  const taskFile = repository(dir).pathFor(approved.task);
+  const originalRead = fs.readFileSync;
+  let canonicalReads = 0;
+  fs.readFileSync = function instrumented(file, ...args) {
+    if (path.resolve(String(file)) === path.resolve(taskFile)) canonicalReads++;
+    return originalRead.call(fs, file, ...args);
+  };
+  try {
+    assert.equal(stateIsStale(scrumDir), false);
+  } finally {
+    fs.readFileSync = originalRead;
+  }
+  assert.equal(canonicalReads, 0);
+
+  const before = fs.statSync(taskFile);
+  fs.utimesSync(taskFile, before.atime, new Date(before.mtimeMs + 1000));
+  assert.equal(stateIsStale(scrumDir), false);
+  fs.appendFileSync(taskFile, "\nChanged after projection.\n");
+  assert.equal(stateIsStale(scrumDir), true);
+});
+
+test("canonical fingerprint distinguishes an empty control file from a missing one", () => {
+  const dir = makeProject();
+  const scrumDir = path.join(dir, ".scrumrun");
+  const config = path.join(scrumDir, "config.md");
+  fs.writeFileSync(config, "");
+  const empty = canonicalFingerprint(scrumDir);
+  fs.rmSync(config);
+  assert.notEqual(canonicalFingerprint(scrumDir), empty);
 });
 
 test("approval rejects tampered or stale plans without creating artifacts", () => {

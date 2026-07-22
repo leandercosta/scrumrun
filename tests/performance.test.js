@@ -6,11 +6,11 @@ const path = require("node:path");
 const { performance } = require("node:perf_hooks");
 const test = require("node:test");
 
-const { queryIndex, rebuildIndex } = require("../lib/memory/index");
+const { indexStatus, queryIndex, rebuildIndex } = require("../lib/memory/index");
 const { buildContextPackage } = require("../lib/runtime/context");
 const { approveRequest, transitionRun } = require("../lib/runtime/orchestrator");
 const { planRequest } = require("../lib/runtime/request-engine");
-const { KERNEL_LIFECYCLE_MAX_MS, LEAN_CONTROL_CONTEXT_MAX_CHARS, LEAN_CONTROL_CONTEXT_MAX_RATIO, V1_CONTROL_CONTEXT_BASELINE_CHARS } = require("../lib/runtime/budgets");
+const { INDEX_STATUS_100_MAX_MS, KERNEL_LIFECYCLE_MAX_MS, LEAN_CONTROL_CONTEXT_MAX_CHARS, LEAN_CONTROL_CONTEXT_MAX_RATIO, V1_CONTROL_CONTEXT_BASELINE_CHARS } = require("../lib/runtime/budgets");
 const { dryRunMigration } = require("../lib/v2/migration");
 
 const bin = path.resolve(__dirname, "..", "bin", "scrumrun.js");
@@ -46,6 +46,11 @@ test("startup, indexing, and retrieval stay inside release budgets", () => {
   }
   const startup = elapsed(() => execFileSync(process.execPath, [bin, "--version"], { cwd: root, stdio: "pipe" }));
   const indexing = elapsed(() => rebuildIndex(root));
+  const freshness = elapsed(() => {
+    let status;
+    for (let index = 0; index < 100; index++) status = indexStatus(root);
+    return status;
+  });
   const retrieval = elapsed(() => {
     let result;
     for (let index = 0; index < 20; index++) result = queryIndex(root, `calculateValue${index}`, { rebuild: false });
@@ -53,6 +58,8 @@ test("startup, indexing, and retrieval stay inside release budgets", () => {
   });
   assert.ok(startup.milliseconds < 2000, `CLI startup took ${startup.milliseconds.toFixed(1)}ms`);
   assert.ok(indexing.milliseconds < 5000, `index build took ${indexing.milliseconds.toFixed(1)}ms`);
+  assert.equal(freshness.value.check, "metadata");
+  assert.ok(freshness.milliseconds < INDEX_STATUS_100_MAX_MS, `100 index freshness checks took ${freshness.milliseconds.toFixed(1)}ms`);
   assert.ok(retrieval.milliseconds < 5000, `20 retrievals took ${retrieval.milliseconds.toFixed(1)}ms`);
   assert.ok(retrieval.value.results.length > 0);
 });

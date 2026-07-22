@@ -6,7 +6,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { ArtifactRepository, METHOD_VERSION } = require("../lib/v2/artifacts");
-const { graphIndex, indexPath, queryIndex, rebuildIndex, writeMap } = require("../lib/memory/index");
+const { INDEX_SCHEMA_VERSION, graphIndex, indexPath, indexStatus, queryIndex, rebuildIndex, writeMap } = require("../lib/memory/index");
 const { createMemory, listMemory, transitionMemory } = require("../lib/memory/service");
 
 const bin = path.resolve(__dirname, "..", "bin", "scrumrun.js");
@@ -205,4 +205,53 @@ test("generated map is bounded, fingerprinted, and explicitly non-authoritative"
   assert.match(content, /^Source fingerprint: [a-f0-9]{64}$/m);
   assert.match(content, /Authority: none/);
   assert.match(content, /Mapped insight/);
+});
+
+test("semantic index staleness uses metadata fast path and content hash fallback", () => {
+  const root = project();
+  rebuildIndex(root);
+  const source = path.join(root, "pricing.js");
+  const originalRead = fs.readFileSync;
+  let sourceReads = 0;
+  fs.readFileSync = function instrumented(file, ...args) {
+    if (path.resolve(String(file)) === path.resolve(source)) sourceReads++;
+    return originalRead.call(fs, file, ...args);
+  };
+  let fresh;
+  try {
+    fresh = indexStatus(root);
+  } finally {
+    fs.readFileSync = originalRead;
+  }
+  assert.equal(fresh.stale, false);
+  assert.equal(fresh.check, "metadata");
+  assert.equal(sourceReads, 0);
+
+  const before = fs.statSync(source);
+  fs.utimesSync(source, before.atime, new Date(before.mtimeMs + 1000));
+  const metadataOnly = indexStatus(root);
+  assert.equal(metadataOnly.stale, false);
+  assert.equal(metadataOnly.check, "hash");
+  assert.match(metadataOnly.reason, /semantic content is unchanged/);
+
+  fs.writeFileSync(source, "export function calculateFinalPrice() { return 42; }\n");
+  const changed = indexStatus(root);
+  assert.equal(changed.stale, true);
+  assert.equal(changed.check, "hash");
+  assert.match(changed.reason, /content changed/);
+  assert.equal(queryIndex(root, "calculateFinalPrice").rebuilt, true);
+  assert.equal(indexStatus(root).check, "metadata");
+});
+
+test("obsolete semantic index schema forces one disposable rebuild", () => {
+  const root = project();
+  rebuildIndex(root);
+  const { DatabaseSync } = require("node:sqlite");
+  const database = new DatabaseSync(indexPath(root));
+  database.prepare("UPDATE metadata SET value = ? WHERE key = 'schema_version'").run(String(INDEX_SCHEMA_VERSION - 1));
+  database.close();
+  const status = indexStatus(root);
+  assert.equal(status.stale, true);
+  assert.equal(status.check, "schema");
+  assert.equal(queryIndex(root, "calculateFinalPrice").rebuilt, true);
 });

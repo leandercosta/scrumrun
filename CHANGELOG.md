@@ -11,12 +11,14 @@ All notable changes follow Semantic Versioning.
 - Conformance checks that reconstruct Run state and detect event-order, evidence, timestamp, and frontmatter drift.
 - Durable multi-file mutation journal with byte-exact rollback, interruption recovery, hash-only receipts, and explicit `doctor --recover`.
 - Executable Policy Engine with stable Guardrail ids, explicit passed/blocked/deferred results, and deterministic conformance checks.
+- Shared canonical projection fingerprint plus metadata-watch/content-hash freshness checks for `state.md`, `map.md`, and semantic SQLite.
 
 ### Changed
 
 - Run is now the sole operational-history authority; Task status is synchronized without duplicated transition prose.
 - Run completion requires evidenced validation, learning, and completion transitions.
 - Intake classification and risk detection now recognize multilingual runtime, schema, migration, transaction, release, and cross-cutting signals.
+- Semantic cache schema 3 removes commit-only invalidation and performs a one-time disposable rebuild from older cache schemas.
 
 ## 2.0.0 - 2026-07-21
 

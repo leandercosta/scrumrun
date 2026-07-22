@@ -84,6 +84,8 @@ AGENTS.md
 
 Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
+`state.md` and the semantic index use two-tier freshness checks. Matching path/stat watch fingerprints avoid rereading unchanged sources; any metadata drift falls back to complete content hashing. A cache schema mismatch rebuilds the disposable index once. Watch metadata is only an optimization and never authority.
+
 `vault.local.md`, migration backups, and caches are local-only. Their values never appear in logs, history, reviews, memory, reports, commits, or normal responses.
 
 ## Authority and read policy

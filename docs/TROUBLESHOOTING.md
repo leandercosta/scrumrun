@@ -25,6 +25,8 @@ Rollback detected post-migration work that it would erase. Copy/export wanted ch
 npx scrumrun@latest sc knowledge map --build
 ```
 
+Fresh projections include a source fingerprint and a watch fingerprint. A matching watch avoids a full read. If file metadata changed, ScrumRun hashes canonical/source content before deciding whether the projection is actually stale. `check: "schema"` means the disposable SQLite format changed and one rebuild is required; `check: "hash"` means the safe fallback was used.
+
 Stale generated views are warnings, not canonical corruption.
 
 ## Doctor reports `TRANSACTION_PENDING`

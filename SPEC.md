@@ -246,7 +246,9 @@ The agreed v1 control-context baseline is 48,000 characters. A fresh lean v2 int
 
 ## 8. Generated views and cache
 
-`state.md`, `map.md`, context packages, and `.cache/semantic-index.sqlite` are non-authoritative projections. They carry source fingerprints or are treated as stale. Deleting `.cache/` must not remove authored knowledge, and rebuilding it from unchanged sources must yield equivalent query results.
+`state.md`, `map.md`, context packages, and `.cache/semantic-index.sqlite` are non-authoritative projections. They carry source fingerprints or are treated as stale. `state.md` uses the exact canonical fingerprint bound into intake, plus a projection schema, RFC3339 generation time, and a disposable watch fingerprint. SQLite stores its source and watch fingerprints with an explicit cache schema.
+
+Freshness checks use a two-tier strategy: unchanged path/stat identity proves that no source read or reparse is needed; changed metadata triggers a complete canonical/source content fingerprint before staleness is asserted. Cache metadata may optimize verification but never supplies project truth. A cache-schema mismatch forces one disposable rebuild. Deleting `.cache/` must not remove authored knowledge, and rebuilding it from unchanged sources must yield equivalent query results.
 
 The index must never scan or store `vault.local.md`. Source scanning is bounded, skips dependencies/build output and symlinks, and uses replaceable language adapters.
 

@@ -37,6 +37,8 @@ Normal hot path:
 
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
+Generated state and semantic indexes use a metadata-watch fast path with a full content-hash fallback. Treat cache-schema mismatch as a request to rebuild the disposable projection, never as permission to rewrite canonical Markdown.
+
 For a v1 project without canonical v2 artifacts, use the dual-layout reader conceptually and recommend `scrumrun migrate --to 2 --dry-run`. `update` may run that read-only preflight automatically, but only explicit `update --migrate` may apply it.
 
 ## Domain model
