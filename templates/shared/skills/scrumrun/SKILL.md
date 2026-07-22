@@ -74,6 +74,8 @@ At intake:
 5. recommend one route and at most two useful alternatives in guided mode;
 6. ask one explicit approval question before execution; config may change presentation, never remove the gate.
 
+Evaluate every active Guardrail into a structured `passed`, `blocked`, or `deferred` result. Report blocked results with the exact `GR-NNN` id and reason code. Keep deferred results visible and enforce them at the mutation, migration, review, or owner gate they identify; never describe a deferred check as passed.
+
 Do not create canonical artifacts, change status, edit application code, or treat ambiguous acknowledgement as approval. Temporary context may exist only in ignored disposable cache.
 
 ## Approved execution
@@ -122,6 +124,8 @@ Useful relations include `defined_in`, `depends_on`, `used_by`, `constrained_by`
 `.scrumrun/guardrails.md` is the sole canonical project-policy artifact in v2. `golden-rules.md` is a v1 compatibility source only.
 
 - Guardrails are mandatory, stable-id, append-preserving policies.
+- Fresh v2 rules declare `Status`, `Enforcement`, `Scope`, and `Rule`; migrated prose may use deterministic enforcement inference until normalized.
+- Duplicate ids, unknown enforcement, inactive-only policy, and configuration that weakens approval are conformance failures.
 - Retire/supersede a rule; do not silently delete policy history.
 - `config.md` stores preferences, never higher-priority safety policy.
 - Never commit or print vault values.

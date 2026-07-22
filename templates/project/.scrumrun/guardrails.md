@@ -5,19 +5,27 @@ Canonical project policy. Universal method invariants live in `core.md`; this fi
 ## GR-001 - Protect secrets
 
 Status: active
+Enforcement: builtin:secret-boundary
+Scope: all
 Rule: Never commit or print real secrets. Keep local development values in `vault.local.md` and runtime values in environment/config.
 
 ## GR-002 - Preserve owner work
 
 Status: active
+Enforcement: builtin:owner-work
+Scope: all
 Rule: Never overwrite unrelated or pre-existing owner changes. Canonical mutations must be scoped, lossless, validated, and recoverable.
 
 ## GR-003 - Respect read-only paths
 
 Status: active
+Enforcement: builtin:read-only-path
+Scope: all
 Rule: Never modify a path marked read-only by the owner or project configuration.
 
 ## GR-004 - Approval gates execution
 
 Status: active
+Enforcement: builtin:approval-gate
+Scope: intake, execution
 Rule: Intake remains read-only. Create/update a Task and create a Run only after explicit valid approval.

@@ -56,6 +56,8 @@ test("root prompt encodes the v2 entity, approval, guardrail, and memory contrac
   assert.match(content, /Task and creates a Run/);
   assert.match(content, /Sprint only groups Tasks/);
   assert.match(content, /guardrails\.md.*canonical/);
+  assert.match(content, /passed.*blocked.*deferred/);
+  assert.match(content, /GR-NNN/);
   assert.match(content, /Insights remain `candidate`/);
   assert.doesNotMatch(content, /Six nouns|method 1\.0/);
 });

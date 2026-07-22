@@ -10,11 +10,13 @@ All notable changes follow Semantic Versioning.
 - Explicit early-v2 Run-ledger preflight/apply/rollback through `migrate --to 2` and `update --migrate`.
 - Conformance checks that reconstruct Run state and detect event-order, evidence, timestamp, and frontmatter drift.
 - Durable multi-file mutation journal with byte-exact rollback, interruption recovery, hash-only receipts, and explicit `doctor --recover`.
+- Executable Policy Engine with stable Guardrail ids, explicit passed/blocked/deferred results, and deterministic conformance checks.
 
 ### Changed
 
 - Run is now the sole operational-history authority; Task status is synchronized without duplicated transition prose.
 - Run completion requires evidenced validation, learning, and completion transitions.
+- Intake classification and risk detection now recognize multilingual runtime, schema, migration, transaction, release, and cross-cutting signals.
 
 ## 2.0.0 - 2026-07-21
 
