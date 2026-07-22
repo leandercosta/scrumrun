@@ -21,7 +21,7 @@ const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = requi
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
 const { approveRequest, refreshState, retryTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
-const { indexPath, indexStatus, queryIndex, rebuildIndex, writeMap } = require(path.join(root, "lib", "memory", "index"));
+const { indexPath, indexStatus, mapStatus, queryIndex, rebuildIndex, writeMap } = require(path.join(root, "lib", "memory", "index"));
 const { auditProject } = require(path.join(root, "lib", "v2", "conformance"));
 const { recoverPendingTransactions } = require(path.join(root, "lib", "v2", "transaction"));
 const { containsSecret } = require(path.join(root, "lib", "security", "secrets"));
@@ -1302,9 +1302,8 @@ function runSemanticContext(subject, args) {
       return;
     }
     const mapFile = path.join(process.cwd(), ".scrumrun", "map.md");
-    if (!fs.existsSync(mapFile)) throw new Error("Generated map.md is missing; run /sc knowledge map --build.");
-    const status = indexStatus(process.cwd());
-    if (status.stale) console.warn("WARNING: map.md is stale; rebuild it before relying on the view.");
+    const status = mapStatus(process.cwd());
+    if (status.stale) throw new Error(`Generated map.md is stale (${status.reason || status.error || "unknown reason"}); run /sc knowledge map --build.`);
     console.log(fs.readFileSync(mapFile, "utf8"));
     return;
   }

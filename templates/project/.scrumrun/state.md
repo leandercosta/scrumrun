@@ -1,21 +1,14 @@
-# ScrumRun State - {{PROJECT_NAME}}
+# ScrumRun State
 
-Generated: {{DATE}}
-Authority: none; this is a disposable view.
+Projection schema: 1
+Generated: {{DATE}}T00:00:00.000Z
+Status: stale until `init` rebuilds this projection.
+Authority: none; rebuild from canonical artifacts.
 
 ## Active Work
 
-- Feature: none.
-- Task: none.
-- Sprint: none.
-- Run: none.
+- No active canonical work.
 
 ## Relevant Memory
 
-- Decisions: none.
-- Knowledge: none.
-- Insights: none.
-
-## Next Action
-
-- Use `/sc plan intake <request>`.
+- No active canonical memory.
