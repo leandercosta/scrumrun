@@ -9,6 +9,7 @@ const { auditProject } = require("../lib/v2/conformance");
 const {
   configWeakeningAttempts,
   evaluatePolicy,
+  normalizeGuardrailDocument,
   parseGuardrails,
   validateGuardrailDocument
 } = require("../lib/runtime/policy-engine");
@@ -82,6 +83,16 @@ test("migrated prose uses conservative enforcement inference", () => {
   ].join("\n"));
   assert.equal(records[0].enforcement, "manual");
   assert.equal(records[1].enforcement, "builtin:migration-integrity");
+});
+
+test("legacy Guardrails normalize to explicit lossless policy fields", () => {
+  const legacy = "# Guardrails\n\n## GR-401 - Preserve owner work\n\nNever overwrite owner work.\n";
+  const normalized = normalizeGuardrailDocument(legacy);
+  assert.match(normalized, /^Status: active$/m);
+  assert.match(normalized, /^Enforcement: builtin:owner-work$/m);
+  assert.match(normalized, /^Scope: all$/m);
+  assert.match(normalized, /^Rule: Never overwrite owner work\.$/m);
+  assert.match(normalized, /^Never overwrite owner work\.$/m);
 });
 
 test("configuration cannot weaken approval policy or declare unsafe read-only paths", () => {

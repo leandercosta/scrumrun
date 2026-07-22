@@ -47,6 +47,8 @@ Task is the atomic unit. A Task may have zero or one Sprint. A Task may have man
 |---|---|---|---|---|
 | `attempt` | run | required | positive integer | monotonic execution-attempt number within one Task |
 | `ledger` | run | optional | integer 1 | canonical Run event-ledger schema; required for newly authored Runs |
+| `guardrails` | run | optional | integer 1 | append-only Guardrail obligation schema |
+| `workspace` | run | optional | integer 1 | workspace mutation-gateway schema |
 
 Native creation uses the declared initial statuses. Migration may restore a historical non-initial status only with provenance and validation.
 
@@ -54,7 +56,7 @@ Native creation uses the declared initial statuses. Migration may restore a hist
 
 Newly authored Runs use `ledger: 1`. Their `## Events` section contains append-only JSON event blocks with stable ids in the form `RUN-NNN-EVT-NNN`.
 
-Every event requires `schema`, `id`, contiguous `sequence`, RFC3339 `occurred_at`, `timestamp_precision`, `actor`, `from`, `to`, `reason`, and structured `evidence`. Event types are `transition`, `snapshot`. Evidence kinds are `approval`, `command`, `test`, `file`, `review`, `decision`, `insight`, `risk`, `note`, `migration`, `legacy`.
+Every event requires `schema`, `id`, contiguous `sequence`, RFC3339 `occurred_at`, `timestamp_precision`, `actor`, `from`, `to`, `reason`, and structured `evidence`. Event types are `transition`, `snapshot`, `guardrail`, `mutation`. Evidence kinds are `approval`, `command`, `test`, `file`, `review`, `decision`, `insight`, `risk`, `note`, `migration`, `legacy`, `guardrail`, `mutation`.
 
 A native ledger begins with `created → executing`; an evidenced migration `snapshot` may establish one historical baseline without inventing missing transitions. Event order, transition legality, final status, updated date, and completion evidence are machine-validated. Run owns the event history; Task stores its intended scope and synchronized current status without copying Run events.
 

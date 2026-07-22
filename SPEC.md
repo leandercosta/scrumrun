@@ -196,9 +196,11 @@ RECEIVED
   → COMPLETED | FAILED | BLOCKED
 ```
 
-Everything through `AWAITING_APPROVAL` is read-only. It may exist in process memory or ignored cache only. A valid approval token binds the normalized request, policy result, classification, risk, issuance time, and canonical context fingerprint.
+Everything through `AWAITING_APPROVAL` is read-only. It may exist in process memory or ignored cache only. A valid approval token binds the normalized request, policy result, classification, risk, issuance time, canonical context fingerprint, and complete workspace fingerprint. Canonical or source drift after planning invalidates approval.
 
 Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent.
+
+The approved Run binds the exact Guardrail-policy fingerprint and a canonical workspace baseline. Every post-approval `deferred` check becomes an append-only Guardrail obligation. A material source mutation requires a short-lived, path-scoped permit issued from that baseline; recording it verifies before/after hashes, policy freshness, path scope, read-only boundaries, symlink safety, and newly introduced secret-like content. Unrecorded workspace drift fails closed. A Run cannot complete while an obligation is unresolved or the workspace differs from its last recorded mutation.
 
 Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. Validation, learning, completion, failure, block, and resume transitions require a reason or typed evidence. Task status changes without receiving a duplicate narrative history. Multi-file mutations use a durable local transaction journal: `prepared` operations roll back byte-exactly after failure/interruption, while `committed` journals are verified and finalized. Ordinary audit is read-only and reports pending recovery; `doctor --recover` or retrying the approved mutation performs recovery explicitly. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
 
@@ -303,6 +305,7 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 - **I-18** Partial/interrupted writes, conflicting overwrites, unsafe paths, and symlink traversal fail or recover without corrupting canonical state or overwriting later owner work.
 - **I-19** Code intelligence is derived, adapter-based, fingerprinted, and cannot silently confirm memory.
 - **I-20** Post-validation learning proposes candidates and never blocks Task/Run completion.
+- **I-21** Material mutations are policy-bound, path-scoped, hash-verified, append-only, and fail closed on bypass; unresolved Guardrail obligations block completion.
 
 ## 11. Command grammar
 
@@ -320,7 +323,7 @@ Unknown syntax fails deterministically and never guesses a mutation.
 
 An implementation may claim ScrumRun method 2.0.0 only when it:
 
-1. passes positive and negative tests for I-01 through I-20;
+1. passes positive and negative tests for I-01 through I-21;
 2. enforces every exposed state machine and schema;
 3. proves read-only intake and dry-run migration through full-tree fingerprints;
 4. proves migration failure recovery, rollback safety, and vault exclusion;

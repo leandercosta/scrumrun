@@ -17,10 +17,13 @@ Use `/sc` inside a supported AI client. The equivalent CLI form is `npx scrumrun
 /sc plan sprint --add|--list|--show|--start|--complete|--block
 /sc plan feature --add|--list|--show|--activate|--complete
 /sc plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block [--note] [typed evidence flags]
+/sc plan run --authorize-mutation RUN-NNN --path <relative-path> [--path ...]
+/sc plan run --record-mutation RUN-NNN --permit MUT-id [--note] [--actor]
+/sc plan run --satisfy-guardrail RUN-NNN --guardrail GR-NNN [typed evidence flags]
 /sc plan challenge <question>
 ```
 
-CLI-native: intake/approval, Task/Run list/show, Task retry, and Run transitions. A retry requires a failed, blocked, or partial Task and creates a new Run.
+CLI-native: intake/approval, Task/Run list/show, Task retry, Mutation Gateway actions, Guardrail satisfaction, and Run transitions. A retry requires a failed, blocked, or partial Task and creates a new Run. Mutation permits expire after 15 minutes, authorize explicit relative paths only, and must be recorded immediately after the edit.
 
 ## Knowledge
 
@@ -46,11 +49,12 @@ Creation options include `--title`, `--content`, repeated `--evidence`, repeated
 /sc rules reviewer --add|--list|--show|--run
 /sc review code --run
 /sc review artifact --run
+/sc review artifact --record --task TASK-NNN [--run RUN-NNN] [--title "..."] [--evidence "..."]
 /sc review migration --run
 /sc review release --run
 ```
 
-`review artifact --run` is CLI-native and returns a machine-readable 20-invariant project audit. Other review routes require repository reasoning and remain read-only unless fixes receive separate approval.
+`review artifact --run` is read-only and returns a machine-readable 21-invariant project audit. `--record` reruns that audit and persists its exact pass/fail result as a canonical `REV-NNN`; supplied evidence is additive and cannot turn a failed audit into a pass. Other review routes require repository reasoning and remain read-only unless fixes receive separate approval.
 
 ## Config and lifecycle
 
