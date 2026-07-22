@@ -4,6 +4,19 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.1.1 - 2026-07-22
+
+### Fixed
+
+- Semantic indexing now detects whether the current `node:sqlite` build provides FTS5 instead of assuming the optional module exists.
+- Node.js 22.13 uses a deterministic, parameterized lexical fallback for artifact and code search while runtimes with FTS5 retain BM25 retrieval.
+- Semantic cache schema 4 records the selected search backend and safely rebuilds an FTS5 cache when it is opened by a runtime without FTS5.
+
+### Validation
+
+- Added explicit automatic-backend and forced-fallback tests, including multi-token matching, code-symbol retrieval, cache metadata, and absence of FTS virtual tables.
+- The complete 143-test suite passes in the exact `node:22.13.0` runtime that exposed the release regression.
+
 ## 2.1.0 - 2026-07-22
 
 ### Added

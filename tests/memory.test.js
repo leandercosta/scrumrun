@@ -63,6 +63,73 @@ test("repeated review evidence is normalized before rebuilding the semantic inde
   assert.equal(queryIndex(root, "Pricing placement").results[0].id, insight.record.id);
 });
 
+test("semantic index automatically selects the strongest runtime search backend", () => {
+  const root = project();
+  const { DatabaseSync } = require("node:sqlite");
+  const probe = new DatabaseSync(":memory:");
+  let expected = "fts5";
+  try {
+    probe.exec("CREATE VIRTUAL TABLE search_probe USING fts5(value)");
+  } catch (error) {
+    if (!/no such module:\s*fts5/i.test(error.message)) throw error;
+    expected = "like";
+  } finally {
+    probe.close();
+  }
+
+  assert.equal(rebuildIndex(root).searchBackend, expected);
+  assert.equal(indexStatus(root).searchBackend, expected);
+});
+
+test("semantic index falls back to deterministic parameterized search without FTS5", () => {
+  const root = project();
+  const insight = createMemory(root, "insight", {
+    title: "Árvore backend pricing determinism",
+    content: "Every pricing consumer receives deterministic results.",
+    sourceType: "human"
+  });
+
+  const built = rebuildIndex(root, { searchBackend: "like" });
+  assert.equal(built.searchBackend, "like");
+  assert.equal(indexStatus(root).searchBackend, "like");
+
+  const { DatabaseSync } = require("node:sqlite");
+  const database = new DatabaseSync(indexPath(root), { readOnly: true });
+  assert.equal(database.prepare("SELECT value FROM metadata WHERE key = 'search_backend'").get().value, "like");
+  assert.equal(database.prepare("SELECT count(*) AS total FROM sqlite_master WHERE name IN ('artifacts_fts', 'code_fts')").get().total, 0);
+  database.close();
+
+  const memory = queryIndex(root, "backend deterministic", { rebuild: false });
+  assert.equal(memory.searchBackend, "like");
+  assert.equal(memory.results[0].id, insight.record.id);
+  assert.equal(queryIndex(root, "árvore BACKEND", { rebuild: false }).results[0].id, insight.record.id);
+  assert.deepEqual(queryIndex(root, "backend absent-token", { rebuild: false }).results, []);
+  const oversized = Array.from({ length: 1000 }, (_, index) => `missing${index}`).join(" ");
+  assert.deepEqual(queryIndex(root, oversized, { rebuild: false }).results, []);
+
+  const code = queryIndex(root, "calculateFinalPrice", { rebuild: false });
+  assert.ok(code.results.some((item) => item.kind === "function" && item.title === "calculateFinalPrice"));
+});
+
+test("an unusable recorded FTS5 backend triggers one disposable rebuild", () => {
+  const root = project();
+  const insight = createMemory(root, "insight", { title: "Cross-runtime pricing memory" });
+  rebuildIndex(root, { searchBackend: "like" });
+
+  const { DatabaseSync } = require("node:sqlite");
+  const database = new DatabaseSync(indexPath(root));
+  database.prepare("UPDATE metadata SET value = 'fts5' WHERE key = 'search_backend'").run();
+  database.close();
+
+  const stale = indexStatus(root);
+  assert.equal(stale.stale, true);
+  assert.match(stale.reason, /unavailable FTS5/);
+  const result = queryIndex(root, "Cross-runtime pricing");
+  assert.equal(result.rebuilt, true);
+  assert.equal(result.results[0].id, insight.record.id);
+  assert.equal(indexStatus(root).stale, false);
+});
+
 test("confirmed facts reject missing, unsafe, and vault evidence", () => {
   const root = project();
   const fact = createMemory(root, "knowledge", { title: "Pricing rule", sourceType: "human" });
