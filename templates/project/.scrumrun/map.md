@@ -1,8 +1,9 @@
-# ScrumRun Map - {{PROJECT_NAME}}
+# ScrumRun Project Map
 
 Generated: {{DATE}}
+Status: stale
 Authority: none; rebuild from canonical artifacts and source code.
 
-## Active Graph
+## Summary
 
-- Pending: no Features, Tasks, Sprints, Runs, Memory, or Reviews yet.
+- No source fingerprint exists until `/sc knowledge map --build` creates the disposable semantic index and this bounded view.

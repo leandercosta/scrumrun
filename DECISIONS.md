@@ -294,3 +294,59 @@ Date: 2026-07-21
 **Consequences** — Ongoing projects cannot silently miss the required migration, while automation and cautious users retain a zero-write default. Cost: update output is longer inside a v1 project and the update command must remain migration-aware.
 
 **Alternatives considered** — Automatically applying during every update: rejected because updating client integrations is not implicit consent to rewrite project state. Keeping update unaware: safer in isolation but makes partial upgrades easy and confusing.
+
+---
+
+## ADR-021 — Run owns a structured append-only event ledger
+Status: accepted
+Date: 2026-07-22
+
+**Context** — A prose `history.md` made operational truth expensive to parse and allowed two incompatible event formats, ambiguous same-day entries, duplicated Task/Run history, and status derived from punctuation-sensitive text.
+
+**Decision** — Run is the sole operational-history authority. Every native Run stores schema-versioned `RUN-NNN-EVT-NNN` JSON events with RFC3339 time, actor, ordered `from`/`to`, reason, and typed evidence. Task synchronizes current status without copying event prose. Early-v2 Runs migrate explicitly: deterministic chains are recovered; ambiguity becomes an evidenced snapshot rather than an invented transition.
+
+**Consequences** — Status reconstruction and audit are deterministic, retries preserve attempts, and agents can retrieve a bounded Run instead of rereading a global log. Cost: event/schema migrations and stricter evidence gates become release obligations.
+
+**Alternatives considered** — Keep one append-only Markdown history with a better template: simpler storage, but still global, token-heavy, and vulnerable to parser drift. Duplicate transitions into Task: convenient locally but creates two authorities.
+
+---
+
+## ADR-022 — Canonical multi-file mutations use durable local transactions
+Status: accepted
+Date: 2026-07-22
+
+**Context** — Approval, Run transitions, and retries update linked artifacts. Per-file atomic rename prevents partial bytes but cannot prevent a crash after only one file has committed.
+
+**Decision** — Linked canonical mutations use an ignored durable transaction journal with prepared/committed states, byte-exact before images, content hashes, fsync-backed writes, deterministic recovery, and hash-only receipts. Prepared work rolls back; committed work is verified and finalized. Recovery refuses to overwrite owner changes made after interruption. Ordinary audit reports pending recovery but remains read-only.
+
+**Consequences** — Task/Run pairs cannot silently diverge after an interrupted mutation. Failure injection proves rollback and recovery. Cost: more local I/O and a transaction schema that must be validated as hostile input.
+
+**Alternatives considered** — Best-effort compensating writes: cannot distinguish interruption from later owner edits. SQLite as canonical transaction store: violates Markdown portability and creates another authority.
+
+---
+
+## ADR-023 — Guardrails are evaluated by an executable Policy Engine
+Status: accepted
+Date: 2026-07-22
+
+**Context** — Canonical Guardrails without deterministic evaluation could be present in context yet silently ignored or described as passed. Migrated prose also makes aggressive inference unsafe.
+
+**Decision** — Active stable-id Guardrails produce structured `passed`, `blocked`, or `deferred` evaluations. Blocks cite the exact `GR-NNN` id and reason code. Deferred checks remain visible for their mutation, migration, review, or owner boundary. Fresh rules declare enforcement explicitly; migrated prose uses conservative inference and ambiguous rules stay manual. Configuration cannot disable approval or weaken active policy.
+
+**Consequences** — Policy advice is traceable to project authority instead of model opinion, while uncertainty stays explicit. Cost: not every project rule can be automated; manual/deferred enforcement remains a first-class result.
+
+**Alternatives considered** — Treat every loaded rule as passed unless a keyword matches: false assurance. Block all manual rules at intake: safe but makes legitimate project-specific policy unusable.
+
+---
+
+## ADR-024 — Derived freshness uses metadata fast path and content-hash fallback
+Status: accepted
+Date: 2026-07-22
+
+**Context** — Recomputing every artifact hash and reparsing the entire code graph before each status or semantic query makes a disposable index defeat its purpose. Trusting timestamps alone would make cache metadata an accidental authority.
+
+**Decision** — `state.md` and semantic SQLite store a source fingerprint plus a watch fingerprint over path/stat identity. An unchanged watch avoids source reads. Any metadata drift triggers a complete canonical/source content fingerprint before staleness is asserted. Cache schemas are explicit and mismatches force one rebuild. Commit-only changes do not invalidate semantically unchanged code.
+
+**Consequences** — Normal queries stay fast while content remains the final verifier. State and intake share one canonical fingerprint implementation. Cost: metadata-only touches may trigger one full verification, and scanner changes require a cache-schema bump.
+
+**Alternatives considered** — Hash every source on every query: maximally simple but O(project) on the hot path. Timestamp-only cache validity: faster but allows derived metadata to masquerade as truth.

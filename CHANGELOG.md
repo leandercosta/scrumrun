@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.1.0 - 2026-07-22
+
 ### Added
 
 - Canonical Run ledger schema with stable event ids, RFC3339 timestamps, actors, reasons, and typed evidence.
@@ -12,6 +14,7 @@ All notable changes follow Semantic Versioning.
 - Durable multi-file mutation journal with byte-exact rollback, interruption recovery, hash-only receipts, and explicit `doctor --recover`.
 - Executable Policy Engine with stable Guardrail ids, explicit passed/blocked/deferred results, and deterministic conformance checks.
 - Shared canonical projection fingerprint plus metadata-watch/content-hash freshness checks for `state.md`, `map.md`, and semantic SQLite.
+- Evidence-backed release scorecard separating local readiness from external registry/tag gates.
 
 ### Changed
 
@@ -19,6 +22,7 @@ All notable changes follow Semantic Versioning.
 - Run completion requires evidenced validation, learning, and completion transitions.
 - Intake classification and risk detection now recognize multilingual runtime, schema, migration, transaction, release, and cross-cutting signals.
 - Semantic cache schema 3 removes commit-only invalidation and performs a one-time disposable rebuild from older cache schemas.
+- `map --show` now refuses missing or stale fingerprints instead of presenting an unverified projection.
 
 ## 2.0.0 - 2026-07-21
 

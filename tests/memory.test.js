@@ -1,12 +1,12 @@
 const assert = require("node:assert/strict");
-const { execFileSync } = require("node:child_process");
+const { execFileSync, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
 const { ArtifactRepository, METHOD_VERSION } = require("../lib/v2/artifacts");
-const { INDEX_SCHEMA_VERSION, graphIndex, indexPath, indexStatus, queryIndex, rebuildIndex, writeMap } = require("../lib/memory/index");
+const { INDEX_SCHEMA_VERSION, graphIndex, indexPath, indexStatus, mapStatus, queryIndex, rebuildIndex, writeMap } = require("../lib/memory/index");
 const { createMemory, listMemory, transitionMemory } = require("../lib/memory/service");
 
 const bin = path.resolve(__dirname, "..", "bin", "scrumrun.js");
@@ -205,6 +205,21 @@ test("generated map is bounded, fingerprinted, and explicitly non-authoritative"
   assert.match(content, /^Source fingerprint: [a-f0-9]{64}$/m);
   assert.match(content, /Authority: none/);
   assert.match(content, /Mapped insight/);
+  assert.equal(mapStatus(root).stale, false);
+});
+
+test("generated map status refuses stale projection", () => {
+  const root = project();
+  assert.equal(mapStatus(root).stale, true);
+  const shown = spawnSync(process.execPath, [bin, "sc", "knowledge", "map", "--show"], { cwd: root, encoding: "utf8" });
+  assert.notEqual(shown.status, 0);
+  assert.match(`${shown.stdout}${shown.stderr}`, /map\.md is stale/);
+  rebuildIndex(root);
+  assert.equal(mapStatus(root).reason, "map.md is missing");
+  writeMap(root);
+  assert.equal(mapStatus(root).stale, false);
+  fs.writeFileSync(path.join(root, "pricing.js"), "export function changedPrice() {}\n");
+  assert.equal(mapStatus(root).stale, true);
 });
 
 test("semantic index staleness uses metadata fast path and content hash fallback", () => {
