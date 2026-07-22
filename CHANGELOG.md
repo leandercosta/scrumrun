@@ -9,6 +9,7 @@ All notable changes follow Semantic Versioning.
 - Canonical Run ledger schema with stable event ids, RFC3339 timestamps, actors, reasons, and typed evidence.
 - Explicit early-v2 Run-ledger preflight/apply/rollback through `migrate --to 2` and `update --migrate`.
 - Conformance checks that reconstruct Run state and detect event-order, evidence, timestamp, and frontmatter drift.
+- Durable multi-file mutation journal with byte-exact rollback, interruption recovery, hash-only receipts, and explicit `doctor --recover`.
 
 ### Changed
 

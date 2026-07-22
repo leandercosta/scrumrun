@@ -16,7 +16,7 @@ Use `/sc` inside a supported AI client. The equivalent CLI form is `npx scrumrun
 /sc plan task --add|--list|--show|--run|--audit|--cancel|--retry
 /sc plan sprint --add|--list|--show|--start|--complete|--block
 /sc plan feature --add|--list|--show|--activate|--complete
-/sc plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block
+/sc plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block [--note] [typed evidence flags]
 /sc plan challenge <question>
 ```
 
@@ -59,11 +59,13 @@ Creation options include `--title`, `--content`, repeated `--evidence`, repeated
 /sc config init --local|--shared|--lean|--no-agent-hint|--force
 /sc config update [all|codex|opencode|claude] [--migrate]
 /sc config migrate --to 2 --dry-run|--apply|--rollback
-/sc config doctor [all|codex|opencode|claude] [--strict]
+/sc config doctor [all|codex|opencode|claude] [--strict] [--recover]
 /sc config uninstall --force
 /sc config help <topic>
 ```
 
 Top-level CLI aliases (`init`, `update`, `migrate`, `doctor`, `uninstall`, `status`) remain available for shell automation. Ordinary update runs only a read-only migration preflight; `--migrate` is explicit application consent.
+
+Run transitions accept typed evidence through `--command`, `--test`, `--file`, `--review`, `--decision`, `--insight`, `--risk`, or generic `--evidence kind:value`. `doctor --recover` is an explicit write that resolves only safe pending kernel transactions; doctor without it remains read-only.
 
 Run `npx scrumrun@latest commands` for grammar rendered directly from the current manifest.

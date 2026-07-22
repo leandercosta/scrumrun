@@ -200,7 +200,7 @@ Everything through `AWAITING_APPROVAL` is read-only. It may exist in process mem
 
 Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent.
 
-Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. Validation, learning, completion, failure, block, and resume transitions require a reason or typed evidence. Task status changes without receiving a duplicate narrative history. A paired write failure restores both files. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
+Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. Validation, learning, completion, failure, block, and resume transitions require a reason or typed evidence. Task status changes without receiving a duplicate narrative history. Multi-file mutations use a durable local transaction journal: `prepared` operations roll back byte-exactly after failure/interruption, while `committed` journals are verified and finalized. Ordinary audit is read-only and reports pending recovery; `doctor --recover` or retrying the approved mutation performs recovery explicitly. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
 
 ## 6. Policy and precedence
 
@@ -294,7 +294,7 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 - **I-15** Migration is explicit; dry-run and ordinary update perform no project writes.
 - **I-16** Migration preserves hashed source coverage, backup, mapping, idempotency, and safe rollback.
 - **I-17** Migration warnings preserve ambiguity; they never invent Sprints, Runs, approval, or truth.
-- **I-18** Partial writes, conflicting overwrites, unsafe paths, and symlink traversal fail without corrupting canonical state.
+- **I-18** Partial/interrupted writes, conflicting overwrites, unsafe paths, and symlink traversal fail or recover without corrupting canonical state or overwriting later owner work.
 - **I-19** Code intelligence is derived, adapter-based, fingerprinted, and cannot silently confirm memory.
 - **I-20** Post-validation learning proposes candidates and never blocks Task/Run completion.
 

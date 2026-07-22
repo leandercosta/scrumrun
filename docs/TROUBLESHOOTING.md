@@ -27,6 +27,16 @@ npx scrumrun@latest sc knowledge map --build
 
 Stale generated views are warnings, not canonical corruption.
 
+## Doctor reports `TRANSACTION_PENDING`
+
+An approved multi-file mutation was interrupted after its durable journal was prepared. Ordinary doctor/audit is read-only and leaves the evidence untouched. Either retry the same approved operation, which recovers before writing, or explicitly run:
+
+```bash
+npx scrumrun@latest doctor codex --recover --strict
+```
+
+Prepared transactions restore their original bytes; committed transactions verify the applied bytes and finalize. Recovery refuses if a target changed to content matching neither journal side, because that would overwrite later owner work. Receipts contain hashes and outcomes, not file contents.
+
 ## SQLite is missing/corrupt
 
 Delete or clear only the disposable cache:
