@@ -35,4 +35,4 @@ Feature and Sprint provide context/grouping and do not own execution history. Re
 
 ## Generated projections
 
-`state.md` summarizes active work/memory. `map.md` summarizes bounded nodes/edges. SQLite stores the complete derived graph/search index. All are fingerprinted or explicitly stale and can be rebuilt from Markdown plus source code.
+`state.md` summarizes active work/memory. `map.md` summarizes bounded nodes/edges. SQLite stores the complete derived graph/search index. All are fingerprinted or explicitly stale and can be rebuilt from Markdown plus source code. Freshness uses a metadata watch fast path and content-hash fallback; the watch is disposable evidence, never truth.

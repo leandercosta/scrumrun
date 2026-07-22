@@ -94,7 +94,7 @@ The agent can answer questions such as:
 
 AI extraction creates candidates only. Confirmation requires resolvable evidence. Stale and invalidated memory is labeled; rejected/deprecated/invalidated records are excluded from active truth by default.
 
-The fast graph/search layer is `.scrumrun/.cache/semantic-index.sqlite`. It is ignored and disposable: deleting it never deletes knowledge. The current JavaScript/TypeScript adapter derives qualified symbols plus `defined_in`, `depends_on`, `used_by`, and `protected_by` relations.
+The fast graph/search layer is `.scrumrun/.cache/semantic-index.sqlite`. It is ignored and disposable: deleting it never deletes knowledge. Unchanged queries use a metadata-only freshness check; metadata drift falls back to complete content fingerprints before rebuilding. Cache-schema upgrades force one safe disposable rebuild. The current JavaScript/TypeScript adapter derives qualified symbols plus `defined_in`, `depends_on`, `used_by`, and `protected_by` relations.
 
 ## Migrating an ongoing v1 project
 
@@ -153,7 +153,7 @@ npx scrumrun@latest doctor codex --strict
   vault.local.md                   # optional, ignored, never indexed
 ```
 
-`guardrails.md` is canonical project policy. Active `GR-NNN` rules are evaluated into explicit `passed`, `blocked`, or `deferred` results; blocks identify the exact Guardrail and deferred checks stay visible for their execution-time gate. `config.md` contains preferences and cannot weaken policy. Duplicate/unknown Guardrails, disabled approval, and unsafe read-only paths fail conformance. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority.
+`guardrails.md` is canonical project policy. Active `GR-NNN` rules are evaluated into explicit `passed`, `blocked`, or `deferred` results; blocks identify the exact Guardrail and deferred checks stay visible for their execution-time gate. `config.md` contains preferences and cannot weaken policy. Duplicate/unknown Guardrails, disabled approval, and unsafe read-only paths fail conformance. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority. `state.md` carries the same source fingerprint used by intake, an RFC3339 generation time, and a watch fingerprint for fast verified staleness checks.
 
 ## Useful commands
 
