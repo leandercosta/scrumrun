@@ -8,7 +8,9 @@ const test = require("node:test");
 
 const { queryIndex, rebuildIndex } = require("../lib/memory/index");
 const { buildContextPackage } = require("../lib/runtime/context");
-const { LEAN_CONTROL_CONTEXT_MAX_CHARS, LEAN_CONTROL_CONTEXT_MAX_RATIO, V1_CONTROL_CONTEXT_BASELINE_CHARS } = require("../lib/runtime/budgets");
+const { approveRequest, transitionRun } = require("../lib/runtime/orchestrator");
+const { planRequest } = require("../lib/runtime/request-engine");
+const { KERNEL_LIFECYCLE_MAX_MS, LEAN_CONTROL_CONTEXT_MAX_CHARS, LEAN_CONTROL_CONTEXT_MAX_RATIO, V1_CONTROL_CONTEXT_BASELINE_CHARS } = require("../lib/runtime/budgets");
 const { dryRunMigration } = require("../lib/v2/migration");
 
 const bin = path.resolve(__dirname, "..", "bin", "scrumrun.js");
@@ -64,4 +66,15 @@ test("migration projection dry-run stays bounded on a representative v1 project"
   const measured = elapsed(() => dryRunMigration(root));
   assert.equal(measured.value.status, "ready");
   assert.ok(measured.milliseconds < 3000, `migration dry-run took ${measured.milliseconds.toFixed(1)}ms`);
+});
+
+test("durable Task and Run lifecycle stays inside the mutation budget", () => {
+  const root = initialized();
+  const measured = elapsed(() => {
+    const approved = approveRequest(root, planRequest(root, "Measure durable lifecycle").approvalToken);
+    transitionRun(root, approved.run.id, "validating", { note: "Tests passed." });
+    transitionRun(root, approved.run.id, "learning", { note: "Learning reviewed." });
+    transitionRun(root, approved.run.id, "completed", { note: "Acceptance passed." });
+  });
+  assert.ok(measured.milliseconds < KERNEL_LIFECYCLE_MAX_MS, `durable lifecycle took ${measured.milliseconds.toFixed(1)}ms`);
 });

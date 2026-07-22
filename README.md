@@ -73,6 +73,8 @@ Nothing canonical is persisted before approval. Failed retries remain available 
 
 Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
 
+Linked Task/Run writes use a durable ignored transaction journal. Captured failures roll back immediately; interrupted operations are recovered byte-exactly on retry or through explicit `doctor --recover`. Read-only audit reports pending recovery and never repairs state silently.
+
 ## Semantic project memory
 
 Canonical memory is human-readable Markdown:

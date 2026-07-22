@@ -176,6 +176,8 @@ Rules:
 
 Canonical mutations are schema-validated, lossless, and atomic. Preserve unknown fields, prose, and unrelated owner edits. A failed mutation must leave canonical state unchanged or recoverable.
 
+Task/Run pair mutations use an ignored durable journal under `.scrumrun/.backup/transactions/`. A captured failure rolls back immediately; an interrupted `prepared` transaction is rolled back before the next approved mutation, while an interrupted `committed` transaction is verified and finalized. Audit only reports `TRANSACTION_PENDING`. Recovery writes occur only when the approved operation is retried or `doctor --recover` is explicitly invoked, and recovery refuses to overwrite bytes that match neither side of the journal.
+
 ## Semantic memory
 
 ### Knowledge

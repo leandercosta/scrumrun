@@ -100,6 +100,8 @@ Never overwrite a prior attempt. Never mark work complete because time/token bud
 
 Run is the sole operational-history authority. Task synchronizes current status without copying Run events. Validation, learning, completion, failure, block, and resume require a reason or structured evidence; completion also requires evidenced validation and learning. Early v2 prose Runs are migrated explicitly, with deterministic chains recovered and uncertain history represented as an evidenced snapshot.
 
+Linked canonical writes use the ignored durable transaction journal. An interrupted prepared mutation rolls back before the next approved mutation; a committed journal is verified and finalized. Audit remains read-only and reports pending recovery. Use `doctor --recover` only when explicitly requested, and never overwrite bytes changed after interruption.
+
 ## Semantic memory
 
 Canonical memory is Markdown:
@@ -182,7 +184,7 @@ Review is read-only unless the user separately authorizes fixes.
 - `init`: initialize ScrumRun without overwriting existing state silently.
 - `update`: refresh integrations and preflight v1 read-only; apply only with explicit `--migrate`.
 - `migrate`: invoke the explicit migration workflow.
-- `doctor`: verify installed root command and skill content; `--strict` also requires a warning-free project artifact audit.
+- `doctor`: verify installed root command and skill content; `--strict` also requires a warning-free project artifact audit, while explicit `--recover` resolves safe pending kernel transactions.
 - `uninstall`: preview by default; delete only recognized ScrumRun files with explicit `--force`.
 - `help`: show grammar or one focused topic.
 

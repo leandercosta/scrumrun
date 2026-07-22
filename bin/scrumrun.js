@@ -23,6 +23,7 @@ const { approveRequest, refreshState, retryTask, transitionRun } = require(path.
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
 const { indexPath, indexStatus, queryIndex, rebuildIndex, writeMap } = require(path.join(root, "lib", "memory", "index"));
 const { auditProject } = require(path.join(root, "lib", "v2", "conformance"));
+const { recoverPendingTransactions } = require(path.join(root, "lib", "v2", "transaction"));
 const { containsSecret } = require(path.join(root, "lib", "security", "secrets"));
 
 const COMMANDS = ["sc"];
@@ -45,7 +46,7 @@ Usage:
   scrumrun migrate --to 2 --dry-run
   scrumrun migrate --to 2 --apply
   scrumrun migrate --to 2 --rollback
-  scrumrun doctor [all|codex|opencode|claude] [--strict]
+  scrumrun doctor [all|codex|opencode|claude] [--strict] [--recover]
   scrumrun uninstall [--force]
 
 Examples:
@@ -1403,7 +1404,7 @@ function executeRootRoute(route) {
   if (noun === "config" && subject === "migrate") return runMigration(routeArgs);
   if (noun === "config" && subject === "doctor") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
-    return doctor(target);
+    return doctor(target, { strict: routeArgs.includes("--strict"), recover: routeArgs.includes("--recover") });
   }
   if (noun === "config" && subject === "update") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
@@ -2220,11 +2221,21 @@ function runMigration(parts) {
   }
 }
 
-function doctor(target = "all", { compatibility = false, strict = false } = {}) {
+function doctor(target = "all", { compatibility = false, strict = false, recover = false } = {}) {
   const home = os.homedir();
   const checks = [];
   const commands = compatibility ? [...COMMANDS, ...COMPATIBILITY_COMMANDS] : COMMANDS;
   const skillContent = fs.readFileSync(path.join(templates, "shared", "skills", "scrumrun", "SKILL.md"), "utf8");
+
+  if (recover) {
+    const scrumDir = path.join(process.cwd(), ".scrumrun");
+    if (!fs.existsSync(scrumDir)) throw new Error("Cannot recover transactions outside a ScrumRun project.");
+    const recovered = recoverPendingTransactions(scrumDir);
+    console.log(recovered.length
+      ? `recovered ${recovered.map((item) => `${item.id}:${item.action}`).join(", ")}`
+      : "recovered no pending kernel transactions");
+    refreshState(scrumDir);
+  }
 
   function commandContent(command) {
     return command === "sc" ? renderRootPrompt() : renderCompatibilityPrompt(command);
@@ -2340,7 +2351,7 @@ if (!command || command === "--help" || command === "-h") {
   runMigration(args.slice(1));
 } else if (command === "doctor") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  doctor(target, { compatibility: args.includes("--compat"), strict: args.includes("--strict") });
+  doctor(target, { compatibility: args.includes("--compat"), strict: args.includes("--strict"), recover: args.includes("--recover") });
 } else if (command === "claude") {
   const sub = args[1];
   if (sub === "install" || sub === "update") {
