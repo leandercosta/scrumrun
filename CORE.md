@@ -146,6 +146,8 @@ Intake must:
 5. recommend one route and, in guided mode, at most two useful alternatives;
 6. ask one explicit approval question before execution; config may change presentation, never remove the gate.
 
+Policy evaluation is structured per active `GR-NNN`: `passed`, `blocked`, or `deferred`. A block must cite the exact Guardrail id and reason code. Deferred checks must be visible in the plan and re-evaluated at their named execution boundary; they are never silently counted as passed. Invalid/duplicate Guardrails or configuration that weakens approval block conformance and intake.
+
 Before approval, do not create canonical files, update status, edit application code, or retain request content outside ignored disposable context cache. Ambiguous acknowledgement is not approval.
 
 ## Execution lifecycle
@@ -288,6 +290,7 @@ Review is read-only unless fixes are separately authorized. Report findings by s
 - Intake is read-only.
 - No execution without explicit valid approval.
 - Guardrails cannot be bypassed; they may only be superseded/retired with history.
+- Active Guardrails produce explicit passed/blocked/deferred evaluations; blocks cite stable ids and deferred checks remain visible until their execution gate.
 - Task is atomic; Sprint is grouping; Run is an attempt.
 - Retries preserve prior Runs.
 - History is append-only.

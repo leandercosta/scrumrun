@@ -1341,8 +1341,11 @@ function executeRootRoute(route) {
     console.log(`State: ${plan.state}`);
     console.log(`Classification: ${plan.classification.type} (${plan.classification.reason})`);
     console.log(`Risk: ${plan.risk.level} — ${plan.risk.reasons.join("; ")}`);
-    console.log(`Policy: ${plan.policy.status}`);
+    console.log(`Policy: ${plan.policy.status} (${plan.policy.checked.length} checked; ${plan.policy.deferred.length} deferred)`);
     for (const violation of plan.policy.violations) console.log(`BLOCKED: ${violation}`);
+    for (const result of plan.policy.evaluations.filter((item) => item.status === "deferred")) {
+      console.log(`DEFERRED: ${result.guardrail} ${result.code}: ${result.message}`);
+    }
     for (const warning of plan.context.warnings) console.log(`WARNING: ${warning}`);
     if (plan.approvalToken) {
       console.log(`Approval: scrumrun sc plan intake --approve ${plan.approvalToken}`);

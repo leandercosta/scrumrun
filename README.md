@@ -153,7 +153,7 @@ npx scrumrun@latest doctor codex --strict
   vault.local.md                   # optional, ignored, never indexed
 ```
 
-`guardrails.md` is canonical project policy. `config.md` contains preferences and cannot weaken it. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority.
+`guardrails.md` is canonical project policy. Active `GR-NNN` rules are evaluated into explicit `passed`, `blocked`, or `deferred` results; blocks identify the exact Guardrail and deferred checks stay visible for their execution-time gate. `config.md` contains preferences and cannot weaken policy. Duplicate/unknown Guardrails, disabled approval, and unsafe read-only paths fail conformance. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority.
 
 ## Useful commands
 
@@ -164,6 +164,9 @@ npx scrumrun@latest commands
 # plan without writes, then approve the emitted token
 npx scrumrun@latest sc plan intake "Fix pricing rounding"
 npx scrumrun@latest sc plan intake --approve <token>
+
+# verify canonical policy and all twenty executable invariants
+npx scrumrun@latest sc review artifact --run
 
 # memory lifecycle
 npx scrumrun@latest sc knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts

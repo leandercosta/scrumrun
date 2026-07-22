@@ -216,6 +216,10 @@ When guidance conflicts, apply this order:
 
 Configuration controls preferences but cannot weaken higher levels. Missing or stale context must be surfaced, never rendered as certainty.
 
+Every project Guardrail has a stable `GR-NNN` identity, lifecycle status, rule text, enforcement mode, and optional scope/source. Intake evaluates active Guardrails into structured `passed`, `blocked`, or `deferred` results. A block names the responsible Guardrail and machine-readable reason code; a deferred result is shown explicitly and must be enforced at the mutation, migration, review, or owner gate it names. Deferred checks do not become evidence of a pass.
+
+The executable Policy Engine may infer enforcement for migrated prose, but fresh v2 policy declares it explicitly. Unknown enforcement, duplicate ids, inactive-only policy, configuration that disables approval, and unsafe read-only paths fail conformance. Configuration can tune presentation and workflow preferences; it cannot retire, bypass, or weaken active Guardrails.
+
 ## 7. Semantic memory and code intelligence
 
 Memory records include subject, source, evidence, validity window, confidence where useful, review trigger, and last-verified commit. Insight types may include placement rationale, design constraint, known trade-off, failure history, usage warning, compatibility reason, business rule, performance reason, security reason, and testing note.
