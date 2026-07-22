@@ -71,7 +71,7 @@ Use `doctor --compat` only while validating one-cycle v1 adapters.
 
 ## Node.js is unsupported
 
-ScrumRun 2.0 requires Node.js `>=22.13.0` because semantic indexing uses native `node:sqlite`. Upgrade Node, then rerun doctor.
+ScrumRun 2.0 requires Node.js `>=22.13.0` because semantic indexing uses native `node:sqlite`. FTS5/BM25 is used when the runtime provides it; Node builds without FTS5 use the deterministic lexical fallback. Upgrade Node, then rerun doctor.
 
 ## Safe uninstall
 

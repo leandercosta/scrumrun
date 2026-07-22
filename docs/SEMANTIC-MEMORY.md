@@ -65,4 +65,4 @@ npx scrumrun@latest sc knowledge study calculateFinalPrice
 npx scrumrun@latest sc knowledge context --clear
 ```
 
-SQLite is ignored and disposable. Queries default to 10 records/40 relations and hard-cap at 100/100. Match type, truth state, warnings, relation counts, and evidence are returned so recommendations remain explainable.
+SQLite is ignored and disposable. The derived index records its search backend: FTS5/BM25 is selected when the current Node.js SQLite build supports it; otherwise ScrumRun uses deterministic parameterized token matching over the same artifact, code, and relation tables. Queries default to 10 records/40 relations and hard-cap at 100/100. Match type, truth state, warnings, relation counts, and evidence are returned so recommendations remain explainable.
