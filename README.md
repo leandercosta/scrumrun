@@ -213,4 +213,4 @@ The release gates cover artifact/state conformance, read-only intake, migration 
 
 ## License
 
-MIT © Leander Costa
+MIT © Leander Costa · [hi@scrumrun.dev](mailto:hi@scrumrun.dev)
