@@ -26,7 +26,7 @@ Minimum local score: **9.7/10**.
 - Full suite: `npm test`.
 - Performance suite: `npm run benchmark`.
 - Contract drift: `scripts/generate-contract-docs.js --check` runs before tests.
-- Project conformance: `/sc review artifact --run`, twenty invariants, zero findings at the release checkpoint.
+- Project conformance: `/sc review artifact --run`, twenty-one invariants, zero findings at the release checkpoint.
 - Installed integration: `doctor codex --strict`, exact prompt/skill hashes and zero project findings.
 - Package boundary: `npm pack --dry-run --json`, explicit file inventory, no repository-local `.scrumrun/`, tests, vault, backup, migration state, or cache.
 - Tarball E2E: install, v2 memory, ongoing v1 migration, rollback, doctor, and uninstall run from the packed package in the test suite.

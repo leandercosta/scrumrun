@@ -20,6 +20,8 @@ const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.jo
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
 const { approveRequest, refreshState, retryTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
+const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
+const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
 const { indexPath, indexStatus, mapStatus, queryIndex, rebuildIndex, writeMap } = require(path.join(root, "lib", "memory", "index"));
 const { auditProject } = require(path.join(root, "lib", "v2", "conformance"));
@@ -1236,6 +1238,19 @@ function runTransitionOptions(args) {
   return { note: note || noteParts.join(" ").trim() || null, evidence, actor, occurredAt };
 }
 
+function removeOptionPairs(args, names) {
+  const hidden = new Set(names);
+  const next = [];
+  for (let index = 0; index < args.length; index++) {
+    if (hidden.has(args[index])) {
+      index++;
+      continue;
+    }
+    next.push(args[index]);
+  }
+  return next;
+}
+
 function printMemoryArtifact(artifact) {
   if (!artifact) return false;
   console.log(readIfExists(artifact.file));
@@ -1373,6 +1388,33 @@ function executeRootRoute(route) {
     return;
   }
   if (noun === "plan" && subject === "run") {
+    if (routeArgs[0] === "--authorize-mutation") {
+      const paths = optionValues(routeArgs.slice(2), "--path");
+      const result = authorizeMutation(process.cwd(), routeArgs[1], paths);
+      console.log(`Authorized ${result.permit} for ${result.run} until ${result.expiresAt}.`);
+      console.log(`Paths: ${result.paths.join(", ")}`);
+      return;
+    }
+    if (routeArgs[0] === "--record-mutation") {
+      const permit = optionValue(routeArgs.slice(2), "--permit");
+      if (!permit) throw new Error("--record-mutation requires --permit MUT-id.");
+      const parsed = runTransitionOptions(removeOptionPairs(routeArgs, ["--permit"]));
+      const result = recordMutation(process.cwd(), routeArgs[1], permit, parsed);
+      refreshState(projectFile());
+      console.log(`Recorded ${result.mutation} for ${result.run.id}: ${result.changes.length} verified change(s).`);
+      return;
+    }
+    if (routeArgs[0] === "--satisfy-guardrail") {
+      const guardrail = optionValue(routeArgs.slice(2), "--guardrail");
+      if (!guardrail) throw new Error("--satisfy-guardrail requires --guardrail GR-NNN.");
+      const migration = optionValues(routeArgs.slice(2), "--migration").map((ref) => ({ kind: "migration", ref }));
+      const parsed = runTransitionOptions(removeOptionPairs(routeArgs, ["--guardrail", "--migration"]));
+      parsed.evidence.push(...migration);
+      const result = satisfyGuardrail(process.cwd(), routeArgs[1], guardrail, parsed);
+      refreshState(projectFile());
+      console.log(`${result.run.id}: ${result.guardrail} ${result.status}.`);
+      return;
+    }
     const transitions = {
       "--validate": "validating",
       "--learn": "learning",
@@ -1401,6 +1443,20 @@ function executeRootRoute(route) {
     const audit = auditProject(process.cwd());
     console.log(JSON.stringify(audit, null, 2));
     if (!audit.passed) process.exitCode = 1;
+    return;
+  }
+  if (noun === "review" && subject === "artifact" && routeArgs[0] === "--record") {
+    const task = optionValue(routeArgs.slice(1), "--task");
+    if (!task) throw new Error("--record requires --task TASK-NNN.");
+    const result = recordArtifactReview(process.cwd(), {
+      task,
+      run: optionValue(routeArgs.slice(1), "--run"),
+      title: optionValue(routeArgs.slice(1), "--title"),
+      evidence: optionValues(routeArgs.slice(1), "--evidence")
+    });
+    refreshState(projectFile());
+    console.log(`${result.review.record.id}: ${result.review.record.status}; ${result.audit.invariants} invariants; ${result.audit.findings.length} finding(s).`);
+    if (!result.audit.passed) process.exitCode = 1;
     return;
   }
   if (noun === "config" && subject === "migrate") return runMigration(routeArgs);

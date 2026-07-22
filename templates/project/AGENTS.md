@@ -20,7 +20,8 @@ After approval:
 - Run is one execution attempt and follows `executing → validating → learning → completed|failed|blocked`;
 - a retry creates a new Run and preserves the old one;
 - learning proposes evidence-backed Knowledge, Decisions, or candidate Insights.
+- every application/source edit requires a path-scoped Mutation Gateway permit, immediate hash recording, and resolution of the Run's Guardrail obligations before completion.
 
-Never bypass guardrails, overwrite owner work, treat generated state/cache as truth, auto-confirm AI knowledge, auto-migrate a v1 project, or print vault values.
+Never bypass guardrails or edit around the Mutation Gateway, overwrite owner work, treat generated state/cache as truth, auto-confirm AI knowledge, auto-migrate a v1 project, or print vault values.
 
 If `/sc` is unavailable, follow the equivalent workflow in `.scrumrun/core.md` manually.

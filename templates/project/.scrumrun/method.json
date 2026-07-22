@@ -2,6 +2,9 @@
   "method": "2.0.0",
   "layout": "v2",
   "schemas": {
-    "run_ledger": 1
+    "run_ledger": 1,
+    "guardrails": 1,
+    "run_obligations": 1,
+    "mutation_gateway": 1
   }
 }

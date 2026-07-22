@@ -157,6 +157,8 @@ npx scrumrun@latest doctor codex --strict
 
 `guardrails.md` is canonical project policy. Active `GR-NNN` rules are evaluated into explicit `passed`, `blocked`, or `deferred` results; blocks identify the exact Guardrail and deferred checks stay visible for their execution-time gate. `config.md` contains preferences and cannot weaken policy. Duplicate/unknown Guardrails, disabled approval, and unsafe read-only paths fail conformance. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority. `state.md` carries the same source fingerprint used by intake, an RFC3339 generation time, and a watch fingerprint for fast verified staleness checks.
 
+Approved Runs persist every deferred result as an append-only obligation and bind the exact policy plus workspace baseline. Material source edits use a 15-minute, path-scoped Mutation Gateway permit. Recording verifies before/after hashes, owner/read-only scope, symlinks, new secret-like content, and workspace drift. Validation and completion fail closed when edits bypass that chain or obligations remain unresolved.
+
 ## Useful commands
 
 ```bash
@@ -167,8 +169,14 @@ npx scrumrun@latest commands
 npx scrumrun@latest sc plan intake "Fix pricing rounding"
 npx scrumrun@latest sc plan intake --approve <token>
 
-# verify canonical policy and all twenty executable invariants
+# authorize and record a material source mutation
+npx scrumrun@latest sc plan run --authorize-mutation RUN-001 --path src/pricing.ts
+npx scrumrun@latest sc plan run --record-mutation RUN-001 --permit MUT-... --note "Pricing change recorded"
+
+# record an audit-derived Review, then resolve a persisted completion gate
 npx scrumrun@latest sc review artifact --run
+npx scrumrun@latest sc review artifact --record --task TASK-001 --run RUN-001 --evidence "npm test: passed"
+npx scrumrun@latest sc plan run --satisfy-guardrail RUN-001 --guardrail GR-003 --review REV-001
 
 # memory lifecycle
 npx scrumrun@latest sc knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts
@@ -180,7 +188,7 @@ npx scrumrun@latest sc knowledge map --build
 npx scrumrun@latest sc knowledge map --show
 ```
 
-The command manifest in `lib/commands/manifest.js` generates help and compatibility adapters, preventing client grammar drift.
+The command manifest in `lib/commands/manifest.js` generates help and compatibility adapters, preventing client grammar drift. A recorded artifact Review cannot self-declare success: ScrumRun reruns the audit and derives the `REV-NNN` verdict from the result.
 
 ## Documentation
 

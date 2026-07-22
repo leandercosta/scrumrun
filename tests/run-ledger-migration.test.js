@@ -65,6 +65,9 @@ test("Run ledger dry-run is read-only and apply keeps a byte-exact backup", () =
     original
   );
   assert.equal(JSON.parse(fs.readFileSync(path.join(scrum, "method.json"), "utf8")).schemas.run_ledger, 1);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(scrum, "method.json"), "utf8")).schemas.guardrails, 1);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(scrum, "method.json"), "utf8")).schemas.run_obligations, 1);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(scrum, "method.json"), "utf8")).schemas.mutation_gateway, 1);
   assert.equal(planRunLedgerMigration(dir).status, "current");
 });
 

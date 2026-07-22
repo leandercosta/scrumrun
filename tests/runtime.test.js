@@ -125,6 +125,11 @@ test("approval rejects tampered or stale plans without creating artifacts", () =
   assert.throws(() => approveRequest(dir, plan.approvalToken), /context changed/);
   assert.equal(repository(dir).list("task").length, 0);
   assert.equal(repository(dir).list("run").length, 0);
+
+  const workspacePlan = planRequest(dir, "Change one source file");
+  fs.writeFileSync(path.join(dir, "source.js"), "export const changed = true;\n");
+  assert.throws(() => approveRequest(dir, workspacePlan.approvalToken), /workspace changed/);
+  assert.equal(repository(dir).list("task").length, 0);
 });
 
 test("approval failure injection rolls back both canonical artifacts", () => {
@@ -146,7 +151,10 @@ test("Run lifecycle synchronizes Task status and appends one canonical ledger ev
 
   assert.equal(completed.run.status, "completed");
   assert.equal(completed.task.status, "completed");
-  assert.equal(parseRunLedger(runArtifact.body).events.length, 4);
+  const events = parseRunLedger(runArtifact.body).events;
+  assert.equal(events.filter((event) => event.type === "transition").length, 4);
+  assert.equal(events.filter((event) => event.type === "guardrail" && event.result === "pending").length, 3);
+  assert.equal(events.filter((event) => event.type === "guardrail" && event.result === "passed").length, 3);
   assert.deepEqual(validateRunLedger(runArtifact.record, runArtifact.body).errors, []);
   assert.equal((taskArtifact.body.match(/^## Transition /gm) || []).length, 0);
   assert.match(runArtifact.body, /"from": "executing"/);

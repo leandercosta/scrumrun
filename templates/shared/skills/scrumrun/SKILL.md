@@ -80,6 +80,8 @@ Evaluate every active Guardrail into a structured `passed`, `blocked`, or `defer
 
 Do not create canonical artifacts, change status, edit application code, or treat ambiguous acknowledgement as approval. Temporary context may exist only in ignored disposable cache.
 
+The approval token binds both canonical context and a complete workspace fingerprint. Any canonical or source change after planning invalidates it and requires a new intake.
+
 ## Approved execution
 
 Explicit approval creates/updates the Task and creates a Run. The Run follows:
@@ -93,7 +95,7 @@ During execution:
 
 1. keep the change inside the approved Task scope;
 2. preserve existing owner work and unrelated dirty files;
-3. enforce guardrails before every material mutation;
+3. enforce guardrails before every material mutation: obtain a short-lived path-scoped Mutation Gateway permit before editing and record its verified before/after hashes immediately afterward;
 4. validate in proportion to risk;
 5. record exactly one structured `RUN-NNN-EVT-NNN` event per state transition, with RFC3339 time, actor, reason, and typed evidence;
 6. run configured reviewers;
@@ -101,6 +103,8 @@ During execution:
 8. complete the Run, then Task, and only then the Sprint when its whole batch is done.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
+
+Every deferred policy result is an append-only Run obligation. Unrecorded workspace drift, policy drift, an expired/missing permit, out-of-scope changes, unsafe symlinks, newly introduced secret-like content, or an unresolved obligation blocks validation/completion. The ignored permit cache is disposable; deleting it invalidates outstanding permits and never creates authority.
 
 Run is the sole operational-history authority. Task synchronizes current status without copying Run events. Validation, learning, completion, failure, block, and resume require a reason or structured evidence; completion also requires evidenced validation and learning. Early v2 prose Runs are migrated explicitly, with deterministic chains recovered and uncertain history represented as an evidenced snapshot.
 
@@ -155,7 +159,7 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 - `task`: add/list/show/run/audit/cancel/retry atomic work; use `type: fix` for fixes and `status: backlog` for parked work.
 - `sprint`: add/list/show/start/complete/block a real Task batch/timebox.
 - `feature`: add/list/show/activate/complete long-lived initiatives.
-- `run`: list/show/validate/learn/complete/resume/fail/block concrete Task attempts.
+- `run`: list/show/authorize-mutation/record-mutation/satisfy-guardrail/validate/learn/complete/resume/fail/block concrete Task attempts.
 - `intake <request>`: execute the read-only request pipeline.
 - `challenge <question>`: deep read-only analysis with evidence, risks, options, and recommendation.
 

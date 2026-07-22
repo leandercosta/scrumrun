@@ -150,7 +150,7 @@ Intake must:
 
 Policy evaluation is structured per active `GR-NNN`: `passed`, `blocked`, or `deferred`. A block must cite the exact Guardrail id and reason code. Deferred checks must be visible in the plan and re-evaluated at their named execution boundary; they are never silently counted as passed. Invalid/duplicate Guardrails or configuration that weakens approval block conformance and intake.
 
-Before approval, do not create canonical files, update status, edit application code, or retain request content outside ignored disposable context cache. Ambiguous acknowledgement is not approval.
+Before approval, do not create canonical files, update status, edit application code, or retain request content outside ignored disposable context cache. The approval token binds both canonical context and the workspace fingerprint; drift in either requires a new intake. Ambiguous acknowledgement is not approval.
 
 ## Execution lifecycle
 
@@ -174,6 +174,9 @@ Rules:
 - validation, learning, completion, failure, block, and resume require a reason or evidence;
 - validation must match the risk and acceptance criteria;
 - configured reviews run before completion;
+- every deferred policy result is persisted as a Run Guardrail obligation;
+- before changing application/source files, issue a short-lived path-scoped mutation permit and record the verified before/after hashes in the Run;
+- unrecorded workspace drift, policy drift, out-of-scope paths, unsafe symlinks, new secret-like content, or unresolved obligations block validation/completion;
 - learning proposes memory candidates after validation and never auto-confirms AI inference;
 - complete a Sprint only when all its included Tasks meet the Sprint exit gate;
 - do not mark work complete merely because time or token budget ended.
@@ -248,7 +251,7 @@ Legacy sprint plan entries normally become Tasks. History attempts become Runs w
 - `task --add|--list|--show|--run|--audit|--cancel|--retry`
 - `sprint --add|--list|--show|--start|--complete|--block`
 - `feature --add|--list|--show|--activate|--complete`
-- `run --list|--show|--validate|--learn|--complete|--resume|--fail|--block`
+- `run --list|--show|--authorize-mutation|--record-mutation|--satisfy-guardrail|--validate|--learn|--complete|--resume|--fail|--block`
 - `intake <request>`
 - `challenge <question>`
 
@@ -293,6 +296,7 @@ Review is read-only unless fixes are separately authorized. Report findings by s
 - No execution without explicit valid approval.
 - Guardrails cannot be bypassed; they may only be superseded/retired with history.
 - Active Guardrails produce explicit passed/blocked/deferred evaluations; blocks cite stable ids and deferred checks remain visible until their execution gate.
+- Material mutations require path-scoped permits and append-only hash evidence; completion fails closed on policy/workspace drift or unresolved obligations.
 - Task is atomic; Sprint is grouping; Run is an attempt.
 - Retries preserve prior Runs.
 - History is append-only.

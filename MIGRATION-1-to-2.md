@@ -34,14 +34,14 @@ npx scrumrun@latest update --migrate
 
 ### Early v2 Run upgrade
 
-Projects created by the first 2.0.0 build may contain prose-based Run transitions. The same ongoing-project commands detect this layout without writes and, after explicit `--migrate`, upgrade it to ledger schema 1:
+Projects created by earlier 2.x builds may contain prose-based Run transitions or inferred Guardrail fields. The same ongoing-project commands detect this layout without writes and, after explicit `--migrate`, upgrade the Run ledger and security schemas:
 
 ```text
 .scrumrun/.migration/run-ledger-v1/manifest.json
 .scrumrun/.migration/run-ledger-v1/backup/runs/RUN-NNN.md
 ```
 
-Every changed Run and `method.json` is hashed and backed up byte-exactly. Proven transition chains become ordered `RUN-NNN-EVT-NNN` events. When only the recorded status is provable, migration emits one evidenced `snapshot`; it does not invent the missing path. Replay is idempotent, an interrupted apply restores prepared sources, and rollback refuses when a Run changed after migration.
+Every changed Run, `guardrails.md`, and `method.json` is hashed and backed up byte-exactly. Inferred legacy Guardrail fields become explicit without deleting the original prose. Proven transition chains become ordered `RUN-NNN-EVT-NNN` events. When only the recorded status is provable, migration emits one evidenced `snapshot`; it does not invent the missing path. Existing terminal Runs remain historical; new/retried Runs bind policy obligations and the Mutation Gateway. Replay is idempotent, an interrupted apply restores prepared sources, and rollback refuses when a changed artifact moved after migration.
 
 ## Standalone flow
 
