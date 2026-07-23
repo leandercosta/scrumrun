@@ -4,15 +4,19 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.2.0 - 2026-07-23
+
 ### Security
 
 - Added fail-closed, 15-minute, path-scoped Mutation Gateway permits with policy/workspace binding, before/after hashes, read-only and symlink checks, new-secret detection, and append-only Run evidence.
 - Deferred Guardrails now become persisted Run obligations; unresolved obligations, policy drift, workspace bypass, and pending canonical transactions block completion.
 - Fresh and explicitly migrated projects require structured `Status`, `Enforcement`, `Scope`, and `Rule` fields and advertise Guardrail, obligation, and Mutation Gateway schemas in `method.json`.
+- Added per-project `allow_secrets_in` config.md allowlist so owners can exempt non-canonical descriptive files (e.g. v1 `history.md`, `sprint.md`) from secret-like content detection without weakening canonical artifact policy. Exact paths, directory prefixes, and glob patterns are supported. Real `sk-…` / `AKIA…` / JWT / PEM shapes are never exempted because they always carry a real value.
 
 ### Changed
 
 - Project conformance now covers 21 executable invariants and detects active Run mutation bypasses.
+- `lib/security/secrets` exports `loadSecretAllowlist`, `isSecretAllowed`, `containsSecretWithAllowlist`, and `parseFrontmatter` for use by intake, migration, and conformance.
 
 ## 2.1.1 - 2026-07-22
 
