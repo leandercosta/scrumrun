@@ -22,6 +22,7 @@ Read in the order that matches how deep you want to go.
 | Doc | For | Time |
 |---|---|---|
 | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) | Install, migration, and daily-use issues with fixes. | as needed |
+| [`ERROR-CODES.md`](ERROR-CODES.md) | Catalog of stable `SR-E-NNN` codes with summary + remediation for every user-facing failure. | as needed |
 | [`RELEASE-SCORECARD.md`](RELEASE-SCORECARD.md) | Evidence-backed local readiness signals per release. | 5 min |
 
 ## Go deep

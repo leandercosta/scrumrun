@@ -6,6 +6,14 @@ All notable changes follow Semantic Versioning.
 
 ### Added
 
+- Stable error catalog in [`lib/errors.js`](lib/errors.js) exposing a `ScrumRunError` class plus `describe`/`codes` accessors, and a human view in [`docs/ERROR-CODES.md`](docs/ERROR-CODES.md). Codes follow `SR-E-NNN` with reserved ranges per subsystem and are guaranteed stable once assigned.
+- `sc config doctor --recover --dry-run` previews every pending kernel transaction, describes each planned rollback or commit-verification, warns about unsafe paths, journal integrity failures, or owner-touched files, and exits non-zero when at least one transaction cannot be recovered safely — never writes.
+- Invariant `I-22`: the semantic index's declared search backend must match the runtime's actual capabilities. Conformance now emits a `high` `SEARCH_BACKEND_MISMATCH` finding when a cache advertises `fts5` on a runtime that cannot execute it, replacing the previous lazy-rebuild-only behaviour that hid the drift.
+- `previewPendingRecovery` exported from `lib/v2/transaction` for library consumers.
+- Property-based intake tests: 200 adversarial inputs per run (NUL bytes, ANSI escapes, homoglyphs, injection shapes, oversize strings) proving `planRequest` is total, never throws unclassified errors, and does not mutate `.scrumrun/`.
+
+### Changed
+
 - `sc plan run --render RUN-NNN` prints the ledger as a chronological, human-readable timeline with actors, transitions, reasons, evidence, and total span. Complements the existing `--show` (raw Markdown) so auditing no longer requires reading JSON blocks by hand.
 - `sc plan run --stats [--task TASK-NNN] [--feature FEAT-NNN] [--sprint SPRINT-NNN] [--json]` aggregates every Run in the project into status mix, p50/p95/max time in `VALIDATING` and `EXECUTING`, retry counts per Task, completions after prior failure, and guardrail/mutation event totals — computed straight over the canonical ledger, no separate index.
 - New modules `lib/commands/run-render` and `lib/commands/run-stats` expose `renderRun`, `renderRunFromDisk`, `computeStats`, and `renderStats` for library consumers.

@@ -25,7 +25,7 @@ const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "revi
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
 const { indexPath, indexStatus, mapStatus, queryIndex, rebuildIndex, writeMap } = require(path.join(root, "lib", "memory", "index"));
 const { auditProject } = require(path.join(root, "lib", "v2", "conformance"));
-const { recoverPendingTransactions } = require(path.join(root, "lib", "v2", "transaction"));
+const { recoverPendingTransactions, previewPendingRecovery } = require(path.join(root, "lib", "v2", "transaction"));
 const { containsSecret } = require(path.join(root, "lib", "security", "secrets"));
 
 const COMMANDS = ["sc"];
@@ -1493,7 +1493,7 @@ function executeRootRoute(route) {
   if (noun === "config" && subject === "migrate") return runMigration(routeArgs);
   if (noun === "config" && subject === "doctor") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
-    return doctor(target, { strict: routeArgs.includes("--strict"), recover: routeArgs.includes("--recover") });
+    return doctor(target, { strict: routeArgs.includes("--strict"), recover: routeArgs.includes("--recover"), dryRun: routeArgs.includes("--dry-run") });
   }
   if (noun === "config" && subject === "update") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
@@ -2310,7 +2310,7 @@ function runMigration(parts) {
   }
 }
 
-function doctor(target = "all", { compatibility = false, strict = false, recover = false } = {}) {
+function doctor(target = "all", { compatibility = false, strict = false, recover = false, dryRun = false } = {}) {
   const home = os.homedir();
   const checks = [];
   const commands = compatibility ? [...COMMANDS, ...COMPATIBILITY_COMMANDS] : COMMANDS;
@@ -2319,6 +2319,33 @@ function doctor(target = "all", { compatibility = false, strict = false, recover
   if (recover) {
     const scrumDir = path.join(process.cwd(), ".scrumrun");
     if (!fs.existsSync(scrumDir)) throw new Error("Cannot recover transactions outside a ScrumRun project.");
+    if (dryRun) {
+      const preview = previewPendingRecovery(scrumDir);
+      if (preview.errors.length) {
+        for (const err of preview.errors) console.error(`dry-run: ${err}`);
+        process.exitCode = 1;
+        return;
+      }
+      if (!preview.plans.length) {
+        console.log("dry-run: no pending kernel transactions to recover");
+      } else {
+        console.log(`dry-run: ${preview.plans.length} pending transaction(s) would be handled as follows:`);
+        for (const plan of preview.plans) {
+          const header = `  ${plan.id} (${plan.status}) → ${plan.action}${plan.name ? `  [${plan.name}]` : ""}`;
+          console.log(header);
+          for (const warning of plan.warnings) console.log(`    ! ${warning}`);
+          for (const file of plan.files) console.log(`    · ${file.relative} (${file.from} → ${file.to})`);
+        }
+        const blocked = preview.plans.filter((plan) => plan.action === "blocked").length;
+        if (blocked) {
+          console.log(`dry-run: ${blocked} transaction(s) cannot be recovered automatically.`);
+          process.exitCode = 1;
+        } else {
+          console.log("dry-run: safe to re-run without --dry-run to apply.");
+        }
+      }
+      return;
+    }
     const recovered = recoverPendingTransactions(scrumDir);
     console.log(recovered.length
       ? `recovered ${recovered.map((item) => `${item.id}:${item.action}`).join(", ")}`
@@ -2440,7 +2467,7 @@ if (!command || command === "--help" || command === "-h") {
   runMigration(args.slice(1));
 } else if (command === "doctor") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  doctor(target, { compatibility: args.includes("--compat"), strict: args.includes("--strict"), recover: args.includes("--recover") });
+  doctor(target, { compatibility: args.includes("--compat"), strict: args.includes("--strict"), recover: args.includes("--recover"), dryRun: args.includes("--dry-run") });
 } else if (command === "claude") {
   const sub = args[1];
   if (sub === "install" || sub === "update") {

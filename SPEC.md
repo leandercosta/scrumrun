@@ -308,6 +308,7 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 - **I-19** Code intelligence is derived, adapter-based, fingerprinted, and cannot silently confirm memory.
 - **I-20** Post-validation learning proposes candidates and never blocks Task/Run completion.
 - **I-21** Material mutations are policy-bound, path-scoped, hash-verified, append-only, and fail closed on bypass; unresolved Guardrail obligations block completion.
+- **I-22** The semantic index's declared search backend must match the runtime capabilities of the current Node.js SQLite build; conformance flags a mismatch instead of relying on lazy runtime fallback.
 
 ## 11. Command grammar
 
@@ -325,7 +326,7 @@ Unknown syntax fails deterministically and never guesses a mutation.
 
 An implementation may claim ScrumRun method 2.0.0 only when it:
 
-1. passes positive and negative tests for I-01 through I-21;
+1. passes positive and negative tests for I-01 through I-22;
 2. enforces every exposed state machine and schema;
 3. proves read-only intake and dry-run migration through full-tree fingerprints;
 4. proves migration failure recovery, rollback safety, and vault exclusion;
