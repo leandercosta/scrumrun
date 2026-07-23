@@ -24,7 +24,7 @@ test("SPEC, CORE, README, skill, templates, and package declare one v2 contract"
   const packageMetadata = require("../package.json");
   assert.equal(packageMetadata.version, "2.2.0");
   assert.equal(packageMetadata.engines.node, ">=22.13.0");
-  assert.match(read("README.md"), /Package:\*\* `2\.1\.1`/);
+  assert.match(read("README.md"), /Package:\*\* `2\.2\.0`/);
   for (const file of ["SPEC.md", "CORE.md", "README.md", "templates/shared/skills/scrumrun/SKILL.md"]) {
     const content = read(file);
     assert.match(content, /2\.0(?:\.0)?/, `${file} must declare v2`);
