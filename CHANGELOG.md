@@ -4,6 +4,14 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+### Documentation
+
+- Added [`docs/QUICKSTART.md`](docs/QUICKSTART.md): first Run in under 10 minutes, no `SPEC.md` reading required.
+- Added [`docs/INDEX.md`](docs/INDEX.md) with reading-order recommendations by intent (fresh install, integrating a client, upgrading from v1, browsing rationale, troubleshooting).
+- Added a **Terminology quick reference** in the README that maps internal names (`Mutation Gateway`, `Policy Engine`, `Guardrail obligation`, `Canonical projection`, `Executable schema`) to friendlier user-facing forms; both are treated as synonyms.
+- Bumped README package badge to `2.2.0` and linked the Quickstart from the top.
+- Created `.scrumrun/features/FEAT-001.md` to record the ongoing "Method 2.x — Onboarding, Visible Auditability, and Stable Diagnostics" initiative and its four-wave scope.
+
 ## 2.2.0 - 2026-07-23
 
 ### Security
