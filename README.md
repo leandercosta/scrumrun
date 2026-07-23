@@ -159,6 +159,32 @@ npx scrumrun@latest doctor codex --strict
 
 Approved Runs persist every deferred result as an append-only obligation and bind the exact policy plus workspace baseline. Material source edits use a 15-minute, path-scoped Mutation Gateway permit. Recording verifies before/after hashes, owner/read-only scope, symlinks, new secret-like content, and workspace drift. Validation and completion fail closed when edits bypass that chain or obligations remain unresolved.
 
+### Owner-controlled allowlist for descriptive files
+
+Secret-like content detection is canonical-policy-level and applies to every file outside `vault.local.md`. Owners can exempt specific **non-canonical descriptive paths** from the keyword heuristic by adding frontmatter to `.scrumrun/config.md`:
+
+```yaml
+---
+allow_secrets_in:
+  - goals/main/history.md
+  - goals/main/sprint.md
+  - docs/migration-notes/
+  - "*.legacy.md"
+---
+```
+
+Supported matchers per entry:
+
+- exact path (`goals/main/history.md`)
+- directory prefix ending in `/` (`docs/legacy/`)
+- glob pattern (`*.legacy.md`)
+
+Rules:
+
+- Canonical artifacts (Task, Sprint, Run, Feature, Review, Memory) are **never** eligible — a secret in a canonical file always fails conformance.
+- High-confidence shapes (`sk-…`, `AKIA…`, JWT three-part tokens, PEM private keys, long bearer tokens) are never exempted regardless of path.
+- The allowlist is recorded as evidence of an explicit owner decision and is reviewed by `doctor`.
+
 ## Useful commands
 
 ```bash
