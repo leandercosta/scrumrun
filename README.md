@@ -4,7 +4,9 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `2.1.1` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `2.2.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+
+**New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
 ## The model
 
@@ -74,6 +76,20 @@ Nothing canonical is persisted before approval. Failed retries remain available 
 Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
 
 Linked Task/Run writes use a durable ignored transaction journal. Captured failures roll back immediately; interrupted operations are recovered byte-exactly on retry or through explicit `doctor --recover`. Read-only audit reports pending recovery and never repairs state silently.
+
+## Terminology quick reference
+
+Internal names in the code and spec are precise but occasionally heavy. When they surface in CLI output or docs, the shorter form works too.
+
+| Internal (SPEC/CORE) | User-facing (docs, output) | What it means |
+|---|---|---|
+| Mutation Gateway | edit permit | The 15-minute, path-scoped permission an approved Run needs to edit source files. |
+| Policy Engine | guardrail check | The executable evaluation of every active `GR-NNN` rule before planning and before execution. |
+| Guardrail obligation | pending guardrail | A deferred guardrail check persisted on a Run; must resolve before completion. |
+| Canonical projection | derived view | Generated navigation files such as `state.md` and `map.md` — always regenerable, never authority. |
+| Executable schema | frozen contract | The single machine-checked shape for ids, transitions, and cardinalities. |
+
+The short forms are synonyms — safe to use in issues, PRs, and everyday conversation.
 
 ## Semantic project memory
 
