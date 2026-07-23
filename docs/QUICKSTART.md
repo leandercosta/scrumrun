@@ -77,6 +77,23 @@ RUN-001-EVT-005  completed
 A retry does not overwrite `RUN-001`. It creates `RUN-002` beside it. The
 old attempt stays as evidence.
 
+You can render a Run's ledger as a human timeline instead of reading the
+raw JSON:
+
+```bash
+npx scrumrun@latest sc plan run --render RUN-001
+```
+
+For aggregate signal across every Run in the project — status mix, p50
+and p95 time in `VALIDATING`, retries per Task, guardrail check counts —
+use `--stats`:
+
+```bash
+npx scrumrun@latest sc plan run --stats
+npx scrumrun@latest sc plan run --stats --task TASK-001
+npx scrumrun@latest sc plan run --stats --json
+```
+
 ## Reading the memory
 
 As you work, the project accumulates:

@@ -4,9 +4,16 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+### Added
+
+- `sc plan run --render RUN-NNN` prints the ledger as a chronological, human-readable timeline with actors, transitions, reasons, evidence, and total span. Complements the existing `--show` (raw Markdown) so auditing no longer requires reading JSON blocks by hand.
+- `sc plan run --stats [--task TASK-NNN] [--feature FEAT-NNN] [--sprint SPRINT-NNN] [--json]` aggregates every Run in the project into status mix, p50/p95/max time in `VALIDATING` and `EXECUTING`, retry counts per Task, completions after prior failure, and guardrail/mutation event totals — computed straight over the canonical ledger, no separate index.
+- New modules `lib/commands/run-render` and `lib/commands/run-stats` expose `renderRun`, `renderRunFromDisk`, `computeStats`, and `renderStats` for library consumers.
+
 ### Documentation
 
-- Added [`docs/QUICKSTART.md`](docs/QUICKSTART.md): first Run in under 10 minutes, no `SPEC.md` reading required.
+- Added [`docs/QUICKSTART.md`](docs/QUICKSTART.md): first Run in under 10 minutes, no `SPEC.md` reading required. Now includes the new `sc plan run --render` and `sc plan run --stats` commands.
+- Added [`docs/DEMO.md`](docs/DEMO.md) with the exact asciinema script for a 40-second intake → approve → render → stats demo the owner can record and embed in the README and LP.
 - Added [`docs/INDEX.md`](docs/INDEX.md) with reading-order recommendations by intent (fresh install, integrating a client, upgrading from v1, browsing rationale, troubleshooting).
 - Added a **Terminology quick reference** in the README that maps internal names (`Mutation Gateway`, `Policy Engine`, `Guardrail obligation`, `Canonical projection`, `Executable schema`) to friendlier user-facing forms; both are treated as synonyms.
 - Bumped README package badge to `2.2.0` and linked the Quickstart from the top.

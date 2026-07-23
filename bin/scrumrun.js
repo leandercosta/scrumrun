@@ -1371,6 +1371,37 @@ function executeRootRoute(route) {
     console.log(`Created retry ${result.run.id} for ${result.task.id} (attempt ${result.run.attempt}).`);
     return;
   }
+  if (noun === "plan" && subject === "run" && routeArgs[0] === "--render") {
+    const { renderRunFromDisk } = require(path.join(root, "lib", "commands", "run-render"));
+    const runId = routeArgs[1];
+    if (!runId) {
+      console.error("--render requires a RUN-NNN id.");
+      process.exitCode = 1;
+      return;
+    }
+    try {
+      console.log(renderRunFromDisk(process.cwd(), runId));
+    } catch (error) {
+      console.error(error.message);
+      process.exitCode = 1;
+    }
+    return;
+  }
+  if (noun === "plan" && subject === "run" && routeArgs[0] === "--stats") {
+    const { computeStats, renderStats } = require(path.join(root, "lib", "commands", "run-stats"));
+    const filters = {
+      task: optionValue(routeArgs.slice(1), "--task"),
+      feature: optionValue(routeArgs.slice(1), "--feature"),
+      sprint: optionValue(routeArgs.slice(1), "--sprint")
+    };
+    const summary = computeStats(process.cwd(), filters);
+    if (routeArgs.includes("--json")) {
+      console.log(JSON.stringify({ filters, summary }, null, 2));
+    } else {
+      console.log(renderStats(summary, filters));
+    }
+    return;
+  }
   if (noun === "plan" && ["task", "run"].includes(subject) && ["--list", "--show"].includes(routeArgs[0])) {
     const repository = new ArtifactRepository(projectFile());
     if (routeArgs[0] === "--list") {
