@@ -84,6 +84,8 @@ AGENTS.md
 
 **Before querying project state, read `.scrumrun/method.json`.** Its `paths` block is the authoritative index of every canonical location in this project. Navigate by that index; if a path is not declared there, it is not canonical truth. Directory listing and grep are fallbacks — never the first step. A ScrumRun-aware agent must never search for `goals/`, `backlog.md`, `sprint.md`, or any legacy layout: those are absent by design once migration completes and are surfaced only through `.scrumrun/.migration-backup/`.
 
+**Never write Run events by hand.** Runs are only mutated through the CLI: `sc plan run --validate | --learn | --complete | --resume | --fail | --block | --satisfy-guardrail | --authorize-mutation | --record-mutation`. Editing `runs/RUN-NNN.md` directly bypasses schema validation, produces invalid ledger events (invalid `type`, unknown evidence `kind`, missing snapshot, wrong `from`), and breaks conformance for the entire project. If the CLI does not expose the shape you need, propose a spec change through an ADR — do not invent event vocabulary. Existing hand-written Runs can be recovered with `sc plan run --normalize-legacy` (byte-exact original preserved in `.scrumrun/.migration-backup/runs/`).
+
 Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
 `state.md` and the semantic index use two-tier freshness checks. Matching path/stat watch fingerprints avoid rereading unchanged sources; any metadata drift falls back to complete content hashing. A cache schema mismatch rebuilds the disposable index once. Watch metadata is only an optimization and never authority.

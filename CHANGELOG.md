@@ -4,6 +4,21 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.5.0 - 2026-07-23
+
+### Added
+
+- `sc plan run --normalize-legacy [--dry-run]` collapses malformed Run ledgers (invalid `type`, unknown evidence `kind`, missing snapshot invariant, unparseable `task` reference, empty ledger) into a single valid `snapshot` event that preserves the fact of the Run without inventing transitions. Byte-exact originals are moved to `.scrumrun/.migration-backup/runs/RUN-NNN.md` (numbered suffix if a backup already exists). Coherent with ADR-021: ambiguous history becomes evidence, never invented state.
+- Invariant **I-24**: canonical Runs must pass ledger validation. Hand-written Runs surface as a `high` `RUN_WRITE_BYPASS` finding in `doctor --strict`, with a pointer to the recovery command.
+- New module `lib/commands/normalize-legacy` exposes `normalizeLegacyRuns`, `analyze`, `apply`, `renderReport`, `needsNormalization`, and `scanRuns` for library consumers.
+- CORE and the shared SKILL now open with a hard instruction: **never write Run events by hand**. Only the CLI mutates `runs/*.md`. Direct writes produce invalid vocabulary and break conformance; if the CLI does not expose the shape you need, propose a spec change instead of inventing.
+
+### Changed
+
+- Manifest declares `--normalize-legacy` and `--dry-run` on `sc plan run`.
+- SPEC.md conformance range extended to `I-01 through I-24`.
+- Test suite grew from 184 to 192 passing.
+
 ## 2.4.1 - 2026-07-23
 
 ### Added

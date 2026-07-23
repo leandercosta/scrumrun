@@ -1386,6 +1386,27 @@ function executeRootRoute(route) {
     }
     return;
   }
+  if (noun === "plan" && subject === "run" && routeArgs[0] === "--normalize-legacy") {
+    const { normalizeLegacyRuns, renderReport } = require(path.join(root, "lib", "commands", "normalize-legacy"));
+    const dryRun = routeArgs.includes("--dry-run");
+    const scrumDir = path.join(process.cwd(), ".scrumrun");
+    try {
+      const result = normalizeLegacyRuns(scrumDir, { dryRun });
+      console.log(renderReport(result.plan, result.applied));
+      if (!dryRun && result.applied && result.applied.length) {
+        refreshState(scrumDir);
+        console.log(`\nNormalized ${result.applied.length} Run(s). Byte-exact originals live under .scrumrun/.migration-backup/runs/.`);
+      } else if (dryRun && result.plan.malformed) {
+        console.log(`\nDry-run only. Re-run without --dry-run to apply the plan.`);
+      } else if (!result.plan.malformed) {
+        console.log(`\nEvery Run already conforms to the current ledger schema. Nothing to normalize.`);
+      }
+    } catch (error) {
+      console.error(error.message);
+      process.exitCode = 1;
+    }
+    return;
+  }
   if (noun === "plan" && subject === "run" && routeArgs[0] === "--stats") {
     const { computeStats, renderStats } = require(path.join(root, "lib", "commands", "run-stats"));
     const filters = {

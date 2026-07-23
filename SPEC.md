@@ -310,6 +310,7 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 - **I-21** Material mutations are policy-bound, path-scoped, hash-verified, append-only, and fail closed on bypass; unresolved Guardrail obligations block completion.
 - **I-22** The semantic index's declared search backend must match the runtime capabilities of the current Node.js SQLite build; conformance flags a mismatch instead of relying on lazy runtime fallback.
 - **I-23** `method.json` declares the canonical path index for every artifact family so agents navigate by declaration, not by search. Missing or drifted paths fail conformance; grep and directory scans are fallbacks, never the first step.
+- **I-24** Runs are only mutated through the CLI. A canonical Run whose ledger fails validation is a bypass — conformance reports `RUN_WRITE_BYPASS` with a pointer to the recovery command `sc plan run --normalize-legacy`, which collapses the bad ledger into a single `snapshot` event and preserves the byte-exact original under `.scrumrun/.migration-backup/runs/`.
 
 ## 11. Command grammar
 
@@ -327,7 +328,7 @@ Unknown syntax fails deterministically and never guesses a mutation.
 
 An implementation may claim ScrumRun method 2.0.0 only when it:
 
-1. passes positive and negative tests for I-01 through I-23;
+1. passes positive and negative tests for I-01 through I-24;
 2. enforces every exposed state machine and schema;
 3. proves read-only intake and dry-run migration through full-tree fingerprints;
 4. proves migration failure recovery, rollback safety, and vault exclusion;
