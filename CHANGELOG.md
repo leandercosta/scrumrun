@@ -4,6 +4,18 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.4.1 - 2026-07-23
+
+### Added
+
+- `sc plan intake` now renders a **pretty terminal layout** in interactive TTYs: a boxed intake pipeline with streaming stages, aligned Classification / Why / Risk / Deferred-guardrails fields, and a highlighted approval-command box that mirrors the LP replay. Zero-dep — pure ANSI + Unicode. Falls back automatically to the existing Markdown summary when stdout is piped, `NO_COLOR` is set, or `--plain` is passed. `--json` returns the full structured plan for automation.
+- New module `lib/commands/pretty-intake` exposes `canRenderPretty`, `renderIntake`, and `renderIntakePlain` for library consumers.
+
+### Changed
+
+- Manifest declares `--plain` and `--json` on `sc plan intake`.
+- Test suite grew from 177 to 184 passing (added contract tests for TTY detection, `NO_COLOR` / `FORCE_COLOR` overrides, backwards-compatible plain output, and blocked-plan rendering).
+
 ## 2.4.0 - 2026-07-23
 
 ### Added
