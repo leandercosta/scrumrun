@@ -123,7 +123,8 @@ test("an unusable recorded FTS5 backend triggers one disposable rebuild", () => 
 
   const stale = indexStatus(root);
   assert.equal(stale.stale, true);
-  assert.match(stale.reason, /unavailable FTS5/);
+  assert.match(stale.reason, /declared search backend fts5 is not available/);
+  assert.equal(stale.backendMismatch, true);
   const result = queryIndex(root, "Cross-runtime pricing");
   assert.equal(result.rebuilt, true);
   assert.equal(result.results[0].id, insight.record.id);

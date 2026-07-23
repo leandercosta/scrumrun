@@ -145,3 +145,12 @@ and never migrated.
 **How do I add my own project rules?** Edit `.scrumrun/guardrails.md`.
 Each rule has `Status`, `Enforcement`, `Scope`, and `Rule` fields and gets
 a stable `GR-NNN` id.
+
+**What if something goes wrong?** Every user-facing failure carries a
+stable `SR-E-NNN` code. Grep it in [`docs/ERROR-CODES.md`](ERROR-CODES.md)
+for the exact remediation. If a canonical transaction was interrupted,
+preview the repair before running it:
+
+```bash
+npx scrumrun@latest sc config doctor --recover --dry-run
+```

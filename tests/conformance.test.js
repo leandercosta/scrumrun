@@ -58,9 +58,9 @@ test("every declared transition starts and ends in the schema for its kind", () 
   }
 });
 
-test("all twenty-one normative invariants point to executable test evidence", () => {
+test("all twenty-two normative invariants point to executable test evidence", () => {
   const specIds = [...read("SPEC.md").matchAll(/\*\*(I-\d{2})\*\*/g)].map((match) => match[1]);
-  assert.deepEqual(specIds, Array.from({ length: 21 }, (_, index) => `I-${String(index + 1).padStart(2, "0")}`));
+  assert.deepEqual(specIds, Array.from({ length: 22 }, (_, index) => `I-${String(index + 1).padStart(2, "0")}`));
   assert.deepEqual(INVARIANTS.map((item) => item.id), specIds);
   const testSources = fs.readdirSync(path.join(root, "tests"))
     .filter((name) => name.endsWith(".test.js"))
@@ -77,7 +77,7 @@ test("artifact conformance review passes a clean v2 project and fails unsafe can
   execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
   const audit = auditProject(project);
   assert.equal(audit.passed, true, JSON.stringify(audit.findings));
-  assert.equal(audit.invariants, 21);
+  assert.equal(audit.invariants, 22);
   const cli = JSON.parse(execFileSync(process.execPath, [bin, "sc", "review", "artifact", "--run"], { cwd: project, encoding: "utf8" }));
   assert.equal(cli.passed, true);
 
