@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `2.2.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `2.3.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -228,19 +228,35 @@ npx scrumrun@latest sc knowledge study calculateFinalPrice
 # rebuild or inspect the derived graph
 npx scrumrun@latest sc knowledge map --build
 npx scrumrun@latest sc knowledge map --show
+
+# read a Run as a human timeline instead of raw ledger JSON
+npx scrumrun@latest sc plan run --render RUN-001
+
+# aggregate every Run in the project (p50/p95 durations, retries, guardrail counts)
+npx scrumrun@latest sc plan run --stats
+npx scrumrun@latest sc plan run --stats --task TASK-001 --json
+
+# preview a canonical-transaction recovery before touching disk
+npx scrumrun@latest sc config doctor --recover --dry-run
 ```
 
 The command manifest in `lib/commands/manifest.js` generates help and compatibility adapters, preventing client grammar drift. A recorded artifact Review cannot self-declare success: ScrumRun reruns the audit and derives the `REV-NNN` verdict from the result.
+
+Every user-facing failure carries a stable [`SR-E-NNN` code](docs/ERROR-CODES.md) with a permanent meaning, a short summary, and an exact remediation.
 
 ## Documentation
 
 | File | Purpose |
 |---|---|
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | First Run in under 10 minutes, no `SPEC.md` reading required. |
+| [`docs/INDEX.md`](docs/INDEX.md) | Reading-order recommendations across every doc, by intent. |
 | [`CORE.md`](./CORE.md) | Operational runtime guide for agents. |
 | [`SPEC.md`](./SPEC.md) | Normative 2.0 state machines, invariants, and conformance rules. |
 | [`DECISIONS.md`](./DECISIONS.md) | Architectural decisions and trade-offs. |
+| [`docs/ERROR-CODES.md`](docs/ERROR-CODES.md) | Stable `SR-E-NNN` catalog with remediation for every failure. |
 | `MIGRATION-1-to-2.md` | Upgrade, verification, rollback, and recovery guide. |
 | [`docs/RELEASE-SCORECARD.md`](docs/RELEASE-SCORECARD.md) | Evidence-backed local readiness scores and residual release risks. |
+| [`docs/DEMO.md`](docs/DEMO.md) | Script for a 40-second asciinema demo of the full intake → approve → render → stats loop. |
 
 ScrumRun remains client-independent: any agent that reads Markdown can follow `CORE.md`; Codex, Claude Code, and OpenCode integrations are accelerators.
 
