@@ -29,11 +29,12 @@ Apply instructions in this order:
 
 Normal hot path:
 
-1. read `AGENTS.md`;
-2. read `.scrumrun/guardrails.md`;
-3. read `.scrumrun/state.md`;
-4. follow the ids/pointers to only the relevant canonical artifacts;
-5. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
+1. read `.scrumrun/method.json` — its `paths` block is the authoritative index of every canonical location; navigate by that index and never grep for legacy paths (`goals/`, `backlog.md`, `sprint.md`, `history.md`);
+2. read `AGENTS.md`;
+3. read `.scrumrun/guardrails.md`;
+4. read `.scrumrun/state.md`;
+5. follow the ids/pointers to only the relevant canonical artifacts;
+6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
