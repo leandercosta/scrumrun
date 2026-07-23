@@ -36,6 +36,8 @@ Normal hot path:
 5. follow the ids/pointers to only the relevant canonical artifacts;
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
+**Never write Run events by hand.** Only the CLI mutates `runs/RUN-NNN.md`: `sc plan run --validate | --learn | --complete | --resume | --fail | --block | --satisfy-guardrail | --authorize-mutation | --record-mutation`. Direct edits produce invalid ledger events (unknown `type` like `execution`/`validation`/`learning`, unknown evidence `kind` like `guardrail-check`/`build`/`task-status`, missing snapshot invariant) and break project conformance. If the CLI does not expose the shape you need, propose a spec change instead of inventing vocabulary. Recover hand-written Runs via `sc plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
+
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
 Generated state and semantic indexes use a metadata-watch fast path with a full content-hash fallback. Treat cache-schema mismatch as a request to rebuild the disposable projection, never as permission to rewrite canonical Markdown.
