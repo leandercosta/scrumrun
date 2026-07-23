@@ -1,6 +1,28 @@
 {
   "method": "2.0.0",
   "layout": "v2",
+  "paths_schema": 1,
+  "paths": {
+    "guardrails": "guardrails.md",
+    "config": "config.md",
+    "project": "project.md",
+    "core": "core.md",
+    "state_view": "state.md",
+    "map_view": "map.md",
+    "tasks": "tasks/",
+    "sprints": "sprints/",
+    "features": "features/",
+    "runs": "runs/",
+    "reviews": "reviews/",
+    "memory": {
+      "knowledge": "memory/knowledge/",
+      "decisions": "memory/decisions/",
+      "insights": "memory/insights/",
+      "dossiers": "memory/dossiers/"
+    },
+    "vault_local": "vault.local.md",
+    "cache": ".cache/"
+  },
   "schemas": {
     "run_ledger": 1,
     "guardrails": 1,

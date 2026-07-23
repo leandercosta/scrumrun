@@ -4,6 +4,20 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.4.0 - 2026-07-23
+
+### Added
+
+- `method.json` now carries a canonical `paths` block plus `paths_schema: 1`. The block declares the exact relative location of every artifact family (`guardrails`, `config`, `project`, `core`, `state_view`, `map_view`, `tasks`, `sprints`, `features`, `runs`, `reviews`, `memory.{knowledge,decisions,insights,dossiers}`, `vault_local`, `cache`) so ScrumRun-aware agents navigate by index instead of grep. Powered by a new `lib/v2/paths` module used by init, migration, and conformance so drift is impossible.
+- Invariant **I-23** — *method.json declares canonical paths so agents navigate by index, not by search*. `doctor --strict` flags `METHOD_PATHS_MISSING`, `METHOD_PATHS_DRIFT`, and `METHOD_PATHS_SCHEMA` findings; a `high` severity blocks conformance until `update --migrate` regenerates the block.
+- CORE and the shared SKILL now open with a hard instruction: read `.scrumrun/method.json` **before** any grep, and never search for legacy paths (`goals/`, `backlog.md`, `sprint.md`, `history.md`). Directory listing is a fallback, never a first step.
+
+### Changed
+
+- Migration output writes `method.json` through the shared `renderMethodJson` helper, so v1→v2 migrations backfill the `paths` block automatically.
+- SPEC.md conformance range extended to `I-01 through I-23`.
+- Test suite grew from 170 to 177 passing.
+
 ## 2.3.0 - 2026-07-23
 
 ### Added
