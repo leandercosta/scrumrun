@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.5.1 - 2026-07-23
+
+### Fixed
+
+- `doctor` no longer crashes on Runs with a null `task` reference. `conformance.js` now guards `repository.read("task", …)` and emits a specific `RUN_TASK_MISSING` finding when `record.task` is `null`, differentiating it from the "task exists but is invalid" case. Affects any project normalized with `sc plan run --normalize-legacy` where the original Run had an unparseable task ref.
+
 ## 2.5.0 - 2026-07-23
 
 ### Added
