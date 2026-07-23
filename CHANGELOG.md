@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.3.0 - 2026-07-23
+
 ### Added
 
 - Stable error catalog in [`lib/errors.js`](lib/errors.js) exposing a `ScrumRunError` class plus `describe`/`codes` accessors, and a human view in [`docs/ERROR-CODES.md`](docs/ERROR-CODES.md). Codes follow `SR-E-NNN` with reserved ranges per subsystem and are guaranteed stable once assigned.
