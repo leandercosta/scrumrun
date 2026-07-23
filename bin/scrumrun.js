@@ -1351,19 +1351,18 @@ function executeRootRoute(route) {
     }
     const request = routeArgs[0] === "--request" ? routeArgs.slice(1).join(" ") : routeArgs.join(" ");
     const plan = planRequest(process.cwd(), request);
-    console.log(`# ScrumRun Intake`);
-    console.log(`State: ${plan.state}`);
-    console.log(`Classification: ${plan.classification.type} (${plan.classification.reason})`);
-    console.log(`Risk: ${plan.risk.level} — ${plan.risk.reasons.join("; ")}`);
-    console.log(`Policy: ${plan.policy.status} (${plan.policy.checked.length} checked; ${plan.policy.deferred.length} deferred)`);
-    for (const violation of plan.policy.violations) console.log(`BLOCKED: ${violation}`);
-    for (const result of plan.policy.evaluations.filter((item) => item.status === "deferred")) {
-      console.log(`DEFERRED: ${result.guardrail} ${result.code}: ${result.message}`);
+    if (routeArgs.includes("--json")) {
+      console.log(JSON.stringify(plan, null, 2));
+      return;
+    }
+    const { canRenderPretty, renderIntake, renderIntakePlain } = require(path.join(root, "lib", "commands", "pretty-intake"));
+    const forcePlain = routeArgs.includes("--plain");
+    if (!forcePlain && canRenderPretty()) {
+      console.log(renderIntake(plan));
+    } else {
+      console.log(renderIntakePlain(plan));
     }
     for (const warning of plan.context.warnings) console.log(`WARNING: ${warning}`);
-    if (plan.approvalToken) {
-      console.log(`Approval: scrumrun sc plan intake --approve ${plan.approvalToken}`);
-    }
     return;
   }
   if (noun === "plan" && subject === "task" && routeArgs[0] === "--retry") {

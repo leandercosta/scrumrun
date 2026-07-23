@@ -58,6 +58,12 @@ proposals. Approving is one command:
 npx scrumrun@latest sc plan intake --approve <token>
 ```
 
+In an interactive terminal, the output is rendered as a boxed intake
+pipeline with the exact structure shown on the landing page. Pipe the
+command (`| less`, `> intake.txt`) or set `NO_COLOR=1` to get the plain
+Markdown summary instead; add `--json` for a fully structured payload
+you can feed to CI or a downstream tool.
+
 Only then does a Task and a Run get created.
 
 ## Watching the Run
