@@ -1,6 +1,6 @@
 {
   "name": "scrumrun",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Evidence-driven Agile runtime and semantic project memory for AI coding agents.",
   "bin": {
     "scrumrun": "bin/scrumrun.js",

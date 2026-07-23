@@ -220,6 +220,8 @@ Configuration controls preferences but cannot weaken higher levels. Missing or s
 
 Every project Guardrail has a stable `GR-NNN` identity, lifecycle status, rule text, enforcement mode, and optional scope/source. Intake evaluates active Guardrails into structured `passed`, `blocked`, or `deferred` results. A block names the responsible Guardrail and machine-readable reason code; a deferred result is shown explicitly and must be enforced at the mutation, migration, review, or owner gate it names. Deferred checks do not become evidence of a pass.
 
+Secret-like content detection is canonical-policy-level and applies to every artifact, evidence, intake payload, and source file outside the local vault. Owners may exempt specific **non-canonical descriptive paths** from the keyword heuristic through `config.md` frontmatter `allow_secrets_in: [paths...]` (exact paths, directory prefixes ending in `/`, or glob patterns). Canonical artifacts (Task, Sprint, Run, Feature, Review, Memory) are never eligible for the allowlist: a secret in a canonical file always fails conformance. Exemption never applies to high-confidence shapes (`sk-…`, `AKIA…`, JWT, PEM private keys, long bearer tokens) regardless of path. The allowlist is recorded as evidence of an explicit owner decision and is reviewed by `doctor`.
+
 The executable Policy Engine may infer enforcement for migrated prose, but fresh v2 policy declares it explicitly. Unknown enforcement, duplicate ids, inactive-only policy, configuration that disables approval, and unsafe read-only paths fail conformance. Configuration can tune presentation and workflow preferences; it cannot retire, bypass, or weaken active Guardrails.
 
 ## 7. Semantic memory and code intelligence

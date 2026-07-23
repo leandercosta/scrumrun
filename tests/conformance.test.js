@@ -22,7 +22,7 @@ function read(relative) {
 test("SPEC, CORE, README, skill, templates, and package declare one v2 contract", () => {
   assert.equal(METHOD_VERSION, "2.0.0");
   const packageMetadata = require("../package.json");
-  assert.equal(packageMetadata.version, "2.1.1");
+  assert.equal(packageMetadata.version, "2.2.0");
   assert.equal(packageMetadata.engines.node, ">=22.13.0");
   assert.match(read("README.md"), /Package:\*\* `2\.1\.1`/);
   for (const file of ["SPEC.md", "CORE.md", "README.md", "templates/shared/skills/scrumrun/SKILL.md"]) {
