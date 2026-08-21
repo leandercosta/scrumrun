@@ -4,6 +4,16 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.2 - 2026-08-21
+
+### Fixed
+
+- **Duplicate artifact ids across concurrent agents.** All create operations now serialize on a single global `create` lock (`approveRequest`, `retryTask`, `startBacklogTask`, `createMemory`, `recordArtifactReview`) instead of independent per-operation locks (`approval`, `task-…`, `memory-…`, `review-artifact`). Previously two agents could read the same `max` id and both write `TASK-NNN`/`RUN-NNN`; the race is now closed at the source. Conformance's `ID_DUPLICATE` finding remains as a detection backstop for hand-written files.
+
+### Validation
+
+- Added `tests/id-concurrency.test.js` — concurrent backlog starts and memory proposals across child processes allocate unique ids.
+
 ## 2.7.1 - 2026-08-21
 
 ### Added
