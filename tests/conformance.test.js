@@ -10,7 +10,7 @@ const { ArtifactRepository } = require("../lib/v2/artifacts");
 const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib/v2/schema");
 const { INVARIANTS, auditProject } = require("../lib/v2/conformance");
 const { planRequest } = require("../lib/runtime/request-engine");
-const { approveRequest, nextBacklogTask, startBacklogTask, transitionRun } = require("../lib/runtime/orchestrator");
+const { approveRequest, nextBacklogTask, retryTask, startBacklogTask, transitionRun } = require("../lib/runtime/orchestrator");
 
 const root = path.resolve(__dirname, "..");
 const bin = path.join(root, "bin", "scrumrun.js");
@@ -288,6 +288,27 @@ test("approved Task records the agent identity as assignee", () => {
     execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
     const approved = approveRequest(project, planRequest(project, "Fix pricing").approvalToken);
     assert.equal(approved.task.assignee, "codex");
+  } finally {
+    if (original === undefined) delete process.env.SCRUMRUN_AGENT;
+    else process.env.SCRUMRUN_AGENT = original;
+  }
+});
+
+test("retry rejects a Task assigned to another agent unless reassigned", () => {
+  const original = process.env.SCRUMRUN_AGENT;
+  try {
+    process.env.SCRUMRUN_AGENT = "codex";
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-retry-gate-"));
+    execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+    const approved = approveRequest(project, planRequest(project, "Fix pricing rounding").approvalToken);
+    transitionRun(project, approved.run.id, "failed", { note: "Failed." });
+    assert.equal(approved.task.assignee, "codex");
+
+    process.env.SCRUMRUN_AGENT = "claude";
+    assert.throws(() => retryTask(project, approved.task.id), /assigned to codex/);
+
+    const retried = retryTask(project, approved.task.id, { reassign: true });
+    assert.equal(retried.task.assignee, "claude", "reassign transfers ownership to the retrier");
   } finally {
     if (original === undefined) delete process.env.SCRUMRUN_AGENT;
     else process.env.SCRUMRUN_AGENT = original;

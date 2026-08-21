@@ -117,13 +117,24 @@ test("Mutation Gateway rejects tampered permits", () => {
   assert.throws(() => recordMutation(directory, approved.run.id, permit.permit), /integrity check failed/);
 });
 
-test("Mutation Gateway serializes concurrent workspace permits", () => {
+test("Mutation Gateway allows disjoint-path permits and rejects overlapping ones", () => {
   const directory = project();
   const first = approve(directory, "Implement first isolated change");
   const second = approve(directory, "Implement second isolated change");
   const permit = authorizeMutation(directory, first.run.id, ["src/first.js"]);
   assert.ok(permit.permit);
-  assert.throws(() => authorizeMutation(directory, second.run.id, ["src/second.js"]), /Another mutation permit is still active/);
+  assert.ok(authorizeMutation(directory, second.run.id, ["src/second.js"]).permit, "disjoint paths may hold concurrent permits");
+  assert.throws(() => authorizeMutation(directory, second.run.id, ["src/first.js"]), /overlap an active permit/);
+  assert.throws(() => authorizeMutation(directory, second.run.id, ["src/first.js/nested.js"]), /overlap an active permit/);
+});
+
+test("permitsOverlap detects shared paths and parent/child prefixes", () => {
+  const { permitsOverlap } = require("../lib/runtime/mutation-gateway");
+  assert.equal(permitsOverlap(["src/a.js"], ["src/b.js"]), false);
+  assert.equal(permitsOverlap(["src/a.js"], ["src/a.js"]), true);
+  assert.equal(permitsOverlap(["src/"], ["src/a.js"]), true);
+  assert.equal(permitsOverlap(["src/a.js"], ["src/"]), true);
+  assert.equal(permitsOverlap([], ["src/a.js"]), false);
 });
 
 test("Mutation Gateway binds the full policy surface, including config", () => {

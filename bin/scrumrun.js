@@ -1420,7 +1420,7 @@ function executeRootRoute(route) {
     return;
   }
   if (noun === "plan" && subject === "task" && routeArgs[0] === "--retry") {
-    const result = retryTask(process.cwd(), routeArgs[1]);
+    const result = retryTask(process.cwd(), routeArgs[1], { reassign: routeArgs.includes("--reassign") });
     console.log(`Created retry ${result.run.id} for ${result.task.id} (attempt ${result.run.attempt}).`);
     return;
   }

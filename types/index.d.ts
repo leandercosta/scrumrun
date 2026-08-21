@@ -388,7 +388,7 @@ export function transitionRun(projectRoot: string, runId: string, nextStatus: st
   failurePoint?: string | null;
   interruptPoint?: string | null;
 }): { run: ArtifactRecord; task: ArtifactRecord; learning: { created: string[]; warnings: string[] } | null; recovered?: unknown[] };
-export function retryTask(projectRoot: string, taskId: string, options?: { note?: string; failurePoint?: string | null; interruptPoint?: string | null }): { run: ArtifactRecord; task: ArtifactRecord; content: string; recovered?: unknown[] };
+export function retryTask(projectRoot: string, taskId: string, options?: { note?: string; reassign?: boolean; failurePoint?: string | null; interruptPoint?: string | null }): { run: ArtifactRecord; task: ArtifactRecord; content: string; recovered?: unknown[] };
 export function startBacklogTask(projectRoot: string, taskId: string, options?: { note?: string; failurePoint?: string | null; interruptPoint?: string | null }): { run: ArtifactRecord; task: ArtifactRecord; content: string; recovered?: unknown[] };
 export function nextBacklogTask(repository: ArtifactRepository): ArtifactRecord | null;
 export function refreshState(scrumDir: string): StateProjection;
@@ -458,6 +458,8 @@ export function prepareCompletion(projectRoot: string, runArtifact: { record: Ar
 export function auditActiveWorkspace(projectRoot: string, runArtifact: { record: ArtifactRecord; body: string }): string | null;
 export function assertCanonicalWrite(projectRoot: string, operation: string, contents?: string[]): { operation: string; policy: string };
 export function expectedWorkspace(runArtifact: { record: ArtifactRecord; body: string }): unknown;
+export function pathOverlaps(a: string, b: string): boolean;
+export function permitsOverlap(pathsA: string[], pathsB: string[]): boolean;
 
 // ---------------------------------------------------------------------------
 // lib/runtime/policy-engine

@@ -4,6 +4,29 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.1 - 2026-08-21
+
+### Added
+
+- **Assignee gate on retry** — `sc plan task --retry [--reassign]` now rejects a retry of a Task owned by a different agent identity, preventing two agents from silently taking over each other's failed work. `--reassign` explicitly transfers ownership to the retrier.
+- **Path-scoped mutation permits** — the Mutation Gateway now allows concurrent edit permits for non-overlapping paths (`src/a.js` and `src/b.js` in parallel) and rejects only overlapping paths, replacing the previous global "one permit at a time" rule at the authorize step.
+
+### Notes
+
+- The permit **record** step still uses the global workspace fingerprint, so two agents editing disjoint paths can hold permits concurrently but the second record may still surface drift until path-scoped baselines land (a future change touching invariant I-21).
+
+## 2.7.0 - 2026-08-21
+
+### Added
+
+- `scrumrun repair` covers 100% of vidnap-scale legacy drift.
+
+## 2.6.8 - 2026-08-21
+
+### Added
+
+- Comprehensive `scrumrun repair` covering legacy drift end-to-end.
+
 ## 2.6.0 - 2026-08-21
 
 ### Added
