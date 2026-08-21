@@ -93,7 +93,7 @@ test("ordinary update preflights an early v2 Run ledger without project writes",
   const scrum = path.join(dir, ".scrumrun");
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-ledger-home-"));
   const before = inventoryTree(scrum);
-  const output = execFileSync(process.execPath, [bin, "update", "codex"], {
+  const output = execFileSync(process.execPath, [bin, "update", "codex", "--no-migrate"], {
     cwd: dir,
     encoding: "utf8",
     env: { ...process.env, HOME: home }

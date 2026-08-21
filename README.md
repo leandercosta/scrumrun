@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `2.6.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `2.6.7` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -33,10 +33,22 @@ See [`docs/SCHEMA.md`](docs/SCHEMA.md) for the generated executable contract and
 
 ## Install
 
+Install the CLI globally (recommended — avoids `npx` cache quirks):
+
 ```bash
-npx scrumrun@latest install
-npx scrumrun@latest init
+npm i -g scrumrun@latest
+scrumrun install
+scrumrun init
 ```
+
+To upgrade later:
+
+```bash
+npm i -g scrumrun@latest
+scrumrun update
+```
+
+`npx scrumrun@latest <command>` also works if you prefer not to install globally, but pin the version explicitly (`@latest` or `@2.6.1`) — `npx scrumrun` alone will happily reuse a stale cached version.
 
 `install` adds the client integration; `init` creates the project tree. Initialization is local by default: `.scrumrun/` and the generated agent hint are added to `.git/info/exclude`. Use `--shared` when the team wants to commit the project memory.
 

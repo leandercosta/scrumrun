@@ -44,6 +44,12 @@ const COMMANDS = ["sc"];
 const COMPATIBILITY_COMMANDS = Object.keys(COMMAND_ALIASES);
 const MANAGED_COMMANDS = [...new Set(["sc", "sc-plan", "sc-knowledge", "sc-rules", ...COMPATIBILITY_COMMANDS])];
 
+let installVerbose = false;
+const installSummary = { cleaned: 0, written: 0, skipped: 0, targets: [] };
+function installLog(msg) {
+  if (installVerbose) console.log(msg);
+}
+
 function usage() {
   console.log(`ScrumRun
 
@@ -52,7 +58,7 @@ Usage:
   scrumrun sc
   scrumrun sc <noun> <subject> <action> [args]
   scrumrun install [all|codex|opencode|claude] [--force]
-  scrumrun update  [all|codex|opencode|claude] [--migrate]
+  scrumrun update  [all|codex|opencode|claude] [--no-migrate] [--verbose]
   scrumrun init [--local|--shared] [--lean] [--no-agent-hint] [--force]
   scrumrun status
   scrumrun core [--path|--prompt]
@@ -61,14 +67,19 @@ Usage:
   scrumrun migrate --to 2 --apply
   scrumrun migrate --to 2 --rollback
   scrumrun doctor [all|codex|opencode|claude] [--strict] [--recover]
+  scrumrun repair [--apply]
   scrumrun uninstall [--force]
 
+Install:
+  npm i -g scrumrun@latest          # recommended
+  npx scrumrun@latest <command>     # also works; pin @latest to avoid stale npx cache
+
 Examples:
-  npx scrumrun@latest install
-  npx scrumrun@latest sc knowledge decision --list
-  npx scrumrun@latest init
-  npx scrumrun@latest status
-  npx scrumrun@latest migrate --to 2 --dry-run
+  scrumrun install
+  scrumrun init
+  scrumrun status
+  scrumrun sc knowledge decision --list
+  scrumrun migrate --to 2 --dry-run
 `);
 }
 
@@ -179,8 +190,13 @@ function copyDir(srcDir, destDir, options = {}) {
   return results;
 }
 
-function printResults(title, results) {
+function printResults(title, results, { quietable = false } = {}) {
+  for (const result of results) {
+    if (result.status === "written") installSummary.written += 1;
+    else if (result.status === "skipped") installSummary.skipped += 1;
+  }
   console.log(`\n${title}`);
+  if (quietable && !installVerbose) return;
   for (const result of results) {
     const prefix = result.status === "skipped" ? "skip" : result.status;
     console.log(`  ${prefix} ${result.dest}`);
@@ -197,14 +213,16 @@ function cleanupLegacy(commandsDir, skillsDir) {
       const managed = MANAGED_COMMANDS.some((command) => name === `${command}.md`);
       if (legacyPrefix || oldConsolidated || managed) {
         fs.rmSync(path.join(commandsDir, name), { force: true });
-        console.log(`  rm legacy ${path.join(commandsDir, name)}`);
+        installSummary.cleaned += 1;
+        installLog(`  rm legacy ${path.join(commandsDir, name)}`);
       }
     }
   }
   const oldSkill = path.join(skillsDir, "ai-scrum");
   if (fs.existsSync(oldSkill)) {
     fs.rmSync(oldSkill, { recursive: true, force: true });
-    console.log(`  rm legacy ${oldSkill}`);
+    installSummary.cleaned += 1;
+    installLog(`  rm legacy ${oldSkill}`);
   }
 }
 
@@ -226,8 +244,9 @@ function installClient(label, commandsDir, skillsDir, skillTemplateDir, force, {
       results.push(writeCommandAsset(path.join(commandsDir, `${alias}.md`), renderCompatibilityPrompt(alias), force));
     }
   }
-  printResults(`Installed ${label}`, results);
-  console.log(compatibility
+  installSummary.targets.push(label);
+  printResults(`Installed ${label}`, results, { quietable: true });
+  installLog(compatibility
     ? "  compatibility adapters installed for this v1 upgrade cycle"
     : "  canonical surface: /sc only");
 }
@@ -299,7 +318,7 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
           return { status: "blocked" };
         }
         if (!apply) {
-          console.log("\nThe project remains unchanged. Apply the verified plan with: npx scrumrun@latest update --migrate");
+          console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: npx scrumrun@latest update --no-migrate");
           return { status: "ready" };
         }
         const result = applyRunLedgerMigration(process.cwd());
@@ -325,7 +344,7 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
       return { status: "blocked" };
     }
     if (!apply) {
-      console.log("\nThe project remains unchanged. Apply the verified plan with: npx scrumrun@latest update --migrate");
+      console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: npx scrumrun@latest update --no-migrate");
       return { status: "ready" };
     }
     const result = applyMigration(process.cwd(), { plan: preview.plan });
@@ -340,7 +359,12 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
   }
 }
 
-function updateInstallation(target, { migrate = false } = {}) {
+function updateInstallation(target, { migrate = false, verbose = false } = {}) {
+  installVerbose = verbose;
+  installSummary.cleaned = 0;
+  installSummary.written = 0;
+  installSummary.skipped = 0;
+  installSummary.targets.length = 0;
   const migration = migrationPreflightOnUpdate({ apply: migrate });
   install(target, true, { compatibility: true });
   if (migrate && v2Project()) {
@@ -350,6 +374,10 @@ function updateInstallation(target, { migrate = false } = {}) {
       // Best-effort: regenerating the disposable briefing must never block an integration update.
       // Conformance reports stale or unsafe state separately.
     }
+  }
+  if (!verbose) {
+    const targetSummary = installSummary.targets.join(", ") || "no clients";
+    console.log(`Updated ${targetSummary} — ${installSummary.written} files written, ${installSummary.cleaned} legacy removed. Run with --verbose to see file paths.`);
   }
   return migration;
 }
@@ -1383,7 +1411,7 @@ function executeRootRoute(route) {
     }
     const { canRenderPretty, renderIntake, renderIntakePlain } = require(path.join(root, "lib", "commands", "pretty-intake"));
     const forcePlain = routeArgs.includes("--plain");
-    if (!forcePlain && canRenderPretty()) {
+    if (!forcePlain && process.stdout.isTTY && canRenderPretty()) {
       console.log(renderIntake(plan));
     } else {
       console.log(renderIntakePlain(plan));
@@ -1570,7 +1598,7 @@ function executeRootRoute(route) {
   }
   if (noun === "config" && subject === "update") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
-    return updateInstallation(target, { migrate: routeArgs.includes("--migrate") });
+    return updateInstallation(target, { migrate: !routeArgs.includes("--no-migrate"), verbose: routeArgs.includes("--verbose") });
   }
   if (noun === "config" && subject === "init") {
     const localMode = routeArgs.includes("--local");
@@ -2495,7 +2523,7 @@ if (!command || command === "--help" || command === "-h") {
   console.log(`ScrumRun ${version}`);
 } else if (command === "install" || command === "update") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  if (command === "update") updateInstallation(target, { migrate: args.includes("--migrate") });
+  if (command === "update") updateInstallation(target, { migrate: !args.includes("--no-migrate"), verbose: args.includes("--verbose") });
   else install(target, true, { compatibility: false });
 } else if (command === "sc") {
   runRoot(args.slice(1));
@@ -2507,6 +2535,18 @@ if (!command || command === "--help" || command === "-h") {
     process.exitCode = 1;
   } else {
     initProject({ force, mode: shared ? "shared" : "local", agentHint: shared || !noAgentHint, lean });
+  }
+} else if (command === "repair") {
+  const scrumDir = path.join(process.cwd(), ".scrumrun");
+  try {
+    const { repair } = require(path.join(root, "lib", "commands", "repair"));
+    const doApply = args.includes("--apply");
+    const result = repair(scrumDir, { apply: doApply });
+    console.log(result.report);
+    if (!doApply && result.plan.entries.length) process.exitCode = 0;
+  } catch (error) {
+    console.error(`repair failed: ${error.message}`);
+    process.exitCode = 1;
   }
 } else if (command === "uninstall") {
   uninstallProject(force);

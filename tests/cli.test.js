@@ -18,7 +18,7 @@ test("CLI help uses the public npm command", () => {
     encoding: "utf8",
   });
 
-  assert.match(output, /npx scrumrun@latest init/);
+  assert.match(output, /npm i -g scrumrun@latest/);
   assert.doesNotMatch(output, /github:leandercosta\/scrumrun/);
 });
 

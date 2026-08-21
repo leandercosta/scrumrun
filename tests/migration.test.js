@@ -158,7 +158,7 @@ test("update preflights an ongoing v1 project without changing it", () => {
   const scrum = path.join(dir, ".scrumrun");
   const before = inventoryTree(scrum);
 
-  const output = execFileSync(process.execPath, [bin, "update", "codex"], {
+  const output = execFileSync(process.execPath, [bin, "update", "codex", "--no-migrate"], {
     cwd: dir,
     env: { ...process.env, HOME: home },
     encoding: "utf8"
@@ -166,7 +166,7 @@ test("update preflights an ongoing v1 project without changing it", () => {
 
   assert.match(output, /Project migration preflight/);
   assert.match(output, /Status: dry-run/);
-  assert.match(output, /update --migrate/);
+  assert.match(output, /update to apply/i);
   assert.equal(inventoryTree(scrum).rootSha256, before.rootSha256);
   assert.equal(fs.existsSync(path.join(home, ".codex", "prompts", "sc.md")), true);
 });
