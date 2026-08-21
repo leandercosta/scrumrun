@@ -129,3 +129,28 @@ test("Run ledger migration rejects a symlinked recovery directory without source
   assert.deepEqual(fs.readFileSync(runFile), before);
   assert.deepEqual(fs.readdirSync(outside), []);
 });
+
+test("update --migrate regenerates the legacy state.md as a briefing without touching canonical work", () => {
+  const dir = earlyV2Project();
+  const scrum = path.join(dir, ".scrumrun");
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-ledger-home-"));
+  const taskFile = path.join(scrum, "tasks", "TASK-001.md");
+  const taskBefore = fs.readFileSync(taskFile, "utf8");
+  const runFile = path.join(scrum, "runs", "RUN-001.md");
+  fs.writeFileSync(path.join(scrum, "state.md"), "# ScrumRun State\n\nProjection schema: 1\nGenerated: 2026-07-22T00:00:00.000Z\nSource fingerprint: 0000000000000000000000000000000000000000000000000000000000000000\nWatch fingerprint: 0000000000000000000000000000000000000000000000000000000000000000\nAuthority: none.\n\n## Active Work\n\n- none\n");
+  execFileSync(process.execPath, [bin, "update", "codex", "--migrate"], {
+    cwd: dir,
+    encoding: "utf8",
+    env: { ...process.env, HOME: home }
+  });
+  const state = fs.readFileSync(path.join(scrum, "state.md"), "utf8");
+  assert.match(state, /^# ScrumRun Briefing/m);
+  assert.match(state, /Projection schema: 2/);
+  assert.match(state, /## Now/);
+  assert.match(state, /## Recent/);
+  assert.equal(fs.readFileSync(taskFile, "utf8"), taskBefore, "canonical Task is untouched");
+  const migratedRun = fs.readFileSync(runFile, "utf8");
+  assert.match(migratedRun, /ledger: 1/, "Run is upgraded to the ledger schema");
+  assert.match(migratedRun, /Existing Run/, "Run title is preserved");
+  assert.match(migratedRun, /created → executing|executing/, "Run transition history is recovered, not lost");
+});

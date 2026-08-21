@@ -4,7 +4,9 @@ const test = require("node:test");
 const { sha256 } = require("../lib/v2/artifacts");
 const {
   appendRunEvent,
+  appendTechnicalSummary,
   createRunBody,
+  extractTechnicalSummary,
   migrateLegacyRun,
   parseRunLedger,
   validateRunLedger
@@ -107,4 +109,34 @@ test("Run ledger rejects secret-like event content", () => {
     note: "api_key=super-secret-value-now",
     occurredAt: "2026-07-22T09:10:00.000Z"
   }), /secret-like/);
+});
+
+test("appendTechnicalSummary adds a section after events without breaking the ledger", () => {
+  let current = record();
+  let body = createRunBody(current, { occurredAt: "2026-07-22T09:00:00.000Z" }).body;
+  for (const [status, at, options] of [
+    ["validating", "2026-07-22T09:10:00.000Z", { note: "Tests passed.", evidence: [{ kind: "test", summary: "npm test: 120 passed" }] }],
+    ["learning", "2026-07-22T09:20:00.000Z", { note: "No reusable rule found.", evidence: [{ kind: "insight", ref: "INS:none" }] }],
+    ["completed", "2026-07-22T09:30:00.000Z", { note: "Acceptance criteria passed.", evidence: [{ kind: "review", ref: "REV-001" }] }]
+  ]) {
+    const next = { ...current, status, updated: at.slice(0, 10) };
+    body = appendRunEvent(current, body, next, { ...options, occurredAt: at }).body;
+    current = next;
+  }
+  const summaryText = "Moved calculateFinalPrice to checkout/pricing.ts. Updated 3 call sites.";
+  const withSummary = appendTechnicalSummary(current, body, summaryText);
+  assert.ok(withSummary.includes("## Technical Summary"));
+  assert.ok(withSummary.includes(summaryText));
+  assert.equal(validateRunLedger(current, withSummary).errors.length, 0);
+  assert.equal(extractTechnicalSummary(withSummary), summaryText);
+});
+
+test("extractTechnicalSummary returns null when no summary section exists", () => {
+  const body = createRunBody(record(), { occurredAt: "2026-07-22T09:00:00.000Z" }).body;
+  assert.equal(extractTechnicalSummary(body), null);
+});
+
+test("appendTechnicalSummary rejects secret-like content", () => {
+  const body = createRunBody(record(), { occurredAt: "2026-07-22T09:00:00.000Z" }).body;
+  assert.throws(() => appendTechnicalSummary(record(), body, "api_key=super-secret"), /secret-like/);
 });

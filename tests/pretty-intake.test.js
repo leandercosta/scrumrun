@@ -131,3 +131,21 @@ test("renderIntake renders BLOCKED state with a red marker and no approval box",
   assert.ok(bare.includes("GR-004"));
   assert.ok(!bare.includes("awaiting owner approval"));
 });
+
+test("renderIntake renders a Preview field when plan.preview is set", () => {
+  const output = renderIntake(fakePlan({ preview: "Rounding error in pricing.ts:28. Move Math.round after tax calc." }));
+  const bare = output.replace(/\x1b\[[0-9;]*m/g, "");
+  assert.ok(bare.includes("PREVIEW"), "pretty output must include a Preview field");
+  assert.ok(bare.includes("Rounding error"), "preview text must appear in the output");
+});
+
+test("renderIntake omits Preview when plan.preview is null", () => {
+  const output = renderIntake(fakePlan({ preview: null }));
+  const bare = output.replace(/\x1b\[[0-9;]*m/g, "");
+  assert.ok(!bare.includes("PREVIEW"), "no Preview field when preview is absent");
+});
+
+test("renderIntakePlain includes Preview when set", () => {
+  const plain = renderIntakePlain(fakePlan({ preview: "Short technical summary." }));
+  assert.match(plain, /^Preview: Short technical summary\.$/m);
+});

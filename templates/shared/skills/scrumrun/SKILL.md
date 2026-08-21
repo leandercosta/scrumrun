@@ -32,8 +32,8 @@ Normal hot path:
 1. read `.scrumrun/method.json` — its `paths` block is the authoritative index of every canonical location; navigate by that index and never grep for legacy paths (`goals/`, `backlog.md`, `sprint.md`, `history.md`);
 2. read `AGENTS.md`;
 3. read `.scrumrun/guardrails.md`;
-4. read `.scrumrun/state.md`;
-5. follow the ids/pointers to only the relevant canonical artifacts;
+4. read `.scrumrun/state.md` — the **briefing**: active work, recent completions with their technical summaries, open decisions, active memory, backlog queue, and pointers;
+5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `sc knowledge study "<topic>"`);
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
 **Never write Run events by hand.** Only the CLI mutates `runs/RUN-NNN.md`: `sc plan run --validate | --learn | --complete | --resume | --fail | --block | --satisfy-guardrail | --authorize-mutation | --record-mutation`. Direct edits produce invalid ledger events (unknown `type` like `execution`/`validation`/`learning`, unknown evidence `kind` like `guardrail-check`/`build`/`task-status`, missing snapshot invariant) and break project conformance. If the CLI does not expose the shape you need, propose a spec change instead of inventing vocabulary. Recover hand-written Runs via `sc plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
@@ -81,6 +81,8 @@ At intake:
 
 Evaluate every active Guardrail into a structured `passed`, `blocked`, or `deferred` result. Report blocked results with the exact `GR-NNN` id and reason code. Keep deferred results visible and enforce them at the mutation, migration, review, or owner gate they identify; never describe a deferred check as passed.
 
+Assert the classification explicitly when the keyword inference is wrong: `sc plan intake "…" --type fix|task|feature|docs|discovery`. Attach a short technical explanation before approval with `--preview "…"` (rendered in the terminal, bound into the token, stored as `## Preview` on the Task).
+
 Do not create canonical artifacts, change status, edit application code, or treat ambiguous acknowledgement as approval. Temporary context may exist only in ignored disposable cache.
 
 The approval token binds both canonical context and a complete workspace fingerprint. Any canonical or source change after planning invalidates it and requires a new intake.
@@ -98,14 +100,18 @@ During execution:
 
 1. keep the change inside the approved Task scope;
 2. preserve existing owner work and unrelated dirty files;
-3. enforce guardrails before every material mutation: obtain a short-lived path-scoped Mutation Gateway permit before editing and record its verified before/after hashes immediately afterward;
-4. validate in proportion to risk;
-5. record exactly one structured `RUN-NNN-EVT-NNN` event per state transition, with RFC3339 time, actor, reason, and typed evidence;
-6. run configured reviewers;
-7. extract candidate learning only after validation;
-8. complete the Run, then Task, and only then the Sprint when its whole batch is done.
+3. define or confirm the Task's `## Acceptance Criteria` before execution and check them off as evidence;
+4. enforce guardrails before every material mutation: obtain a short-lived path-scoped Mutation Gateway permit before editing and record its verified before/after hashes immediately afterward;
+5. validate in proportion to risk and against the acceptance criteria;
+6. record exactly one structured `RUN-NNN-EVT-NNN` event per state transition, with RFC3339 time, actor, reason, and typed evidence;
+7. run configured reviewers;
+8. extract candidate learning only after validation;
+9. record a `## Technical Summary` at completion (`sc plan run --complete --summary "…"`) so the next agent inherits what was actually done;
+10. complete the Run, then Task, and only then the Sprint when its whole batch is done.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
+
+When a Run completes and work remains queued, the briefing's `## Next Up` names the next backlog Task. Surface it with `sc plan task --next` and start it with `sc plan task --start [TASK-NNN]` — starting is the explicit approval; the owner can always decline. Each agent declares its identity via `SCRUMRUN_AGENT` (or `Agent Identity` in `config.md`); it is recorded as the Task `assignee` and the Run event `actor`.
 
 Every deferred policy result is an append-only Run obligation. Unrecorded workspace drift, policy drift, an expired/missing permit, out-of-scope changes, unsafe symlinks, newly introduced secret-like content, or an unresolved obligation blocks validation/completion. The ignored permit cache is disposable; deleting it invalidates outstanding permits and never creates authority.
 
@@ -159,11 +165,11 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 
 ### `/sc plan`
 
-- `task`: add/list/show/run/audit/cancel/retry atomic work; use `type: fix` for fixes and `status: backlog` for parked work.
+- `task`: add/list/show/run/audit/cancel/retry atomic work; use `type: fix` for fixes and `status: backlog` for parked work. `--next` surfaces the oldest backlog Task; `--start [TASK-NNN]` promotes it and creates its first Run.
 - `sprint`: add/list/show/start/complete/block a real Task batch/timebox.
 - `feature`: add/list/show/activate/complete long-lived initiatives.
-- `run`: list/show/authorize-mutation/record-mutation/satisfy-guardrail/validate/learn/complete/resume/fail/block concrete Task attempts.
-- `intake <request>`: execute the read-only request pipeline.
+- `run`: list/show/render/stats/normalize-legacy/authorize-mutation/record-mutation/satisfy-guardrail/validate/learn/complete/resume/fail/block concrete Task attempts. `--complete` accepts `--summary "…"` to store a technical summary.
+- `intake <request>`: execute the read-only request pipeline; accepts `--type fix|task|feature|docs|discovery` and `--preview "…"`.
 - `challenge <question>`: deep read-only analysis with evidence, risks, options, and recommendation.
 
 ### `/sc knowledge`

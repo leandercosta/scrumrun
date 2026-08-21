@@ -37,8 +37,8 @@ test("init --lean stores complete v2 truth with a lean read policy", () => {
   assert.doesNotMatch(guardrails, /Golden Rules/);
 
   const state = fs.readFileSync(path.join(dir, ".scrumrun", "state.md"), "utf8");
-  assert.match(state, /Active Work/);
-  assert.match(state, /Relevant Memory/);
+  assert.match(state, /## Now/);
+  assert.match(state, /## Active Memory/);
 });
 
 test("init default creates the canonical v2 tree without v1 aggregate files", () => {

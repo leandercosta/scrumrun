@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `2.5.1` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `2.6.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -65,13 +65,15 @@ RECEIVED → CONTEXTUALIZING → POLICY → RISK → CLASSIFICATION
          → PLANNING → AWAITING_APPROVAL
 ```
 
+The agent may assert the classification (`--type fix|task|feature|docs|discovery`) and attach a short technical preview (`--preview "…"`), rendered with color in the terminal before any Task exists. Nothing canonical is persisted before approval.
+
 Explicit approval atomically creates a Task and a Run. Execution then follows:
 
 ```text
 EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 ```
 
-Nothing canonical is persisted before approval. Failed retries remain available as separate Runs.
+Every approved Task carries an `## Acceptance Criteria` section so "done" is defined before work begins; `--complete --summary "…"` stores a `## Technical Summary` on the Run so the next agent inherits what was actually done. Failed retries remain available as separate Runs.
 
 Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
 
@@ -113,6 +115,21 @@ AI extraction creates candidates only. Confirmation requires resolvable evidence
 The fast graph/search layer is `.scrumrun/.cache/semantic-index.sqlite`. It is ignored and disposable: deleting it never deletes knowledge. The index selects FTS5/BM25 when the current Node.js SQLite build provides it and otherwise uses a deterministic, parameterized lexical fallback; both backends preserve bounded graph retrieval without changing canonical Markdown. Unchanged queries use a metadata-only freshness check; metadata drift falls back to complete content fingerprints before rebuilding. Cache-schema upgrades force one safe disposable rebuild. The current JavaScript/TypeScript adapter derives qualified symbols plus `defined_in`, `depends_on`, `used_by`, and `protected_by` relations.
 
 `map.md` is shown only when its source fingerprint matches the current semantic index. A fresh placeholder or stale map is rejected with an explicit rebuild instruction instead of being presented as project truth.
+
+## Project briefing
+
+`state.md` is the **briefing**: a bounded summary an agent reads first, before touching anything else.
+
+```text
+## Now            active work, with each Task's assignee
+## Recent         last completions + their technical summaries
+## Open Decisions titles only, with pointers
+## Active Memory  confirmed facts / insights / decisions
+## Next Up        the backlog queue, oldest first
+## Where to look  pointers to guardrails, tasks, runs, semantic search
+```
+
+It is progressive disclosure: the briefing is enough for most work; the agent follows its pointers and goes deeper only when the briefing lacks what it needs. The intake context package embeds the same briefing. Each agent declares an identity (`SCRUMRUN_AGENT` or `Agent Identity` in `config.md`), recorded as the Task `assignee` and Run `actor`, so `--shared` teams can see who owns each active Task from the briefing alone.
 
 ## Migrating an ongoing v1 project
 
@@ -208,8 +225,15 @@ Rules:
 npx scrumrun@latest commands
 
 # plan without writes, then approve the emitted token
-npx scrumrun@latest sc plan intake "Fix pricing rounding"
+npx scrumrun@latest sc plan intake "Fix pricing rounding" --type fix --preview "Rounding moved after tax calc"
 npx scrumrun@latest sc plan intake --approve <token>
+
+# record what was done at completion, so the next agent inherits it
+npx scrumrun@latest sc plan run --complete RUN-001 --note "Done" --evidence "npm test: passed" --summary "Moved rounding after tax calc in checkout/pricing.ts"
+
+# auto-sequencing: surface and start the next backlog Task
+npx scrumrun@latest sc plan task --next
+npx scrumrun@latest sc plan task --start TASK-009
 
 # authorize and record a material source mutation
 npx scrumrun@latest sc plan run --authorize-mutation RUN-001 --path src/pricing.ts

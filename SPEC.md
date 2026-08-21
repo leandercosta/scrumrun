@@ -83,6 +83,8 @@ method: 2.0.0
 
 IDs, filenames, kind, status, real ISO dates, and method version must agree. Unknown fields and authored prose are preserved. Duplicate fields, malformed frontmatter, unsafe paths, and symlinked canonical paths are invalid.
 
+A Task may carry an optional `assignee` scalar recording the agent identity (`SCRUMRUN_AGENT` or `config.md` `Agent Identity`) that owns the work. It is descriptive metadata, never a competing authority: it does not change status transitions or block conformance.
+
 ### 3.2 Stable identifiers
 
 | Kind | Identifier |
@@ -202,7 +204,11 @@ Approval atomically creates one Task and its first Run. If either write fails, n
 
 The approved Run binds the exact Guardrail-policy fingerprint and a canonical workspace baseline. Every post-approval `deferred` check becomes an append-only Guardrail obligation. A material source mutation requires a short-lived, path-scoped permit issued from that baseline; recording it verifies before/after hashes, policy freshness, path scope, read-only boundaries, symlink safety, and newly introduced secret-like content. Unrecorded workspace drift fails closed. A Run cannot complete while an obligation is unresolved or the workspace differs from its last recorded mutation.
 
-Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. Validation, learning, completion, failure, block, and resume transitions require a reason or typed evidence. Task status changes without receiving a duplicate narrative history. Multi-file mutations use a durable local transaction journal: `prepared` operations roll back byte-exactly after failure/interruption, while `committed` journals are verified and finalized. Ordinary audit is read-only and reports pending recovery; `doctor --recover` or retrying the approved mutation performs recovery explicitly. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
+The agent may assert the classification explicitly (`--type fix|task|feature|docs|discovery`), overriding keyword inference with validation and a stable reason. It may attach a short technical preview (`--preview`), rendered in the terminal, bound into the approval token, and stored as `## Preview` on the approved Task. A Task declares its `## Acceptance Criteria` before execution; completion is measured against them, never against elapsed time or token budget.
+
+Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. Validation, learning, completion, failure, block, and resume transitions require a reason or typed evidence. Task status changes without receiving a duplicate narrative history. On completion, an optional `## Technical Summary` section records what was actually done, surfaced to later intake through the briefing. Multi-file mutations use a durable local transaction journal: `prepared` operations roll back byte-exactly after failure/interruption, while `committed` journals are verified and finalized. Ordinary audit is read-only and reports pending recovery; `doctor --recover` or retrying the approved mutation performs recovery explicitly. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
+
+Backlog is a queue view of Tasks with `status: backlog`, ordered oldest-first by id. Starting a backlog Task (`--next` to surface, `--start` to promote) transitions `backlog → running`, creates the Task's first Run, re-evaluates policy, and records the agent identity. Starting is itself the explicit approval required by I-01.
 
 ## 6. Policy and precedence
 
@@ -251,6 +257,8 @@ The agreed v1 control-context baseline is 48,000 characters. A fresh lean v2 int
 ## 8. Generated views and cache
 
 `state.md`, `map.md`, context packages, and `.cache/semantic-index.sqlite` are non-authoritative projections. They carry source fingerprints or are treated as stale. `state.md` uses the exact canonical fingerprint bound into intake, plus a projection schema, RFC3339 generation time, and a disposable watch fingerprint. SQLite stores its source and watch fingerprints with an explicit cache schema.
+
+`state.md` is the **briefing**: a bounded, progressive-disclosure index of active work (with each Task's `assignee`), recent completions (with their technical summaries), open decisions, active memory, and the backlog queue, plus pointers to deeper artifacts. Agents read the briefing first and follow its pointers, going deeper only when the briefing lacks what they need. The briefing is a convenience view, never authority; a canonical artifact the briefing summarizes remains the source of truth.
 
 Freshness checks use a two-tier strategy: unchanged path/stat identity proves that no source read or reparse is needed; changed metadata triggers a complete canonical/source content fingerprint before staleness is asserted. Cache metadata may optimize verification but never supplies project truth. A cache-schema mismatch forces one disposable rebuild. Deleting `.cache/` must not remove authored knowledge, and rebuilding it from unchanged sources must yield equivalent query results.
 

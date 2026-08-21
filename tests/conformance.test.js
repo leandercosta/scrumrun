@@ -10,7 +10,7 @@ const { ArtifactRepository } = require("../lib/v2/artifacts");
 const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib/v2/schema");
 const { INVARIANTS, auditProject } = require("../lib/v2/conformance");
 const { planRequest } = require("../lib/runtime/request-engine");
-const { approveRequest, transitionRun } = require("../lib/runtime/orchestrator");
+const { approveRequest, nextBacklogTask, startBacklogTask, transitionRun } = require("../lib/runtime/orchestrator");
 
 const root = path.resolve(__dirname, "..");
 const bin = path.join(root, "bin", "scrumrun.js");
@@ -22,9 +22,10 @@ function read(relative) {
 test("SPEC, CORE, README, skill, templates, and package declare one v2 contract", () => {
   assert.equal(METHOD_VERSION, "2.0.0");
   const packageMetadata = require("../package.json");
-  assert.equal(packageMetadata.version, "2.5.1");
+  assert.match(packageMetadata.version, /^\d+\.\d+\.\d+$/, "package.json version must be valid semver");
   assert.equal(packageMetadata.engines.node, ">=22.13.0");
-  assert.match(read("README.md"), /Package:\*\* `2\.5\.1`/);
+  const versionEscaped = packageMetadata.version.replace(/\./g, "\\.");
+  assert.match(read("README.md"), new RegExp(`Package:\\*\\* \`${versionEscaped}\``), "README badge must match package.json version");
   for (const file of ["SPEC.md", "CORE.md", "README.md", "templates/shared/skills/scrumrun/SKILL.md"]) {
     const content = read(file);
     assert.match(content, /2\.0(?:\.0)?/, `${file} must declare v2`);
@@ -120,4 +121,175 @@ test("artifact conformance validates Run event continuity, evidence, and final s
   const audit = auditProject(project);
   assert.equal(audit.passed, false);
   assert.ok(audit.findings.some((finding) => finding.code === "RUN_LEDGER_INVALID" && /\.from must be executing/.test(finding.message)));
+});
+
+test("approved Task body includes Acceptance Criteria section", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-acceptance-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const approved = approveRequest(project, planRequest(project, "Fix pricing rounding").approvalToken);
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const task = repository.read("task", approved.task.id);
+  assert.match(task.body, /## Acceptance Criteria/);
+});
+
+test("conformance warns when an active Task lacks Acceptance Criteria", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-acceptance-warn-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "running" }, "# Work\n\nNo criteria here.");
+  const audit = auditProject(project);
+  assert.ok(audit.findings.some((f) => f.code === "ACCEPTANCE_CRITERIA_MISSING" && f.severity === "warning"));
+});
+
+test("completing a Run with --summary stores it and context surfaces it", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-summary-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const approved = approveRequest(project, planRequest(project, "Move pricing to checkout").approvalToken);
+  transitionRun(project, approved.run.id, "validating", { note: "Tests passed.", evidence: [{ kind: "test", summary: "npm test: passed" }] });
+  transitionRun(project, approved.run.id, "learning", { note: "No new insights.", evidence: [{ kind: "insight", ref: "INS:none" }] });
+  const summaryText = "Moved calculateFinalPrice to checkout/pricing.ts and updated 3 call sites.";
+  transitionRun(project, approved.run.id, "completed", { note: "Done.", evidence: [{ kind: "review", ref: "REV-001" }], summary: summaryText });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const run = repository.read("run", approved.run.id);
+  assert.match(run.body, /## Technical Summary/);
+  const { buildContextPackage } = require("../lib/runtime/context");
+  const context = buildContextPackage(project, "Next task: update tax calculation");
+  assert.ok(context.history.recentSummaries && context.history.recentSummaries.length, "context should surface recent technical summaries");
+  assert.equal(context.history.recentSummaries[0].run, approved.run.id);
+  assert.ok(context.history.recentSummaries[0].summary.includes("Moved calculateFinalPrice"));
+});
+
+test("--type override sets the classification explicitly", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-type-override-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const plan = planRequest(project, "Redesign the pricing module", { typeOverride: "feature" });
+  assert.equal(plan.classification.taskType, "feature");
+  assert.equal(plan.classification.reason, "explicitly specified by agent");
+});
+
+test("--type override rejects invalid values", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-type-invalid-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  assert.throws(() => planRequest(project, "Some work", { typeOverride: "bogus" }), /Invalid --type/);
+});
+
+test("--preview is stored in the plan and Task body after approval", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-preview-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const previewText = "Rounding error in checkout/pricing.ts:28. Move Math.round after tax calc.";
+  const plan = planRequest(project, "Fix pricing rounding", { preview: previewText });
+  assert.equal(plan.preview, previewText);
+  const approved = approveRequest(project, plan.approvalToken);
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const task = repository.read("task", approved.task.id);
+  assert.match(task.body, /## Preview/);
+  assert.ok(task.body.includes(previewText));
+});
+
+test("--preview rejects secret-like content", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-preview-secret-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  assert.throws(() => planRequest(project, "Fix auth", { preview: "api_key=super-secret-value" }), /secret-like/);
+});
+
+test("state.md is a structured briefing with progressive disclosure pointers", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-briefing-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const stateContent = fs.readFileSync(path.join(project, ".scrumrun", "state.md"), "utf8");
+  assert.match(stateContent, /^# ScrumRun Briefing/m);
+  assert.match(stateContent, /## Now/);
+  assert.match(stateContent, /## Recent/);
+  assert.match(stateContent, /## Where to look/);
+  assert.match(stateContent, /Progressive disclosure/);
+  assert.match(stateContent, /Source fingerprint:\s*[a-f0-9]{64}/);
+  assert.match(stateContent, /Watch fingerprint:\s*[a-f0-9]{64}/);
+});
+
+test("briefing surfaces active work and technical summaries after completion", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-briefing-work-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const approved = approveRequest(project, planRequest(project, "Move pricing to checkout").approvalToken);
+  transitionRun(project, approved.run.id, "validating", { note: "Tests passed.", evidence: [{ kind: "test", summary: "passed" }] });
+  transitionRun(project, approved.run.id, "learning", { note: "Done.", evidence: [{ kind: "insight", ref: "INS:none" }] });
+  transitionRun(project, approved.run.id, "completed", { note: "Done.", evidence: [{ kind: "review", ref: "REV-001" }], summary: "Moved calculateFinalPrice to checkout and updated 3 call sites." });
+  const stateContent = fs.readFileSync(path.join(project, ".scrumrun", "state.md"), "utf8");
+  assert.ok(stateContent.includes("Moved calculateFinalPrice to checkout"), "briefing should include technical summary");
+  assert.match(stateContent, /## Where to look/);
+});
+
+test("context package includes a briefing field for agents", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-briefing-context-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const { buildContextPackage } = require("../lib/runtime/context");
+  const context = buildContextPackage(project, "Next task");
+  assert.ok(context.briefing, "context package must include a briefing field");
+  assert.match(context.briefing, /ScrumRun Briefing/);
+  assert.match(context.briefing, /## Now/);
+});
+
+test("nextBacklogTask returns the oldest backlog Task", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-next-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "backlog" }, "# First\n\n## Request\n\nDo first thing.");
+  repository.write({ ...common, id: "TASK-002", kind: "task", status: "backlog" }, "# Second\n\n## Request\n\nDo second thing.");
+  const next = nextBacklogTask(repository);
+  assert.equal(next.id, "TASK-001", "oldest backlog task first");
+});
+
+test("startBacklogTask promotes the Task and creates a Run with assignee", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-start-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "backlog" }, "# Fix pricing\n\n## Request\n\nFix pricing rounding.");
+  const result = startBacklogTask(project, "TASK-001");
+  assert.equal(result.task.status, "running");
+  assert.equal(result.run.task, "TASK-001");
+  assert.equal(result.run.attempt, 1);
+  assert.ok(result.task.assignee, "task should carry an assignee");
+  assert.equal(repository.list("run").length, 1);
+});
+
+test("startBacklogTask rejects a Task that is not backlog", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-start-invalid-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "running" }, "# Running\n\n## Request\n\nAlready started.");
+  assert.throws(() => startBacklogTask(project, "TASK-001"), /requires backlog/);
+});
+
+test("agentIdentity resolves from environment and config.md", () => {
+  const { agentIdentity } = require("../lib/runtime/policy-engine");
+  const original = process.env.SCRUMRUN_AGENT;
+  try {
+    process.env.SCRUMRUN_AGENT = "codex";
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-identity-"));
+    execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+    assert.equal(agentIdentity(path.join(project, ".scrumrun")), "codex");
+    delete process.env.SCRUMRUN_AGENT;
+    assert.equal(agentIdentity(path.join(project, ".scrumrun")), "agent", "template default identity when env is unset");
+    fs.appendFileSync(path.join(project, ".scrumrun", "config.md"), "\nAgent Identity: claude-code\n");
+    assert.equal(agentIdentity(path.join(project, ".scrumrun")), "claude-code");
+  } finally {
+    if (original === undefined) delete process.env.SCRUMRUN_AGENT;
+    else process.env.SCRUMRUN_AGENT = original;
+  }
+});
+
+test("approved Task records the agent identity as assignee", () => {
+  const original = process.env.SCRUMRUN_AGENT;
+  try {
+    process.env.SCRUMRUN_AGENT = "codex";
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-assignee-"));
+    execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+    const approved = approveRequest(project, planRequest(project, "Fix pricing").approvalToken);
+    assert.equal(approved.task.assignee, "codex");
+  } finally {
+    if (original === undefined) delete process.env.SCRUMRUN_AGENT;
+    else process.env.SCRUMRUN_AGENT = original;
+  }
 });

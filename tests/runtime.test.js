@@ -74,7 +74,7 @@ test("explicit approval creates exactly one linked Task and Run and is idempoten
   assert.match(fs.readFileSync(path.join(dir, ".scrumrun", "state.md"), "utf8"), new RegExp(`${first.task.id}.*running`));
   assert.equal(stateIsStale(path.join(dir, ".scrumrun")), false);
   const state = fs.readFileSync(path.join(dir, ".scrumrun", "state.md"), "utf8");
-  assert.match(state, /^Projection schema: 1$/m);
+  assert.match(state, /^Projection schema: 2$/m);
   assert.match(state, /^Generated: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/m);
   assert.match(state, /^Watch fingerprint: [a-f0-9]{64}$/m);
   assert.equal((state.match(/^Source fingerprint:\s*([a-f0-9]{64})$/m) || [])[1], buildContextPackage(dir, "Check state consistency").fingerprint);

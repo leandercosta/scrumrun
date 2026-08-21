@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 
+(function checkNodeVersion() {
+  const [major, minor] = process.versions.node.split(".").map(Number);
+  if (major < 22 || (major === 22 && minor < 13)) {
+    process.stderr.write(
+      `SR-E-501 Unsupported Node.js runtime: ${process.versions.node}. `
+      + `ScrumRun requires Node.js >=22.13.0 for native SQLite. `
+      + `Upgrade Node and retry.\n`
+    );
+    process.exit(1);
+  }
+})();
+
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -19,7 +31,7 @@ const { ARTIFACT_TYPES, ArtifactRepository } = require(path.join(root, "lib", "v
 const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.join(root, "lib", "commands", "manifest"));
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
-const { approveRequest, refreshState, retryTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
+const { approveRequest, nextBacklogTask, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
 const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
 const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
@@ -331,6 +343,14 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
 function updateInstallation(target, { migrate = false } = {}) {
   const migration = migrationPreflightOnUpdate({ apply: migrate });
   install(target, true, { compatibility: true });
+  if (migrate && v2Project()) {
+    try {
+      refreshState(path.join(process.cwd(), ".scrumrun"));
+    } catch {
+      // Best-effort: regenerating the disposable briefing must never block an integration update.
+      // Conformance reports stale or unsafe state separately.
+    }
+  }
   return migration;
 }
 
@@ -1212,15 +1232,17 @@ function runTransitionOptions(args) {
   let note = null;
   let actor = "agent";
   let occurredAt = null;
+  let summary = null;
   for (let index = 2; index < args.length; index++) {
     const token = args[index];
     const value = args[index + 1] && !args[index + 1].startsWith("--") ? args[index + 1] : null;
-    if (token === "--note" || token === "--actor" || token === "--at" || token === "--evidence" || evidenceFlags.has(token)) {
+    if (token === "--note" || token === "--actor" || token === "--at" || token === "--evidence" || token === "--summary" || evidenceFlags.has(token)) {
       if (!value) throw new Error(`${token} requires a value.`);
       index++;
       if (token === "--note") note = value;
       else if (token === "--actor") actor = value;
       else if (token === "--at") occurredAt = value;
+      else if (token === "--summary") summary = value;
       else if (token === "--evidence") {
         const separator = value.indexOf(":");
         const kind = separator > 0 ? value.slice(0, separator) : "note";
@@ -1235,7 +1257,7 @@ function runTransitionOptions(args) {
     if (token.startsWith("--")) throw new Error(`Unknown Run evidence option: ${token}`);
     noteParts.push(token);
   }
-  return { note: note || noteParts.join(" ").trim() || null, evidence, actor, occurredAt };
+  return { note: note || noteParts.join(" ").trim() || null, evidence, actor, occurredAt, summary };
 }
 
 function removeOptionPairs(args, names) {
@@ -1349,8 +1371,12 @@ function executeRootRoute(route) {
       console.log(`${result.status === "already-approved" ? "Already approved" : "Approved"}: ${result.task.id} → ${result.run.id}`);
       return;
     }
-    const request = routeArgs[0] === "--request" ? routeArgs.slice(1).join(" ") : routeArgs.join(" ");
-    const plan = planRequest(process.cwd(), request);
+    const typeOverride = optionValue(routeArgs, "--type");
+    const preview = optionValue(routeArgs, "--preview");
+    const cleanArgs = removeOptionPairs(routeArgs, ["--type", "--preview"]);
+    const startIndex = cleanArgs[0] === "--request" ? 1 : 0;
+    const request = cleanArgs.slice(startIndex).filter((arg) => !arg.startsWith("--")).join(" ").trim();
+    const plan = planRequest(process.cwd(), request, { typeOverride, preview });
     if (routeArgs.includes("--json")) {
       console.log(JSON.stringify(plan, null, 2));
       return;
@@ -1368,6 +1394,33 @@ function executeRootRoute(route) {
   if (noun === "plan" && subject === "task" && routeArgs[0] === "--retry") {
     const result = retryTask(process.cwd(), routeArgs[1]);
     console.log(`Created retry ${result.run.id} for ${result.task.id} (attempt ${result.run.attempt}).`);
+    return;
+  }
+  if (noun === "plan" && subject === "task" && routeArgs[0] === "--next") {
+    const repository = new ArtifactRepository(projectFile());
+    const next = nextBacklogTask(repository);
+    if (!next) {
+      console.log("No backlog Tasks to start.");
+      return;
+    }
+    console.log(`Next backlog Task: ${next.id} — ${next.title || next.id}`);
+    console.log(`Start it with: scrumrun sc plan task --start ${next.id}`);
+    return;
+  }
+  if (noun === "plan" && subject === "task" && routeArgs[0] === "--start") {
+    let target = routeArgs[1];
+    if (!target) {
+      const repository = new ArtifactRepository(projectFile());
+      const next = nextBacklogTask(repository);
+      if (!next) {
+        console.error("No backlog Tasks to start.");
+        process.exitCode = 1;
+        return;
+      }
+      target = next.id;
+    }
+    const result = startBacklogTask(process.cwd(), target);
+    console.log(`Started ${result.task.id} (${result.run.id}) assigned to ${result.task.assignee || "agent"}.`);
     return;
   }
   if (noun === "plan" && subject === "run" && routeArgs[0] === "--render") {

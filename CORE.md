@@ -108,9 +108,11 @@ Normal read path:
 
 1. `AGENTS.md`;
 2. `.scrumrun/guardrails.md`;
-3. `.scrumrun/state.md`;
+3. `.scrumrun/state.md` — the **briefing**: a bounded summary of active work, recent completions with their technical summaries, open decisions, active memory, the backlog queue, and pointers;
 4. only the canonical ids and evidence relevant to current work;
 5. `.scrumrun/core.md` when method details or exceptional transitions are needed.
+
+The briefing is a progressive-disclosure index, not full context. Read it first and follow its pointers to specific artifacts (`## Where to look`, `sc knowledge study "<topic>"`). Go deeper — a Task body, a Run ledger, a Decision — only when the briefing lacks what you need. Never treat the briefing as a substitute for the canonical artifact it points to.
 
 Lean mode is this bounded read policy; it is not permission to omit canonical truth.
 
@@ -154,6 +156,8 @@ Intake must:
 
 Policy evaluation is structured per active `GR-NNN`: `passed`, `blocked`, or `deferred`. A block must cite the exact Guardrail id and reason code. Deferred checks must be visible in the plan and re-evaluated at their named execution boundary; they are never silently counted as passed. Invalid/duplicate Guardrails or configuration that weakens approval block conformance and intake.
 
+The agent may assert the classification explicitly with `sc plan intake "…" --type fix|task|feature|docs|discovery`, overriding keyword inference (validated, with a stable reason). It may also attach a short technical explanation with `--preview "…"`, rendered in the pretty terminal layout, bound into the approval token, and stored as `## Preview` on the Task.
+
 Before approval, do not create canonical files, update status, edit application code, or retain request content outside ignored disposable context cache. The approval token binds both canonical context and the workspace fingerprint; drift in either requires a new intake. Ambiguous acknowledgement is not approval.
 
 ## Execution lifecycle
@@ -177,17 +181,27 @@ Rules:
 - the Run ledger is operational history; Task synchronizes current status without copying the Run event;
 - validation, learning, completion, failure, block, and resume require a reason or evidence;
 - validation must match the risk and acceptance criteria;
+- each Task declares its `## Acceptance Criteria` before execution; check them off as evidence, never mark done on vibes;
 - configured reviews run before completion;
 - every deferred policy result is persisted as a Run Guardrail obligation;
 - before changing application/source files, issue a short-lived path-scoped mutation permit and record the verified before/after hashes in the Run;
 - unrecorded workspace drift, policy drift, out-of-scope paths, unsafe symlinks, new secret-like content, or unresolved obligations block validation/completion;
 - learning proposes memory candidates after validation and never auto-confirms AI inference;
+- record a `## Technical Summary` at completion with `sc plan run --complete --summary "…"` so the next agent inherits what was actually done;
 - complete a Sprint only when all its included Tasks meet the Sprint exit gate;
 - do not mark work complete merely because time or token budget ended.
 
 Canonical mutations are schema-validated, lossless, and atomic. Preserve unknown fields, prose, and unrelated owner edits. A failed mutation must leave canonical state unchanged or recoverable.
 
 Task/Run pair mutations use an ignored durable journal under `.scrumrun/.backup/transactions/`. A captured failure rolls back immediately; an interrupted `prepared` transaction is rolled back before the next approved mutation, while an interrupted `committed` transaction is verified and finalized. Audit only reports `TRANSACTION_PENDING`. Recovery writes occur only when the approved operation is retried or `doctor --recover` is explicitly invoked, and recovery refuses to overwrite bytes that match neither side of the journal.
+
+### Backlog and sequencing
+
+Backlog is the queue of Tasks with `status: backlog`, ordered oldest-first by id. When a Run completes, the briefing's `## Next Up` names the next backlog Task. `sc plan task --next` shows it; `sc plan task --start [TASK-NNN]` promotes it to `running`, creates its first Run, re-evaluates policy, and records the agent identity. Starting is itself the explicit approval (I-01): no work executes silently, and the owner can always say "not now".
+
+### Agent identity and assignment
+
+Each agent declares an identity via the `SCRUMRUN_AGENT` environment variable or the `Agent Identity:` field in `config.md` (single-agent default). The identity is recorded as the `assignee` on approved/started Tasks and as the `actor` on Run events. In `--shared` teams, every agent sets its own `SCRUMRUN_AGENT` and reads the briefing's `## Now` to see who owns each active Task before picking up work; file locks and the transaction journal prevent corruption on concurrent edits.
 
 ## Semantic memory
 
@@ -252,11 +266,11 @@ Legacy sprint plan entries normally become Tasks. History attempts become Runs w
 
 ### `/sc plan`
 
-- `task --add|--list|--show|--run|--audit|--cancel|--retry`
+- `task --add|--list|--show|--run|--audit|--cancel|--retry|--next|--start [TASK-NNN]`
 - `sprint --add|--list|--show|--start|--complete|--block`
 - `feature --add|--list|--show|--activate|--complete`
-- `run --list|--show|--authorize-mutation|--record-mutation|--satisfy-guardrail|--validate|--learn|--complete|--resume|--fail|--block`
-- `intake <request>`
+- `run --list|--show|--render|--stats|--normalize-legacy|--authorize-mutation|--record-mutation|--satisfy-guardrail|--validate|--learn|--complete [--summary "…"]|--resume|--fail|--block`
+- `intake <request> [--type fix|task|feature|docs|discovery] [--preview "…"]`
 - `challenge <question>`
 
 ### `/sc knowledge`

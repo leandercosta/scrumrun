@@ -1,14 +1,16 @@
 {
   "name": "scrumrun",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "Evidence-driven Agile runtime and semantic project memory for AI coding agents.",
   "bin": {
     "scrumrun": "bin/scrumrun.js",
     "sr-claude": "bin/claude-install.js"
   },
+  "types": "types/index.d.ts",
   "files": [
     "bin",
     "lib",
+    "types",
     "scripts",
     "templates",
     "CORE.md",
@@ -24,7 +26,10 @@
     "docs:contract": "node scripts/generate-contract-docs.js",
     "check:contract": "node scripts/generate-contract-docs.js --check",
     "test": "node scripts/generate-contract-docs.js --check && node --test tests/*.test.js",
-    "benchmark": "node --test tests/performance.test.js"
+    "benchmark": "node --test tests/performance.test.js",
+    "coverage": "c8 --reporter=text --reporter=lcov node --test tests/*.test.js",
+    "lint": "eslint .",
+    "prepublishOnly": "node scripts/sync-readme-version.js && npm test"
   },
   "keywords": [
     "ai",
@@ -54,5 +59,10 @@
   "license": "MIT",
   "engines": {
     "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "c8": "^12.0.0",
+    "eslint": "^10.8.1"
   }
 }

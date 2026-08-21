@@ -350,3 +350,23 @@ Date: 2026-07-22
 **Consequences** — Normal queries stay fast while content remains the final verifier. State and intake share one canonical fingerprint implementation. Cost: metadata-only touches may trigger one full verification, and scanner changes require a cache-schema bump.
 
 **Alternatives considered** — Hash every source on every query: maximally simple but O(project) on the hot path. Timestamp-only cache validity: faster but allows derived metadata to masquerade as truth.
+
+---
+
+## ADR-025 — v1 compatibility cycle sunset target
+Status: accepted
+Date: 2026-08-20
+
+**Context** — Since the 2.0.0 release (2026-07-21), ScrumRun carries a v1 compatibility surface: generated command aliases (`sc-backlog`, `sc-know`, `sc-sprint`, etc.), v1 layout files (`golden-rules.md`, `backlog.md`, `knowledge.md`, `goals/main/`), the v1 `runGuardrails`/`renderState` builders, and the `migrateLegacyProject` pre-`.scrumrun` layout migration. SPEC §12 states these "may remain for one compatibility cycle" but never defines when that cycle ends. This creates ongoing maintenance cost (the `bin/scrumrun.js` monolith carries ~1200 lines of v1 code), ambiguity about which files are canonical, and a wider attack surface for secret/path bugs.
+
+**Decision** — Target the next major version (3.0.0) as the hard sunset for v1 compatibility. Until then:
+
+1. `doctor` emits a `warning` finding (`V1_COMPAT_IN_USE`) when it detects v1 aliases, v1 layout files, or the legacy layout migration trigger, so maintainers can track remaining v1 usage.
+2. The CHANGELOG and README gain a deprecation notice pointing to `npx scrumrun@latest update --migrate`.
+3. No new v1 features are added; v1 code is frozen and only receives security fixes.
+
+At 3.0.0: v1 aliases are removed, v1 layout files are no longer auto-created, `migrateLegacyProject` and the v1 builders are deleted, and the bin file is refactored to route only `/sc` commands.
+
+**Consequences** — Clear end date for v1 code; maintainers can plan the bin refactor and deletion with confidence. Users on v1 have a full major-version cycle to migrate using the existing idempotent, reversible `migrate --to 2 --apply` tooling. Cost: the v1 surface remains in the tarball until 3.0.0, so the bin monolith and v1 tests are not yet removable.
+
+**Alternatives considered** — Keep v1 forever: maintenance burden grows and the canonical surface stays diluted. Hard-cut immediately (2.6.0): breaks users who have not migrated and gives no warning. Remove v1 code now behind a flag: adds complexity to an already large bin file without a clear deadline.

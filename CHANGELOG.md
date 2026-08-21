@@ -4,6 +4,27 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.6.0 - 2026-08-21
+
+### Added
+
+- **Project Briefing** — `state.md` is now a structured briefing (`## Now`, `## Recent`, `## Open Decisions`, `## Active Memory`, `## Next Up`, `## Where to look`) instead of a flat active-work list. It is the progressive-disclosure entry point: agents read the briefing first and only go deeper when it lacks what they need. Recent completions surface their technical summaries so the next agent knows what was just done without reading full ledgers. `buildContextPackage` now includes a `briefing` field.
+- **Acceptance Criteria** — every approved Task body gains an `## Acceptance Criteria` section so "done" is defined before execution. Conformance emits a non-blocking `ACCEPTANCE_CRITERIA_MISSING` warning for active Tasks that lack it.
+- **Technical Summary** — `sc plan run --complete --summary "…"` stores a `## Technical Summary` section on the Run, surfaced later in the briefing and context package so completed work informs future intake. `appendTechnicalSummary`/`extractTechnicalSummary` are exported for library consumers.
+- **`--type` override** — `sc plan intake "…" --type fix|task|feature|docs|discovery` lets the agent assert the classification explicitly, overriding keyword inference with validation and a stable reason.
+- **`--preview`** — `sc plan intake "…" --preview "technical summary"` renders a cyan Preview field in the pretty terminal layout (mirroring the landing page), binds it into the approval token, and stores it as `## Preview` on the Task.
+- **Auto-sequencing** — `sc plan task --next` surfaces the oldest backlog Task; `sc plan task --start [TASK-NNN]` promotes it to `running`, creates a Run, re-evaluates policy, and records the agent identity. The briefing's `## Next Up` lists the queue.
+- **Agent identity and assignment** — `SCRUMRUN_AGENT` env var (or `Agent Identity` in `config.md`) sets the agent identity recorded as the `assignee` on approved/started Tasks and as the `actor` on Run transitions. The briefing shows the assignee next to active work for team visibility.
+
+### Changed
+
+- `state.md` projection schema bumped 1 → 2 (regenerated automatically; the previous format is superseded, never migrated by hand).
+- `update` now regenerates the disposable briefing after installing integrations, so upgrading from 2.5.x has no friction with the previous `state.md` format. All other changes are additive (new sections and fields) and do not require migration.
+
+### Validation
+
+- Test suite grew from 192 to 213 passing.
+
 ## 2.5.1 - 2026-07-23
 
 ### Fixed
