@@ -132,6 +132,16 @@ test("approval rejects tampered or stale plans without creating artifacts", () =
   assert.equal(repository(dir).list("task").length, 0);
 });
 
+test("approval tolerates copy-pasted tokens with injected whitespace", () => {
+  const dir = makeProject();
+  const plan = planRequest(dir, "Tolerate wrapped approval tokens");
+  const wrapped = plan.approvalToken.replace(/(.{40})/g, "$1\n  ");
+  const approved = approveRequest(dir, wrapped);
+  assert.equal(approved.status, "approved");
+  assert.equal(approved.task.id, "TASK-001");
+  assert.equal(repository(dir).list("run").length, 1);
+});
+
 test("approval failure injection rolls back both canonical artifacts", () => {
   const dir = makeProject();
   const plan = planRequest(dir, "Implement a small docs update");

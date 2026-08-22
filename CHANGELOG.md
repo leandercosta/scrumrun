@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.4 - 2026-08-22
+
+### Fixed
+
+- **Approval token truncated in interactive intake.** The pretty terminal renderer was shrinking the approval command to the first 20 characters of the token, so a copy-pasted `sc plan intake --approve …` failed with "Approval token is malformed or was modified." The full token now renders wrapped across lines (copyable, no ellipsis), and `decodeApproval` strips surrounding/interstitial whitespace so pasted tokens with line breaks or spaces still validate.
+
 ## 2.7.3 - 2026-08-22
 
 ### Added

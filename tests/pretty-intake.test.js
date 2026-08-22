@@ -149,3 +149,20 @@ test("renderIntakePlain includes Preview when set", () => {
   const plain = renderIntakePlain(fakePlan({ preview: "Short technical summary." }));
   assert.match(plain, /^Preview: Short technical summary\.$/m);
 });
+
+test("renderIntake shows the full approval token wrapped, never truncated", () => {
+  const longToken = "eyJzY2hlbWEiOjEsIm1ldGhvZCI6IjIuMC4wIiwicmVxdWVzdCI6Ik1vdmUgY2FsY3VsYXRlRmluYWxQcmljZSJ9." + "a".repeat(120);
+  const output = renderIntake(fakePlan({ approvalToken: longToken }));
+  const bare = output.replace(/\x1b\[[0-9;]*m/g, "");
+  const lines = bare.split("\n");
+  const commandIndex = lines.findIndex((line) => line.includes("--approve"));
+  assert.ok(commandIndex > -1, "approval command line must be present");
+  const chunks = [];
+  for (let index = commandIndex + 1; index < lines.length; index++) {
+    const interior = lines[index].slice(2, -2).trim();
+    if (!interior) break;
+    chunks.push(interior);
+  }
+  assert.ok(!chunks.join("").includes("…"), "the approval token must not be truncated");
+  assert.equal(chunks.join(""), longToken, "wrapped chunks must reconstruct the full token");
+});
