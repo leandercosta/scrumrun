@@ -10,7 +10,7 @@ const { ArtifactRepository } = require("../lib/v2/artifacts");
 const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib/v2/schema");
 const { INVARIANTS, auditProject } = require("../lib/v2/conformance");
 const { planRequest } = require("../lib/runtime/request-engine");
-const { approveRequest, nextBacklogTask, retryTask, startBacklogTask, transitionRun } = require("../lib/runtime/orchestrator");
+const { addPlanArtifact, approveRequest, nextBacklogTask, retryTask, startBacklogTask, transitionRun } = require("../lib/runtime/orchestrator");
 
 const root = path.resolve(__dirname, "..");
 const bin = path.join(root, "bin", "scrumrun.js");
@@ -260,6 +260,47 @@ test("startBacklogTask rejects a Task that is not backlog", () => {
   const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
   repository.write({ ...common, id: "TASK-001", kind: "task", status: "running" }, "# Running\n\n## Request\n\nAlready started.");
   assert.throws(() => startBacklogTask(project, "TASK-001"), /requires backlog/);
+});
+
+test("addPlanArtifact creates backlog tasks with sequential ids and no Run", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-add-task-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+
+  const first = addPlanArtifact(project, "task", "Fix login bug");
+  assert.equal(first.record.id, "TASK-001");
+  assert.equal(first.record.status, "backlog");
+  assert.equal(first.record.type, "task");
+  assert.match(first.body, /## Acceptance Criteria/);
+
+  const second = addPlanArtifact(project, "task", "Crash on empty input", { type: "fix" });
+  assert.equal(second.record.id, "TASK-002");
+  assert.equal(second.record.type, "fix");
+  assert.equal(repository.list("run").length, 0, "add must not create a Run");
+});
+
+test("addPlanArtifact supports feature and sprint with their initial statuses", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-add-plan-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+
+  const feature = addPlanArtifact(project, "feature", "Onboarding v2");
+  assert.equal(feature.record.id, "FEAT-001");
+  assert.equal(feature.record.status, "backlog");
+  assert.equal(feature.record.type, "initiative");
+
+  const sprint = addPlanArtifact(project, "sprint", "Sprint 01");
+  assert.equal(sprint.record.id, "SPRINT-001");
+  assert.equal(sprint.record.status, "proposed");
+});
+
+test("addPlanArtifact rejects invalid input and out-of-band statuses", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-add-invalid-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  assert.throws(() => addPlanArtifact(project, "task", ""), /non-empty title/);
+  assert.throws(() => addPlanArtifact(project, "task", "X", { type: "nope" }), /Invalid task --type/);
+  assert.throws(() => addPlanArtifact(project, "task", "X", { status: "running" }), /Invalid task status/);
+  assert.throws(() => addPlanArtifact(project, "run", "X"), /Unsupported plan kind/);
 });
 
 test("agentIdentity resolves from environment and config.md", () => {

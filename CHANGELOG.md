@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.3 - 2026-08-22
+
+### Added
+
+- **Manual Task/Feature/Sprint creation via CLI.** `sc plan task --add`, `sc plan feature --add`, and `sc plan sprint --add` now create canonical artifacts directly (previously these documented actions fell through to the "Agent workflow" hint without writing anything). `--add` parks intent only — a Task lands in `backlog` with no Run, and `sc plan task --start TASK-NNN` remains the explicit approval that creates the first Run. `sc plan task --add` accepts `--type fix|task|docs|discovery` and `--status backlog|proposed`; Feature and Sprint default to their initial statuses. `--list`/`--show` now also cover Feature and Sprint artifacts.
+
 ## 2.7.2 - 2026-08-21
 
 ### Fixed

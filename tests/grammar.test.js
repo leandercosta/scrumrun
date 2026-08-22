@@ -97,6 +97,21 @@ test("CLI root dispatches implemented helpers and rejects unknown actions", () =
   }), /Command failed/);
 });
 
+test("CLI plan task --add creates a backlog Task and lists it", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-plan-add-"));
+  run(["init", "--lean", "--force"], { cwd: dir });
+  const added = run(["sc", "plan", "task", "--add", "Fix login bug"], { cwd: dir });
+  assert.match(added, /Created backlog TASK-001/);
+  const listed = run(["sc", "plan", "task", "--list"], { cwd: dir });
+  assert.match(listed, /TASK-001 \| backlog \| Fix login bug/);
+  const feature = run(["sc", "plan", "feature", "--add", "Onboarding v2"], { cwd: dir });
+  assert.match(feature, /Created backlog FEAT-001/);
+  const sprint = run(["sc", "plan", "sprint", "--add", "Sprint 01"], { cwd: dir });
+  assert.match(sprint, /Created proposed SPRINT-001/);
+  assert.match(run(["sc", "plan", "feature", "--list"], { cwd: dir }), /FEAT-001 \| backlog \| Onboarding v2/);
+  assert.match(run(["sc", "plan", "sprint", "--list"], { cwd: dir }), /SPRINT-001 \| proposed \| Sprint 01/);
+});
+
 test("CLI v1 aliases execute their canonical helper with a deprecation note", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-alias-"));
   run(["init", "--lean", "--force"], { cwd: dir });

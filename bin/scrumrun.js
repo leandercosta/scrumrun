@@ -31,7 +31,7 @@ const { ARTIFACT_TYPES, ArtifactRepository } = require(path.join(root, "lib", "v
 const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.join(root, "lib", "commands", "manifest"));
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
-const { approveRequest, nextBacklogTask, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
+const { addPlanArtifact, approveRequest, nextBacklogTask, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
 const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
 const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
@@ -1451,6 +1451,18 @@ function executeRootRoute(route) {
     console.log(`Started ${result.task.id} (${result.run.id}) assigned to ${result.task.assignee || "agent"}.`);
     return;
   }
+  if (noun === "plan" && ["task", "feature", "sprint"].includes(subject) && routeArgs[0] === "--add") {
+    const label = removeOptionPairs(routeArgs.slice(1), ["--type", "--status"])
+      .filter((arg) => !arg.startsWith("--"))
+      .join(" ")
+      .trim();
+    const result = addPlanArtifact(process.cwd(), subject, label, {
+      type: optionValue(routeArgs, "--type"),
+      status: optionValue(routeArgs, "--status")
+    });
+    console.log(`Created ${result.record.status} ${result.record.id}: ${path.relative(process.cwd(), result.file)}`);
+    return;
+  }
   if (noun === "plan" && subject === "run" && routeArgs[0] === "--render") {
     const { renderRunFromDisk } = require(path.join(root, "lib", "commands", "run-render"));
     const runId = routeArgs[1];
@@ -1503,7 +1515,7 @@ function executeRootRoute(route) {
     }
     return;
   }
-  if (noun === "plan" && ["task", "run"].includes(subject) && ["--list", "--show"].includes(routeArgs[0])) {
+  if (noun === "plan" && ["task", "run", "feature", "sprint"].includes(subject) && ["--list", "--show"].includes(routeArgs[0])) {
     const repository = new ArtifactRepository(projectFile());
     if (routeArgs[0] === "--list") {
       const artifacts = repository.list(subject).map((artifact) => `${artifact.record.id} | ${artifact.record.status} | ${((artifact.body || "").match(/^# ([^\r\n]+)/m) || [])[1] || artifact.record.id}`);

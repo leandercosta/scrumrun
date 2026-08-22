@@ -396,6 +396,7 @@ export function renderState(repository: ArtifactRepository): string;
 export function stateFingerprint(repository: ArtifactRepository): string;
 export function stateIsStale(scrumDir: string): boolean;
 export function nextId(repository: ArtifactRepository, kind: ArtifactKind): string;
+export function addPlanArtifact(projectRoot: string, kind: ArtifactKind, label: string, options?: { type?: string | null; status?: string | null }): ParsedArtifact & { file: string };
 
 // ---------------------------------------------------------------------------
 // lib/runtime/mutation-gateway
