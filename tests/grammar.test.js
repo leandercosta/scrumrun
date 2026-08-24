@@ -112,6 +112,26 @@ test("CLI plan task --add creates a backlog Task and lists it", () => {
   assert.match(run(["sc", "plan", "sprint", "--list"], { cwd: dir }), /SPRINT-001 \| proposed \| Sprint 01/);
 });
 
+test("CLI plan task --add resolves the project root from a subdirectory", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-plan-add-subdir-"));
+  run(["init", "--lean", "--force"], { cwd: dir });
+  const subdir = path.join(dir, "app", "front");
+  fs.mkdirSync(subdir, { recursive: true });
+  const added = run(["sc", "plan", "task", "--add", "Fix Step5 SUBMITING"], { cwd: subdir });
+  assert.match(added, /Created backlog TASK-001/);
+  assert.ok(fs.existsSync(path.join(dir, ".scrumrun", "tasks", "TASK-001.md")), "task must land at the project root");
+  assert.ok(!fs.existsSync(path.join(subdir, ".scrumrun")), "no stray .scrumrun directory in the subdirectory");
+});
+
+test("CLI plan task --add fails clearly when no ScrumRun project exists", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-plan-add-noproject-"));
+  assert.throws(() => run(["sc", "plan", "task", "--add", "Orphan task"], {
+    cwd: dir,
+    stdio: ["ignore", "pipe", "pipe"]
+  }), (error) => /ScrumRun project not found/.test(`${error.stderr || ""}${error.message || ""}`));
+  assert.ok(!fs.existsSync(path.join(dir, ".scrumrun")), "no stray .scrumrun directory created");
+});
+
 test("CLI v1 aliases execute their canonical helper with a deprecation note", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-alias-"));
   run(["init", "--lean", "--force"], { cwd: dir });

@@ -1198,6 +1198,25 @@ function v2Project(cwd = process.cwd()) {
   }
 }
 
+function findProjectRoot(startDir = process.cwd()) {
+  let dir = path.resolve(startDir);
+  while (true) {
+    const marker = path.join(dir, ".scrumrun", "method.json");
+    if (fs.existsSync(marker) && !fs.lstatSync(marker).isSymbolicLink() && fs.lstatSync(marker).isFile()) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+function chdirToProjectRoot() {
+  const root = findProjectRoot();
+  if (root && root !== process.cwd()) process.chdir(root);
+  return root;
+}
+
 function optionValues(args, flag) {
   const values = [];
   for (let index = 0; index < args.length; index++) {
@@ -1644,6 +1663,7 @@ function runRoot(parts) {
     process.exitCode = 1;
     return;
   }
+  if (!(route.noun === "config" && route.subject === "init")) chdirToProjectRoot();
   return executeRootRoute(route);
 }
 
@@ -1652,6 +1672,7 @@ function runCompatibilityAlias(alias, parts) {
   console.warn(`Deprecated: ${alias} now executes /sc ${route.noun} ${route.subject}.`);
   if (route.note) console.warn(route.note);
   if (alias === "sc-backlog") return runBacklog(parts);
+  if (alias !== "sc-init") chdirToProjectRoot();
   return executeRootRoute({ type: "route", noun: route.noun, subject: route.subject, args: route.args });
 }
 

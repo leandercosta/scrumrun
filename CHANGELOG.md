@@ -4,6 +4,16 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.5 - 2026-08-22
+
+### Added
+
+- **Project-root discovery.** The `sc` CLI now walks up from the current directory to find the nearest `.scrumrun/method.json`, so commands run from any subdirectory (e.g. `app/front`) operate on the project root instead of failing with a cryptic "Mutation Gateway requires a valid method.json" error. `sc config init` and `sc-init` still initialize in the current directory.
+
+### Fixed
+
+- **Missing-project error.** `sc plan task --add` now reports a clear "ScrumRun project not found" message (with `scrumrun init` / run-from-root guidance) instead of leaking an internal ENOENT, and no longer leaves a stray `.scrumrun/.cache` lock directory behind when the command is run outside a project.
+
 ## 2.7.4 - 2026-08-22
 
 ### Fixed
