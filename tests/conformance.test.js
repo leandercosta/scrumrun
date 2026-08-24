@@ -303,6 +303,25 @@ test("addPlanArtifact rejects invalid input and out-of-band statuses", () => {
   assert.throws(() => addPlanArtifact(project, "run", "X"), /Unsupported plan kind/);
 });
 
+test("addPlanArtifact records the git branch, or null outside git", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-branch-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+
+  const noGit = addPlanArtifact(project, "task", "No git branch");
+  assert.equal(noGit.record.branch, null, "no branch field when the project is not a git repo");
+
+  execFileSync("git", ["init", "-q"], { cwd: project, stdio: "ignore" });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: project, stdio: "ignore" });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: project, stdio: "ignore" });
+  fs.writeFileSync(path.join(project, "file.txt"), "x\n");
+  execFileSync("git", ["add", "-A"], { cwd: project, stdio: "ignore" });
+  execFileSync("git", ["commit", "-q", "-m", "init"], { cwd: project, stdio: "ignore" });
+  execFileSync("git", ["checkout", "-q", "-b", "feature/branch-test"], { cwd: project, stdio: "ignore" });
+
+  const onBranch = addPlanArtifact(project, "feature", "On a branch");
+  assert.equal(onBranch.record.branch, "feature/branch-test", "artifact must record the active branch");
+});
+
 test("agentIdentity resolves from environment and config.md", () => {
   const { agentIdentity } = require("../lib/runtime/policy-engine");
   const original = process.env.SCRUMRUN_AGENT;

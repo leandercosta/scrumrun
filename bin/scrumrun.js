@@ -1537,7 +1537,11 @@ function executeRootRoute(route) {
   if (noun === "plan" && ["task", "run", "feature", "sprint"].includes(subject) && ["--list", "--show"].includes(routeArgs[0])) {
     const repository = new ArtifactRepository(projectFile());
     if (routeArgs[0] === "--list") {
-      const artifacts = repository.list(subject).map((artifact) => `${artifact.record.id} | ${artifact.record.status} | ${((artifact.body || "").match(/^# ([^\r\n]+)/m) || [])[1] || artifact.record.id}`);
+      const artifacts = repository.list(subject).map((artifact) => {
+        const title = ((artifact.body || "").match(/^# ([^\r\n]+)/m) || [])[1] || artifact.record.id;
+        const branch = artifact.record.branch ? ` [${artifact.record.branch}]` : "";
+        return `${artifact.record.id} | ${artifact.record.status} | ${title}${branch}`;
+      });
       console.log(artifacts.length ? artifacts.join("\n") : `No ${subject} artifacts.`);
     } else {
       const artifact = repository.read(subject, routeArgs[1]);

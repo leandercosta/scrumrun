@@ -23,7 +23,7 @@ function forgeCacheDeclaringFts5(dir) {
   const db = new DatabaseSync(cacheFile);
   db.exec(`
     CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT);
-    INSERT INTO metadata (key, value) VALUES ('schema_version', '4');
+    INSERT INTO metadata (key, value) VALUES ('schema_version', '5');
     INSERT INTO metadata (key, value) VALUES ('source_fingerprint', 'x');
     INSERT INTO metadata (key, value) VALUES ('source_watch_fingerprint', 'y');
     INSERT INTO metadata (key, value) VALUES ('search_backend', 'fts5');

@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.6 - 2026-08-24
+
+### Added
+
+- **Branch tracking on artifacts.** Task, Feature, Sprint, and Run artifacts now record the active git branch in a `branch` frontmatter field at creation time (`null` outside a git repo). `sc plan task --list` and the generated `map.md` show the branch, giving a human-readable "which branch did this work originate from" reference index to complement the exact commit SHA already captured in each Run's workspace baseline.
+
 ## 2.7.5 - 2026-08-22
 
 ### Added
