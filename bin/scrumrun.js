@@ -31,7 +31,7 @@ const { ARTIFACT_TYPES, ArtifactRepository } = require(path.join(root, "lib", "v
 const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.join(root, "lib", "commands", "manifest"));
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
-const { addPlanArtifact, approveRequest, nextBacklogTask, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
+const { addPlanArtifact, approveRequest, nextBacklogTask, refreshErrors, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
 const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
 const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
@@ -1378,6 +1378,11 @@ function runSemanticContext(subject, args) {
     console.log(JSON.stringify(result, null, 2));
     return;
   }
+  if (subject === "errors") {
+    const report = refreshErrors(path.join(process.cwd(), ".scrumrun"));
+    console.log(report.content);
+    return;
+  }
   if (subject === "map") {
     if (action === "--build") {
       const built = rebuildIndex(process.cwd());
@@ -1537,7 +1542,9 @@ function executeRootRoute(route) {
   if (noun === "plan" && ["task", "run", "feature", "sprint"].includes(subject) && ["--list", "--show"].includes(routeArgs[0])) {
     const repository = new ArtifactRepository(projectFile());
     if (routeArgs[0] === "--list") {
-      const artifacts = repository.list(subject).map((artifact) => {
+      const typeFilter = optionValue(routeArgs, "--type");
+      const listed = repository.list(subject).filter((artifact) => !typeFilter || artifact.record.type === typeFilter);
+      const artifacts = listed.map((artifact) => {
         const title = ((artifact.body || "").match(/^# ([^\r\n]+)/m) || [])[1] || artifact.record.id;
         const branch = artifact.record.branch ? ` [${artifact.record.branch}]` : "";
         return `${artifact.record.id} | ${artifact.record.status} | ${title}${branch}`;
@@ -1601,7 +1608,7 @@ function executeRootRoute(route) {
     }
   }
   if (noun === "knowledge" && ["fact", "decision", "insight", "dossier"].includes(subject) && v2Project()) return runV2Memory(subject, routeArgs);
-  if (noun === "knowledge" && ["context", "map", "study"].includes(subject) && v2Project()) return runSemanticContext(subject, routeArgs);
+  if (noun === "knowledge" && ["context", "map", "study", "errors"].includes(subject) && v2Project()) return runSemanticContext(subject, routeArgs);
   if (noun === "knowledge" && subject === "decision") return runDecisions(routeArgs);
   if (noun === "knowledge" && subject === "fact") return runKnow(routeArgs);
   if (noun === "knowledge" && subject === "vault") return runVault(routeArgs);

@@ -392,6 +392,7 @@ export function retryTask(projectRoot: string, taskId: string, options?: { note?
 export function startBacklogTask(projectRoot: string, taskId: string, options?: { note?: string; failurePoint?: string | null; interruptPoint?: string | null }): { run: ArtifactRecord; task: ArtifactRecord; content: string; recovered?: unknown[] };
 export function nextBacklogTask(repository: ArtifactRepository): ArtifactRecord | null;
 export function refreshState(scrumDir: string): StateProjection;
+export function refreshErrors(scrumDir: string): { content: string; sourceFingerprint: string };
 export function renderState(repository: ArtifactRepository): string;
 export function stateFingerprint(repository: ArtifactRepository): string;
 export function stateIsStale(scrumDir: string): boolean;

@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 2.7.7 - 2026-08-24
+
+### Added
+
+- **Error index.** `sc knowledge errors --show` renders `.scrumrun/errors.md` — a derived index grouping `type: fix` Tasks into Open and Resolved (with branch), so reported bugs have a dedicated project log. `sc plan task --list --type <type>` now filters Tasks by type (e.g. `--type fix`).
+
 ## 2.7.6 - 2026-08-24
 
 ### Added

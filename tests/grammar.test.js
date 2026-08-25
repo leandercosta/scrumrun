@@ -132,6 +132,22 @@ test("CLI plan task --add fails clearly when no ScrumRun project exists", () => 
   assert.ok(!fs.existsSync(path.join(dir, ".scrumrun")), "no stray .scrumrun directory created");
 });
 
+test("CLI error index filters fix tasks and renders errors.md", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-errors-"));
+  run(["init", "--lean", "--force"], { cwd: dir });
+  run(["sc", "plan", "task", "--add", "Fix login bug", "--type", "fix"], { cwd: dir });
+  run(["sc", "plan", "task", "--add", "Add dark mode"], { cwd: dir });
+
+  const listed = run(["sc", "plan", "task", "--list", "--type", "fix"], { cwd: dir });
+  assert.match(listed, /Fix login bug/);
+  assert.doesNotMatch(listed, /Add dark mode/);
+
+  const errors = run(["sc", "knowledge", "errors", "--show"], { cwd: dir });
+  assert.match(errors, /Fix Tasks: 1 \(1 open, 0 resolved\)/);
+  assert.match(errors, /Fix login bug/);
+  assert.ok(fs.existsSync(path.join(dir, ".scrumrun", "errors.md")), "errors.md must be generated");
+});
+
 test("CLI v1 aliases execute their canonical helper with a deprecation note", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-alias-"));
   run(["init", "--lean", "--force"], { cwd: dir });
