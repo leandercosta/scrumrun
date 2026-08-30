@@ -255,3 +255,20 @@ sprint: null
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("normalization recovers null identity fields from the filename, date, and legacy title", () => {
+  const dir = makeProject();
+  const scrumDir = path.join(dir, ".scrumrun");
+  try {
+    fs.writeFileSync(path.join(scrumDir, "tasks", "TASK-023.md"), `---\nid: TASK-023\nkind: task\nstatus: completed\ncreated: 2026-08-30\nupdated: 2026-08-30\nmethod: 2.0.0\ntype: task\nfeature: null\nsprint: null\n---\n\n# Task\n`);
+    fs.writeFileSync(path.join(scrumDir, "runs", "RUN-001.md"), `---\nid: null\nkind: run\nstatus: partial\ncreated: null\nupdated: 2026-08-30\nmethod: 2.0.0\ntask: null\nsprint: null\nattempt: 1\nledger: 1\n---\n\n# Run: TASK-023 - Legacy work\n\n## Events\n`);
+    normalizeLegacyRuns(scrumDir, { dryRun: false });
+    const normalized = fs.readFileSync(path.join(scrumDir, "runs", "RUN-001.md"), "utf8");
+    assert.match(normalized, /^id: RUN-001$/m);
+    assert.match(normalized, /^created: 2026-08-30$/m);
+    assert.match(normalized, /^task: TASK-023$/m);
+    assert.equal(auditProject(dir).findings.some((finding) => finding.code === "RUN_TASK_MISSING"), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
