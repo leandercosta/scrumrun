@@ -79,7 +79,7 @@ RECEIVED → CONTEXTUALIZING → POLICY → RISK → CLASSIFICATION
 
 The agent may assert the classification (`--type fix|task|feature|docs|discovery`) and attach a short technical preview (`--preview "…"`), rendered with color in the terminal before any Task exists. Nothing canonical is persisted before approval.
 
-Explicit approval atomically creates a Task and a Run. Execution then follows:
+Explicit approval atomically materializes the required plan artifacts and always creates the linked Task and Run. Feature and Sprint artifacts are created automatically when the request calls for them. Execution then follows:
 
 ```text
 EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED

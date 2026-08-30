@@ -14,6 +14,7 @@ const { canonicalFingerprint } = require("../lib/runtime/canonical-snapshot");
 const { parseRunLedger, validateRunLedger } = require("../lib/runtime/run-ledger");
 const { planRequest } = require("../lib/runtime/request-engine");
 const { approveRequest, retryTask, stateIsStale, transitionRun } = require("../lib/runtime/orchestrator");
+const { auditProject } = require("../lib/v2/conformance");
 
 function makeProject() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-runtime-"));
@@ -80,6 +81,65 @@ test("explicit approval creates exactly one linked Task and Run and is idempoten
   assert.equal((state.match(/^Source fingerprint:\s*([a-f0-9]{64})$/m) || [])[1], buildContextPackage(dir, "Check state consistency").fingerprint);
   fs.appendFileSync(path.join(dir, ".scrumrun", "project.md"), "\nNew canonical context.\n");
   assert.equal(stateIsStale(path.join(dir, ".scrumrun")), true);
+});
+
+test("feature approval materializes a Feature, Task, and Run with linked ids", () => {
+  const dir = makeProject();
+  const plan = planRequest(dir, "Criar iniciativa de memória semântica");
+  assert.equal(plan.proposal.materialization.summary, "Feature + Task + Run");
+  const approved = approveRequest(dir, plan.approvalToken);
+  const repo = repository(dir);
+  const feature = repo.read("feature", "FEAT-001");
+  const task = repo.read("task", approved.task.id);
+  const run = repo.read("run", approved.run.id);
+
+  assert.equal(repo.list("feature").length, 1);
+  assert.equal(repo.list("task").length, 1);
+  assert.equal(repo.list("run").length, 1);
+  assert.equal(feature.record.status, "active");
+  assert.equal(task.record.feature, feature.record.id);
+  assert.equal(run.record.feature, feature.record.id);
+});
+
+test("sprint approval materializes a Sprint, Task, and Run with linked ids", () => {
+  const dir = makeProject();
+  const plan = planRequest(dir, "Organizar Sprint timebox com cinco tarefas");
+  assert.equal(plan.proposal.materialization.summary, "Sprint + Task + Run");
+  const approved = approveRequest(dir, plan.approvalToken);
+  const repo = repository(dir);
+  const sprint = repo.read("sprint", "SPRINT-001");
+  const task = repo.read("task", approved.task.id);
+  const run = repo.read("run", approved.run.id);
+
+  assert.equal(repo.list("sprint").length, 1);
+  assert.equal(repo.list("task").length, 1);
+  assert.equal(repo.list("run").length, 1);
+  assert.equal(sprint.record.status, "running");
+  assert.equal(task.record.sprint, sprint.record.id);
+  assert.equal(run.record.sprint, sprint.record.id);
+  assert.match(sprint.body, /^## Tasks$/m);
+  assert.match(sprint.body, new RegExp(`^- ${task.record.id}$`, "m"));
+  assert.equal(auditProject(dir).passed, true);
+});
+
+test("context package surfaces related work for feature-led execution", () => {
+  const dir = makeProject();
+  const plan = planRequest(dir, "Criar iniciativa de memória semântica");
+  const approved = approveRequest(dir, plan.approvalToken);
+  transitionRun(dir, approved.run.id, "validating", { note: "Checks passed." });
+  transitionRun(dir, approved.run.id, "learning", { note: "No new memory candidates." });
+  transitionRun(dir, approved.run.id, "completed", {
+    note: "Feature ready.",
+    summary: "Implemented semantic memory scaffolding and linked the initiative to its first task."
+  });
+
+  const context = buildContextPackage(dir, "Next step after semantic memory");
+  const feature = context.relatedWork.find((item) => item.id === "FEAT-001");
+
+  assert.ok(feature, "feature work should be present in related work");
+  assert.ok(feature.related.some((relation) => relation.id === approved.task.id));
+  assert.ok(feature.recentSummaries && feature.recentSummaries.length);
+  assert.match(feature.recentSummaries[0].summary, /semantic memory scaffolding/);
 });
 
 test("state staleness uses metadata fast path with hash fallback", () => {
