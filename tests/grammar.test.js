@@ -50,7 +50,7 @@ test("root and compatibility assets are rendered directly from the manifest", ()
   }
 });
 
-test("root prompt encodes the v2 entity, approval, guardrail, and memory contracts", () => {
+test("root prompt encodes the lean entity, approval, guardrail, and memory contracts", () => {
   const content = renderRootPrompt();
   for (const noun of Object.keys(nouns)) assert.match(content, new RegExp(`\\*\\*${noun}\\*\\*`));
   assert.match(content, /Task and creates a Run/);
@@ -58,7 +58,8 @@ test("root prompt encodes the v2 entity, approval, guardrail, and memory contrac
   assert.match(content, /guardrails\.md.*canonical/);
   assert.match(content, /passed.*blocked.*deferred/);
   assert.match(content, /GR-NNN/);
-  assert.match(content, /Mutation Gateway permit/);
+  assert.match(content, /session checkpoint/);
+  assert.match(content, /--finalize RUN-NNN/);
   assert.match(content, /Insights remain `candidate`/);
   assert.doesNotMatch(content, /Six nouns|method 1\.0/);
 });

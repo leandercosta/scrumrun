@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `2.7.11` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `3.0.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -48,7 +48,7 @@ npm i -g scrumrun@latest
 scrumrun update
 ```
 
-`npx scrumrun@latest <command>` also works if you prefer not to install globally, but pin the version explicitly (`@latest` or `@2.6.1`) — `npx scrumrun` alone will happily reuse a stale cached version.
+Use the installed `scrumrun` command for project work. `npx` is appropriate for one-off installation, migration, or recovery only; agents must never invoke `npx scrumrun@latest` repeatedly while executing a Task, because that adds network dependency and latency to the work loop.
 
 `install` adds the client integration; `init` creates the project tree. Initialization is local by default: `.scrumrun/` and the generated agent hint are added to `.git/info/exclude`. Use `--shared` when the team wants to commit the project memory.
 
@@ -85,7 +85,13 @@ Explicit approval atomically materializes the required plan artifacts and always
 EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 ```
 
-Every approved Task carries an `## Acceptance Criteria` section so "done" is defined before work begins; `--complete --summary "…"` stores a `## Technical Summary` on the Run so the next agent inherits what was actually done. Failed retries remain available as separate Runs.
+Every approved Task carries an `## Acceptance Criteria` section so "done" is defined before work begins. After approval, the agent works directly in code and the Task Markdown. It adds `## Technical Summary` and, when a non-automatic rule needs proof, a compact `## Guardrail Evidence` section. One final checkpoint closes the work:
+
+```bash
+scrumrun sc plan run --finalize RUN-001
+```
+
+The checkpoint validates the complete delta, policy, protected paths, secret boundary, acceptance evidence, and every Guardrail before writing the Run ledger and synchronizing the Task. Failed retries remain available as separate Runs.
 
 Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
 
@@ -211,7 +217,7 @@ npx scrumrun@latest doctor codex --strict
 
 `guardrails.md` is canonical project policy. Active `GR-NNN` rules are evaluated into explicit `passed`, `blocked`, or `deferred` results; blocks identify the exact Guardrail and deferred checks stay visible for their execution-time gate. `config.md` contains preferences and cannot weaken policy. Duplicate/unknown Guardrails, disabled approval, and unsafe read-only paths fail conformance. `state.md`, `map.md`, context packages, and SQLite are generated navigation aids, never authority. `state.md` carries the same source fingerprint used by intake, an RFC3339 generation time, and a watch fingerprint for fast verified staleness checks.
 
-Approved Runs persist every deferred result as an append-only obligation and bind the exact policy plus workspace baseline. Material source edits use a 15-minute, path-scoped Mutation Gateway permit. Recording verifies before/after hashes, owner/read-only scope, symlinks, new secret-like content, and workspace drift. Validation and completion fail closed when edits bypass that chain or obligations remain unresolved.
+Approved Runs persist every deferred result as an append-only obligation and bind the exact policy plus workspace baseline. The normal final checkpoint verifies all workspace changes at once: owner/read-only scope, symlinks, new secret-like content, policy drift, and required Guardrail evidence. Completion fails closed when any verification is missing or fails. The 15-minute path-scoped Mutation Gateway remains available for teams that explicitly choose strict per-edit control.
 
 ### Owner-controlled allowlist for descriptive files
 
@@ -243,43 +249,42 @@ Rules:
 
 ```bash
 # inspect the grammar
-npx scrumrun@latest commands
+scrumrun commands
 
 # plan without writes, then approve the emitted token
-npx scrumrun@latest sc plan intake "Fix pricing rounding" --type fix --preview "Rounding moved after tax calc"
-npx scrumrun@latest sc plan intake --approve <token>
+scrumrun sc plan intake "Fix pricing rounding" --type fix --preview "Rounding moved after tax calc"
+scrumrun sc plan intake --approve <token>
 
 # record what was done at completion, so the next agent inherits it
-npx scrumrun@latest sc plan run --complete RUN-001 --note "Done" --evidence "npm test: passed" --summary "Moved rounding after tax calc in checkout/pricing.ts"
+scrumrun sc plan run --finalize RUN-001 --summary "Moved rounding after tax calc in checkout/pricing.ts"
 
 # auto-sequencing: surface and start the next backlog Task
-npx scrumrun@latest sc plan task --next
-npx scrumrun@latest sc plan task --start TASK-009
+scrumrun sc plan task --next
+scrumrun sc plan task --start TASK-009
 
 # authorize and record a material source mutation
-npx scrumrun@latest sc plan run --authorize-mutation RUN-001 --path src/pricing.ts
-npx scrumrun@latest sc plan run --record-mutation RUN-001 --permit MUT-... --note "Pricing change recorded"
+scrumrun sc plan run --authorize-mutation RUN-001 --path src/pricing.ts  # strict mode only
+scrumrun sc plan run --record-mutation RUN-001 --permit MUT-... --note "Pricing change recorded"
 
 # record an audit-derived Review, then resolve a persisted completion gate
-npx scrumrun@latest sc review artifact --run
-npx scrumrun@latest sc review artifact --record --task TASK-001 --run RUN-001 --evidence "npm test: passed"
-npx scrumrun@latest sc plan run --satisfy-guardrail RUN-001 --guardrail GR-003 --review REV-001
+scrumrun sc review artifact --run
+scrumrun sc review artifact --record --task TASK-001 --run RUN-001 --evidence "npm test: passed"
 
 # memory lifecycle
-npx scrumrun@latest sc knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts
-npx scrumrun@latest sc knowledge insight --confirm INS-001
-npx scrumrun@latest sc knowledge study calculateFinalPrice
+scrumrun sc knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts
+scrumrun sc knowledge insight --confirm INS-001
+scrumrun sc knowledge study calculateFinalPrice
 
 # rebuild or inspect the derived graph
-npx scrumrun@latest sc knowledge map --build
-npx scrumrun@latest sc knowledge map --show
+scrumrun sc knowledge map --build
+scrumrun sc knowledge map --show
 
 # read a Run as a human timeline instead of raw ledger JSON
-npx scrumrun@latest sc plan run --render RUN-001
+scrumrun sc plan run --render RUN-001
 
 # aggregate every Run in the project (p50/p95 durations, retries, guardrail counts)
-npx scrumrun@latest sc plan run --stats
-npx scrumrun@latest sc plan run --stats --task TASK-001 --json
+scrumrun sc plan run --stats
+scrumrun sc plan run --stats --task TASK-001 --json
 
 # preview a canonical-transaction recovery before touching disk
 npx scrumrun@latest sc config doctor --recover --dry-run

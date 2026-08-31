@@ -31,7 +31,7 @@ const { ARTIFACT_TYPES, ArtifactRepository } = require(path.join(root, "lib", "v
 const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.join(root, "lib", "commands", "manifest"));
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
-const { addPlanArtifact, approveRequest, nextBacklogTask, refreshErrors, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
+const { addPlanArtifact, approveRequest, finalizeRun, nextBacklogTask, refreshErrors, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
 const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
 const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
@@ -1562,6 +1562,15 @@ function executeRootRoute(route) {
     return;
   }
   if (noun === "plan" && subject === "run") {
+    if (routeArgs[0] === "--finalize") {
+      const runId = routeArgs[1];
+      if (!runId) throw new Error("--finalize requires RUN-NNN.");
+      const result = finalizeRun(process.cwd(), runId, runTransitionOptions(routeArgs.slice(2)));
+      console.log(`${result.run.id}: completed; ${result.task.id}: completed. Final session audit verified ${result.changes} change(s).`);
+      if (result.resolved.length) console.log(`Guardrails verified: ${result.resolved.join(", ")}.`);
+      if (result.learning && result.learning.created.length) console.log(`Learning candidates: ${result.learning.created.join(", ")}.`);
+      return;
+    }
     if (routeArgs[0] === "--authorize-mutation") {
       const paths = optionValues(routeArgs.slice(2), "--path");
       const result = authorizeMutation(process.cwd(), routeArgs[1], paths);

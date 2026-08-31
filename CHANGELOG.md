@@ -4,6 +4,16 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 3.0.0 - 2026-08-31
+
+### Changed
+
+- **Lightweight execution is now the default.** After approval, agents work directly in application files and the linked Task Markdown, then close the Run with one `scrumrun sc plan run --finalize RUN-NNN` checkpoint.
+- **Finalization is fail-closed.** It audits the complete workspace delta, policy fingerprint, protected paths, symlink safety, scannability, secret boundary, Run ledger, and every Guardrail before completing the Task.
+- **Guardrail proof is co-located with work.** Non-automatic rules use a compact `## Guardrail Evidence` section in the Task and are validated together at finalization; missing evidence blocks completion.
+- **No network command loop.** Generated agent instructions prohibit repeated `npx scrumrun@latest` calls during execution. `npx` remains for one-off installation, migration, and recovery.
+- **Strict mode remains available.** Path-scoped Mutation Gateway permits and individual Run transitions are retained for owners who explicitly request per-edit control.
+
 ## 2.7.7 - 2026-08-24
 
 ### Added

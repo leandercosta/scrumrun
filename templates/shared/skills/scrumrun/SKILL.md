@@ -36,7 +36,7 @@ Normal hot path:
 5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `sc knowledge study "<topic>"`);
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
-**Never write Run events by hand.** Only the CLI mutates `runs/RUN-NNN.md`: `sc plan run --validate | --learn | --complete | --resume | --fail | --block | --satisfy-guardrail | --authorize-mutation | --record-mutation`. Direct edits produce invalid ledger events (unknown `type` like `execution`/`validation`/`learning`, unknown evidence `kind` like `guardrail-check`/`build`/`task-status`, missing snapshot invariant) and break project conformance. If the CLI does not expose the shape you need, propose a spec change instead of inventing vocabulary. Recover hand-written Runs via `sc plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
+**Never write Run events by hand.** Work directly in code and the linked Task Markdown after approval, then let the one final CLI checkpoint mutate `runs/RUN-NNN.md`: `scrumrun sc plan run --finalize RUN-NNN`. It creates the validated transition ledger, audits the full workspace delta, and records the Guardrail results together. Do not invoke `npx scrumrun@latest` during normal execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` commands remain only for owner-requested strict mode. Recover hand-written Runs via `sc plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
 
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
@@ -101,19 +101,17 @@ During execution:
 1. keep the change inside the approved Task scope;
 2. preserve existing owner work and unrelated dirty files;
 3. define or confirm the Task's `## Acceptance Criteria` before execution and check them off as evidence;
-4. enforce guardrails before every material mutation: obtain a short-lived path-scoped Mutation Gateway permit before editing and record its verified before/after hashes immediately afterward;
+4. work normally: edit code and update the Task's `## Technical Summary` and, for non-automatic rules, `## Guardrail Evidence` as evidence becomes available;
 5. validate in proportion to risk and against the acceptance criteria;
-6. record exactly one structured `RUN-NNN-EVT-NNN` event per state transition, with RFC3339 time, actor, reason, and typed evidence;
-7. run configured reviewers;
-8. extract candidate learning only after validation;
-9. record a `## Technical Summary` at completion (`sc plan run --complete --summary "…"`) so the next agent inherits what was actually done;
-10. complete the Run, then Task, and only then the Sprint when its whole batch is done.
+6. run configured reviewers when a Guardrail requires one;
+7. finish once with `scrumrun sc plan run --finalize RUN-NNN`; it verifies every changed path, policy, secret boundary, and guardrail evidence before creating the structured Run events and completing the Task;
+8. use path-scoped Mutation Gateway commands only when the owner explicitly requests strict execution.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
 
 When a Run completes and work remains queued, the briefing's `## Next Up` names the next backlog Task. Surface it with `sc plan task --next` and start it with `sc plan task --start [TASK-NNN]` — starting is the explicit approval; the owner can always decline. Each agent declares its identity via `SCRUMRUN_AGENT` (or `Agent Identity` in `config.md`); it is recorded as the Task `assignee` and the Run event `actor`.
 
-Every deferred policy result is an append-only Run obligation. Unrecorded workspace drift, policy drift, an expired/missing permit, out-of-scope changes, unsafe symlinks, newly introduced secret-like content, or an unresolved obligation blocks validation/completion. The ignored permit cache is disposable; deleting it invalidates outstanding permits and never creates authority.
+Every deferred policy result is an append-only Run obligation. The final checkpoint fails closed on policy drift, protected-path changes, unsafe symlinks, unscannable content, newly introduced secret-like content, or missing Guardrail Evidence. In strict mode it additionally requires the permit chain. The ignored permit cache is disposable; deleting it invalidates outstanding strict-mode permits and never creates authority.
 
 Run is the sole operational-history authority. Task synchronizes current status without copying Run events. Validation, learning, completion, failure, block, and resume require a reason or structured evidence; completion also requires evidenced validation and learning. Early v2 prose Runs are migrated explicitly, with deterministic chains recovered and uncertain history represented as an evidenced snapshot.
 

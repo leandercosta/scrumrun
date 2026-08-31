@@ -7,7 +7,7 @@ const test = require("node:test");
 
 const { ArtifactRepository } = require("../lib/v2/artifacts");
 const { authorizeMutation, recordMutation } = require("../lib/runtime/mutation-gateway");
-const { approveRequest, stateIsStale, transitionRun } = require("../lib/runtime/orchestrator");
+const { approveRequest, finalizeRun, stateIsStale, transitionRun } = require("../lib/runtime/orchestrator");
 const { planRequest } = require("../lib/runtime/request-engine");
 const { guardrailState, parseRunLedger, validateRunLedger } = require("../lib/runtime/run-ledger");
 
@@ -51,6 +51,39 @@ test("Mutation Gateway records scoped before/after evidence and permits a verifi
   const ledger = parseRunLedger(run.body);
   assert.equal(ledger.events.filter((event) => event.type === "mutation").length, 1);
   assert.equal(guardrailState(run.record, run.body).every((item) => item.status === "passed"), true);
+});
+
+test("lightweight finalization verifies the complete workspace once without edit permits", () => {
+  const directory = project();
+  const approved = approve(directory);
+  const repository = new ArtifactRepository(path.join(directory, ".scrumrun"));
+  const task = repository.read("task", approved.task.id);
+  fs.writeFileSync(task.file, `${fs.readFileSync(task.file, "utf8")}\n\n## Technical Summary\n\nImplemented the requested source change and ran the final checks.\n`);
+  write(directory, "src/session.js", "export const lightweight = true;\n");
+
+  const output = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--finalize", approved.run.id], { cwd: directory, encoding: "utf8" });
+  assert.match(output, new RegExp(`${approved.run.id}: completed`));
+  const run = repository.read("run", approved.run.id);
+  assert.equal(run.record.status, "completed");
+  assert.equal(guardrailState(run.record, run.body).every((item) => item.status === "passed"), true);
+  assert.equal(validateRunLedger(run.record, run.body).errors.length, 0);
+});
+
+test("lightweight finalization fails closed until a manual Guardrail has task evidence", () => {
+  const directory = project();
+  fs.appendFileSync(path.join(directory, ".scrumrun", "guardrails.md"), "\n## GR-010 - Architecture review\n\nStatus: active\nEnforcement: manual\nScope: completion\nRule: A passed architecture review is required before completion.\n");
+  const approved = approve(directory, "Implement a reviewed architecture change");
+  const repository = new ArtifactRepository(path.join(directory, ".scrumrun"));
+  const task = repository.read("task", approved.task.id);
+  fs.writeFileSync(task.file, `${fs.readFileSync(task.file, "utf8")}\n\n## Technical Summary\n\nImplemented and reviewed the architecture change.\n`);
+  write(directory, "src/reviewed.js", "export const reviewed = true;\n");
+  assert.throws(() => finalizeRun(directory, approved.run.id), /GR-010 needs final evidence/);
+
+  const reviewOutput = execFileSync(process.execPath, [bin, "sc", "review", "artifact", "--record", "--task", approved.task.id, "--run", approved.run.id, "--title", "Architecture review", "--evidence", "Architecture checks passed."], { cwd: directory, encoding: "utf8" });
+  assert.match(reviewOutput, /REV-001: passed/);
+  fs.appendFileSync(task.file, "\n## Guardrail Evidence\n\n- GR-010 | review | REV-001 | Architecture review passed.\n");
+  const result = finalizeRun(directory, approved.run.id);
+  assert.equal(result.run.status, "completed");
 });
 
 test("Mutation Gateway CLI authorizes and records the declared Run paths", () => {

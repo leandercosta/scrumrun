@@ -1,4 +1,4 @@
-# ScrumRun 2.0 Command Reference
+# ScrumRun 3.0 Command Reference
 
 The canonical grammar is:
 
@@ -6,7 +6,7 @@ The canonical grammar is:
 /sc <noun> <subject> <action> [args]
 ```
 
-Use `/sc` inside a supported AI client. The equivalent CLI form is `npx scrumrun@latest sc ...`. CLI-native workflows execute immediately; reasoning-heavy routes tell the installed agent to execute the validated workflow.
+Use `/sc` inside a supported AI client. The equivalent CLI form is `scrumrun sc ...`. Use `npx scrumrun@latest` only for one-off installation or recovery, never inside an agent's normal execution loop.
 
 ## Plan
 
@@ -17,13 +17,14 @@ Use `/sc` inside a supported AI client. The equivalent CLI form is `npx scrumrun
 /sc plan sprint --add|--list|--show|--start|--complete|--block
 /sc plan feature --add|--list|--show|--activate|--complete
 /sc plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block [--note] [typed evidence flags]
+/sc plan run --finalize RUN-NNN [--summary "technical recap"] [--note]
 /sc plan run --authorize-mutation RUN-NNN --path <relative-path> [--path ...]
 /sc plan run --record-mutation RUN-NNN --permit MUT-id [--note] [--actor]
 /sc plan run --satisfy-guardrail RUN-NNN --guardrail GR-NNN [typed evidence flags]
 /sc plan challenge <question>
 ```
 
-CLI-native: intake/approval, Task/Run list/show, Task retry, Mutation Gateway actions, Guardrail satisfaction, and Run transitions. A retry requires a failed, blocked, or partial Task and creates a new Run. Mutation permits expire after 15 minutes, authorize explicit relative paths only, and must be recorded immediately after the edit.
+Normal execution is Markdown-first: after approval, work in code and the linked Task, then use one `--finalize` checkpoint. It verifies every workspace change and all Guardrail evidence before writing the Run transitions. A retry requires a failed, blocked, or partial Task and creates a new Run. Mutation permits are available only for explicitly requested strict mode.
 
 ## Knowledge
 
@@ -72,4 +73,4 @@ Top-level CLI aliases (`init`, `update`, `migrate`, `doctor`, `uninstall`, `stat
 
 Run transitions accept typed evidence through `--command`, `--test`, `--file`, `--review`, `--decision`, `--insight`, `--risk`, or generic `--evidence kind:value`. `doctor --recover` is an explicit write that resolves only safe pending kernel transactions; doctor without it remains read-only.
 
-Run `npx scrumrun@latest commands` for grammar rendered directly from the current manifest.
+Run `scrumrun commands` for grammar rendered directly from the current manifest.
