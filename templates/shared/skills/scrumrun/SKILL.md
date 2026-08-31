@@ -104,7 +104,7 @@ During execution:
 2. preserve existing owner work and unrelated dirty files;
 3. define or confirm the Task's `## Acceptance Criteria` before execution and check them off as evidence;
 4. work normally: edit code and update the Task's `## Technical Summary` and, for non-automatic rules, `## Guardrail Evidence` as evidence becomes available;
-5. validate in proportion to risk and against the acceptance criteria;
+5. validate in proportion to risk and against the acceptance criteria. Tests, reviews, and environments are required only when the owner, Acceptance Criteria, or an active Guardrail says so. Do not fail or block an otherwise accepted Task merely because an optional E2E/integration suite does not exist or was not run; record a material coverage gap as a follow-up/risk instead;
 6. run configured reviewers when a Guardrail requires one;
 7. finish once with `scrumrun plan run --finalize RUN-NNN`; it verifies every changed path, policy, secret boundary, and guardrail evidence before creating the structured Run events and completing the Task;
 8. use path-scoped Mutation Gateway commands only when the owner explicitly requests strict execution.

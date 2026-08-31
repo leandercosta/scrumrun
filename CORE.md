@@ -183,6 +183,7 @@ Rules:
 - the Run ledger is operational history; Task synchronizes current status without copying the Run event;
 - validation, learning, completion, failure, block, and resume require a reason or evidence;
 - validation must match the risk and acceptance criteria;
+- tests, reviews, and environments are completion gates only when explicitly required by the owner, the Task's Acceptance Criteria, or an active Guardrail; missing optional coverage is a follow-up/risk, never a reason by itself to fail or block an otherwise accepted Task;
 - each Task declares its `## Acceptance Criteria` before execution; check them off as evidence, never mark done on vibes;
 - configured reviews run before completion;
 - every deferred policy result is persisted as a Run Guardrail obligation;

@@ -31,6 +31,8 @@ Normal execution is Markdown-first: after approval, work in code and the linked 
 
 `--amend` is the canonical way to adjust planning truth before execution — never edit an artifact Markdown file directly. Every named `--section "Heading=content"` replaces or adds one `## Heading` section, so new planning context does not need a new CLI release. Repeated `--acceptance`, `--exit-criteria`, and `--exit-gate` values become checklist items. Updating a Task's `--feature` or `--sprint` synchronizes the linked Feature/Sprint projection atomically. A Task is amendable only while `backlog` or `proposed`; after it starts, scope is historical/approved truth and follow-up work needs a new Task.
 
+Every new Task starts with a `## Validation Scope`: only checks explicitly required by the owner, Acceptance Criteria, or an active Guardrail block completion. Missing optional E2E, integration, or review coverage belongs in a follow-up/risk note; it must not be used to mark the Run failed.
+
 ## What can be changed
 
 | Artifact | Canonical operation | Why |

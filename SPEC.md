@@ -200,7 +200,7 @@ RECEIVED
 
 Everything through `AWAITING_APPROVAL` is read-only. It may exist in process memory or ignored cache only. A valid approval token binds the normalized request, policy result, classification, risk, issuance time, canonical context fingerprint, and complete workspace fingerprint. Canonical or source drift after planning invalidates approval.
 
-Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent.
+Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent. Tests, reviews, and environments are completion gates only when explicitly required by the owner, the Task's Acceptance Criteria, or an active Guardrail; missing optional coverage is a documented follow-up/risk, not a failure by itself.
 
 The approved Run binds the exact Guardrail-policy fingerprint and a canonical workspace baseline. Every post-approval `deferred` check becomes an append-only Guardrail obligation. In the normal session path, agents work directly and one final checkpoint verifies the complete baseline-to-final delta: policy freshness, read-only boundaries, symlink safety, scannability, newly introduced secret-like content, and evidence for every Guardrail. Missing or unverifiable evidence fails closed. Strict teams may opt into short-lived, path-scoped permits and per-edit recording; those commands add stronger intermediate control but are not required for normal execution.
 

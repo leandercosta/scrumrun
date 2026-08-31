@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `3.0.2` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `3.0.3` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -91,7 +91,7 @@ Every approved Task carries an `## Acceptance Criteria` section so "done" is def
 scrumrun plan run --finalize RUN-001
 ```
 
-The checkpoint validates the complete delta, policy, protected paths, secret boundary, acceptance evidence, and every Guardrail before writing the Run ledger and synchronizing the Task. Failed retries remain available as separate Runs.
+The checkpoint validates the complete delta, policy, protected paths, secret boundary, Task summary, and every applicable Guardrail before writing the Run ledger and synchronizing the Task. Failed retries remain available as separate Runs. Tests, reviews, and environments are a completion gate only when the owner, Acceptance Criteria, or an active Guardrail explicitly requires them; an optional missing E2E suite is a follow-up/risk, not a failed Task.
 
 Before a Task starts, refine it through the CLI rather than hand-editing Markdown. `--amend` updates title, request, acceptance criteria, Feature/Sprint links, task type, or any named section while preserving its ID and status. It synchronizes related Feature/Sprint projections atomically.
 

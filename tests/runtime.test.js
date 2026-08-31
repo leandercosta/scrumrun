@@ -202,6 +202,15 @@ test("approval tolerates copy-pasted tokens with injected whitespace", () => {
   assert.equal(repository(dir).list("run").length, 1);
 });
 
+test("new Tasks declare optional coverage non-blocking by default", () => {
+  const dir = makeProject();
+  const approved = approveRequest(dir, planRequest(dir, "Implement a scoped UI adjustment").approvalToken);
+  const task = repository(dir).read("task", approved.task.id);
+  assert.match(task.body, /## Validation Scope/);
+  assert.match(task.body, /Non-blocking: tests, reviews, or environments not explicitly required/);
+  assert.match(task.body, /do not fail the Task solely because that optional check was not run/);
+});
+
 test("approval failure injection rolls back both canonical artifacts", () => {
   const dir = makeProject();
   const plan = planRequest(dir, "Implement a small docs update");

@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 3.0.3 - 2026-08-31
+
+### Fixed
+
+- **Scoped validation, not test bureaucracy.** New Tasks now state that only checks explicitly required by the owner, Acceptance Criteria, or an active Guardrail can block completion. Missing optional E2E/integration/review coverage is recorded as a follow-up or risk rather than turning a validated delivery into a failed Run. Generated agent instructions and the method contract enforce the same rule.
+
 ## 3.0.2 - 2026-08-31
 
 ### Added
