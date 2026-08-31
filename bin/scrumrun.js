@@ -58,7 +58,7 @@ Usage:
   scrumrun <noun> <subject> <action> [args]
   scrumrun sc <noun> <subject> <action> [args]  # compatibility alias
   scrumrun install [all|codex|opencode|claude] [--force]
-  scrumrun update  [all|codex|opencode|claude] [--no-migrate] [--verbose]
+  scrumrun update  [all|codex|opencode|claude] [--project] [--migrate] [--verbose]
   scrumrun init [--local|--shared] [--lean] [--no-agent-hint] [--force]
   scrumrun status
   scrumrun core [--path|--prompt]
@@ -318,7 +318,7 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
           return { status: "blocked" };
         }
         if (!apply) {
-          console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: scrumrun update --no-migrate");
+          console.log("\nThe project remains unchanged. Apply only with: scrumrun update --migrate");
           return { status: "ready" };
         }
         const result = applyRunLedgerMigration(process.cwd());
@@ -344,7 +344,7 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
       return { status: "blocked" };
     }
     if (!apply) {
-      console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: scrumrun update --no-migrate");
+      console.log("\nThe project remains unchanged. Apply only with: scrumrun update --migrate");
       return { status: "ready" };
     }
     const result = applyMigration(process.cwd(), { plan: preview.plan });
@@ -359,14 +359,39 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
   }
 }
 
-function updateInstallation(target, { migrate = false, verbose = false } = {}) {
+function refreshProjectGuidance(cwd = process.cwd()) {
+  if (!v2Project(cwd)) return [];
+  const vars = { PROJECT_NAME: path.basename(cwd), DATE: today() };
+  const renderTemplate = (source) => Object.entries(vars).reduce(
+    (content, [key, value]) => content.split(`{{${key}}}`).join(value),
+    fs.readFileSync(source, "utf8")
+  );
+  const results = [];
+  const coreFile = path.join(cwd, ".scrumrun", "core.md");
+  const coreResult = writeFile(coreFile, renderTemplate(path.join(root, "CORE.md")), { backup: true });
+  results.push({ status: coreResult.changed ? "updated" : "skipped", dest: coreFile, backup: coreResult.backup });
+  const agentsFile = path.join(cwd, "AGENTS.md");
+  if (!fs.existsSync(agentsFile) || looksLikeScrumRunAgents(agentsFile)) {
+    const current = readIfExists(agentsFile);
+    const leanProject = /lean read policy/i.test(current);
+    const template = path.join(templates, leanProject ? "project-lean" : "project", "AGENTS.md");
+    const agentResult = writeFile(agentsFile, renderTemplate(template), { backup: true });
+    results.push({ status: agentResult.changed ? "updated" : "skipped", dest: agentsFile, backup: agentResult.backup });
+  } else {
+    results.push({ status: "skipped", dest: `${agentsFile} (not recognized as ScrumRun-generated)` });
+  }
+  return results;
+}
+
+function updateInstallation(target, { migrate = false, project = false, verbose = false } = {}) {
   installVerbose = verbose;
   installSummary.cleaned = 0;
   installSummary.written = 0;
   installSummary.skipped = 0;
   installSummary.targets.length = 0;
-  const migration = migrationPreflightOnUpdate({ apply: migrate });
+  const migration = migrate ? migrationPreflightOnUpdate({ apply: true }) : { status: "skipped" };
   install(target, true, { compatibility: true });
+  const projectResults = project ? refreshProjectGuidance() : [];
   if (migrate && v2Project()) {
     try {
       refreshState(path.join(process.cwd(), ".scrumrun"));
@@ -377,7 +402,8 @@ function updateInstallation(target, { migrate = false, verbose = false } = {}) {
   }
   if (!verbose) {
     const targetSummary = installSummary.targets.join(", ") || "no clients";
-    console.log(`Updated ${targetSummary} — ${installSummary.written} files written, ${installSummary.cleaned} legacy removed. Run with --verbose to see file paths.`);
+    const projectSummary = projectResults.length ? ` Project guidance: ${projectResults.filter((item) => item.status === "updated").length} file(s) refreshed.` : "";
+    console.log(`Updated ${targetSummary} — ${installSummary.written} files written, ${installSummary.cleaned} legacy removed.${projectSummary} Run with --verbose to see file paths.`);
   }
   return migration;
 }
@@ -2597,7 +2623,7 @@ if (!command || command === "--help" || command === "-h") {
   console.log(`ScrumRun ${version}`);
 } else if (command === "install" || command === "update") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  if (command === "update") updateInstallation(target, { migrate: !args.includes("--no-migrate"), verbose: args.includes("--verbose") });
+  if (command === "update") updateInstallation(target, { migrate: args.includes("--migrate"), project: args.includes("--project"), verbose: args.includes("--verbose") });
   else install(target, true, { compatibility: false });
 } else if (command === "sc") {
   runRoot(args.slice(1));

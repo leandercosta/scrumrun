@@ -50,16 +50,16 @@ test("root and compatibility assets are rendered directly from the manifest", ()
   }
 });
 
-test("root prompt encodes the lean entity, approval, guardrail, and memory contracts", () => {
+test("root prompt encodes the Markdown-first entity, approval, guardrail, and memory contracts", () => {
   const content = renderRootPrompt();
   for (const noun of Object.keys(nouns)) assert.match(content, new RegExp(`\\*\\*${noun}\\*\\*`));
-  assert.match(content, /Task and creates a Run/);
-  assert.match(content, /Sprint only groups Tasks/);
+  assert.match(content, /Task, acceptance criteria, technical summary, and follow-ups directly/);
+  assert.match(content, /Run is optional audit\/handoff context/);
   assert.match(content, /guardrails\.md.*canonical/);
   assert.match(content, /passed.*blocked.*deferred/);
   assert.match(content, /GR-NNN/);
-  assert.match(content, /session checkpoint/);
-  assert.match(content, /--finalize RUN-NNN/);
+  assert.match(content, /update --project/);
+  assert.match(content, /Optional unrun E2E\/review coverage/);
   assert.match(content, /Insights remain `candidate`/);
   assert.doesNotMatch(content, /Six nouns|method 1\.0/);
 });
@@ -269,6 +269,19 @@ test("doctor --strict also requires a warning-free canonical project audit", () 
   run(["init", "--shared", "--force"], { cwd: project });
   const output = run(["doctor", "codex", "--strict"], { cwd: project, env: { ...process.env, HOME: home } });
   assert.match(output, /ok\s+ScrumRun project audit: 0 finding\(s\)/);
+});
+
+test("update --project refreshes generated Markdown-first guidance with a backup", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-update-project-home-"));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-update-project-"));
+  run(["init", "--shared", "--force"], { cwd: project });
+  const core = path.join(project, ".scrumrun", "core.md");
+  fs.writeFileSync(core, "# Previous core\n");
+  const output = run(["update", "codex", "--project"], { cwd: project, env: { ...process.env, HOME: home } });
+  assert.match(output, /Project guidance: 1 file\(s\) refreshed/);
+  assert.match(read(core), /Markdown is the normal runtime/);
+  assert.match(read(path.join(project, "AGENTS.md")), /Markdown-first/);
+  assert.ok(fs.readdirSync(path.join(project, ".scrumrun", ".backup")).some((name) => name.includes("core.md")));
 });
 
 test("sr-claude compatibility binary delegates to the root installer", () => {

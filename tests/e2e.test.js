@@ -170,13 +170,11 @@ test("published tarball supports install, v2 memory, ongoing-project migration, 
   fs.mkdirSync(ongoing, { recursive: true });
   const legacyScrum = makeV1Project(ongoing);
   const v1Fingerprint = treeFingerprint(legacyScrum);
-  const updatePreview = run(installedBin, ongoing, home, "update", "codex", "--no-migrate");
-  assert.match(updatePreview, /Project migration preflight/);
-  assert.match(updatePreview, /Status: dry-run/);
-  assert.match(updatePreview, /update to apply/i);
+  const updatePreview = run(installedBin, ongoing, home, "update", "codex");
+  assert.doesNotMatch(updatePreview, /Project migration preflight/);
   assert.equal(treeFingerprint(legacyScrum), v1Fingerprint);
 
-  const updateApply = run(installedBin, ongoing, home, "update", "codex");
+  const updateApply = run(installedBin, ongoing, home, "update", "codex", "--migrate");
   assert.match(updateApply, /Applied the verified ScrumRun v1 → v2 project migration/);
   assert.equal(JSON.parse(fs.readFileSync(path.join(legacyScrum, "method.json"), "utf8")).method, "2.0.0");
   const migratedStudy = run(installedBin, ongoing, home, "sc", "knowledge", "study", "pricing deterministic");

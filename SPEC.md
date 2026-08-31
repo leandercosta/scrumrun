@@ -200,15 +200,15 @@ RECEIVED
 
 Everything through `AWAITING_APPROVAL` is read-only. It may exist in process memory or ignored cache only. A valid approval token binds the normalized request, policy result, classification, risk, issuance time, canonical context fingerprint, and complete workspace fingerprint. Canonical or source drift after planning invalidates approval.
 
-Approval atomically creates one Task and its first Run. If either write fails, neither may remain. Project changes after planning invalidate the token. Reusing a successfully consumed token is idempotent. Tests, reviews, and environments are completion gates only when explicitly required by the owner, the Task's Acceptance Criteria, or an active Guardrail; missing optional coverage is a documented follow-up/risk, not a failure by itself.
+Approval authorizes work after the read-only planning pass. In Markdown-first mode, a Task and optional Run may be created or updated directly; their absence or imperfect administrative metadata never prevents approved work. The CLI's atomic Task/Run creation remains an optional strict/audit path. Tests, reviews, and environments are completion gates only when explicitly required by the owner, the Task's Acceptance Criteria, or an active Guardrail; missing optional coverage is a documented follow-up/risk, not a failure by itself.
 
-The approved Run binds the exact Guardrail-policy fingerprint and a canonical workspace baseline. Every post-approval `deferred` check becomes an append-only Guardrail obligation. In the normal session path, agents work directly and one final checkpoint verifies the complete baseline-to-final delta: policy freshness, read-only boundaries, symlink safety, scannability, newly introduced secret-like content, and evidence for every Guardrail. Missing or unverifiable evidence fails closed. Strict teams may opt into short-lived, path-scoped permits and per-edit recording; those commands add stronger intermediate control but are not required for normal execution.
+When a structured Run is explicitly chosen, it binds the exact Guardrail-policy fingerprint and workspace baseline. Strict audit then verifies the complete delta: policy freshness, read-only boundaries, symlink safety, scannability, newly introduced secret-like content, and evidence for every Guardrail. Strict teams may opt into short-lived, path-scoped permits and per-edit recording. This audit path is never a prerequisite for ordinary Markdown-first execution.
 
 The agent may assert the classification explicitly (`--type fix|task|feature|docs|discovery`), overriding keyword inference with validation and a stable reason. It may attach a short technical preview (`--preview`), rendered in the terminal, bound into the approval token, and stored as `## Preview` on the approved Task. A Task declares its `## Acceptance Criteria` before execution; completion is measured against them, never against elapsed time or token budget.
 
-Run transitions synchronously update the linked Task and append exactly one structured event to the Run ledger. The normal `--finalize` checkpoint writes the required validating, learning, and completed transitions together after its audit; strict mode may write them individually. Task status changes without receiving a duplicate narrative history. Completion requires a `## Technical Summary` and evidenced validation/learning. Multi-file mutations use a durable local transaction journal: `prepared` operations roll back byte-exactly after failure/interruption, while `committed` journals are verified and finalized. Ordinary audit is read-only and reports pending recovery; `doctor --recover` or retrying the approved mutation performs recovery explicitly. Entering `learning` may extract structured candidates from the Run, but extraction failure never blocks Run progress.
+When a structured Run is used, CLI transitions synchronously update the linked Task and append one event to its ledger. This is an optional audit path, not daily operational authority. Markdown-first completion records the Acceptance Criteria, Technical Summary, validation evidence, and Follow-ups directly on the Task. Multi-file CLI mutations use a durable local transaction journal; `doctor --recover` and `repair` remain explicit maintenance operations. Entering learning may extract candidates, but no administrative artifact failure blocks approved work.
 
-Backlog is a queue view of Tasks with `status: backlog`, ordered oldest-first by id. Starting a backlog Task (`--next` to surface, `--start` to promote) transitions `backlog → running`, creates the Task's first Run, re-evaluates policy, and records the agent identity. Starting is itself the explicit approval required by I-01.
+Backlog is a queue view of intentionally parked Tasks, ordered oldest-first by id. CLI `--next`/`--start` helpers may create a structured Run when wanted, but an explicit owner approval is the only daily-work start gate.
 
 ## 6. Policy and precedence
 
@@ -274,7 +274,7 @@ scrumrun migrate --to 2 --apply
 scrumrun migrate --to 2 --rollback
 ```
 
-`scrumrun update` performs the same read-only preflight when run inside a v1 project and leaves project data untouched. `update --migrate` is an explicit request to apply the verified plan; it is not implicit migration.
+`scrumrun update` refreshes integrations only. `update --migrate` is the explicit request to inspect and apply the verified migration plan; migration is never implicit.
 
 Inside an early v2 project, the same commands preflight and explicitly upgrade legacy Run prose to ledger schema 1. Deterministic transition chains are recovered; incomplete history becomes an evidenced snapshot. Apply keeps byte-exact ignored backups, verifies hashes, is idempotent, and supports rollback that refuses to erase later Run changes.
 
@@ -296,7 +296,7 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 ## 10. Normative invariants
 
 - **I-01** No canonical artifact or code write occurs before explicit approval.
-- **I-02** Approval creates a linked Task/Run pair atomically or creates nothing.
+- **I-02** The optional strict CLI approval path creates a linked Task/Run pair atomically or creates nothing; Markdown-first approval remains human-authorized and non-blocking.
 - **I-03** Task is atomic work; Sprint only groups Tasks with real batch/timebox evidence.
 - **I-04** Every retry creates a new Run and preserves earlier attempts.
 - **I-05** Only declared, ordered, evidenced state transitions are accepted; Run event ids are unique and paired transitions are recoverable.

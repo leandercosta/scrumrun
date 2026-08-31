@@ -1,4 +1,4 @@
-# ScrumRun 3.0 Command Reference
+# ScrumRun 3.1 Command Reference
 
 The canonical grammar is:
 
@@ -6,7 +6,7 @@ The canonical grammar is:
 scrumrun <noun> <subject> <action> [args]
 ```
 
-Use the installed `scrumrun` command for all normal project work. `/sc` is an optional AI-client shortcut and `scrumrun sc ...` remains a compatibility alias. Do not use `npx scrumrun@latest` inside an agent's execution loop.
+Use `.scrumrun/` Markdown for normal project work. `/sc` and the installed CLI are optional maintenance/release tools; do not use `npx scrumrun@latest` inside an agent's execution loop.
 
 ## Plan
 
@@ -27,9 +27,9 @@ scrumrun plan run --satisfy-guardrail RUN-NNN --guardrail GR-NNN [typed evidence
 scrumrun plan challenge <question>
 ```
 
-Normal execution is Markdown-first: after approval, work in code and the linked Task, then use one `--finalize` checkpoint. It verifies every workspace change and all Guardrail evidence before writing the Run transitions. A retry requires a failed, blocked, or partial Task and creates a new Run. Mutation permits are available only for explicitly requested strict mode.
+Normal execution is Markdown-first: after approval, work in code and the relevant Task Markdown, then record the Technical Summary and any Follow-ups directly. A Run/`--finalize` checkpoint is optional strict audit, never a prerequisite. Mutation permits are available only for explicitly requested strict mode.
 
-`--amend` is the canonical way to adjust planning truth before execution — never edit an artifact Markdown file directly. Every named `--section "Heading=content"` replaces or adds one `## Heading` section, so new planning context does not need a new CLI release. Repeated `--acceptance`, `--exit-criteria`, and `--exit-gate` values become checklist items. Updating a Task's `--feature` or `--sprint` synchronizes the linked Feature/Sprint projection atomically. A Task is amendable only while `backlog` or `proposed`; after it starts, scope is historical/approved truth and follow-up work needs a new Task.
+`--amend` is an optional structured helper. The Markdown-first workflow may adjust Task/Feature/Sprint content directly, preserving a useful handoff. Use the CLI when atomic relation synchronization or machine audit is valuable; do not let status vocabulary or missing relations stop approved work.
 
 Every new Task starts with a `## Validation Scope`: only checks explicitly required by the owner, Acceptance Criteria, or an active Guardrail block completion. Missing optional E2E, integration, or review coverage belongs in a follow-up/risk note; it must not be used to mark the Run failed.
 
@@ -37,8 +37,8 @@ Every new Task starts with a `## Validation Scope`: only checks explicitly requi
 
 | Artifact | Canonical operation | Why |
 | --- | --- | --- |
-| Task, Feature, Sprint | `--add`, `--amend`, lifecycle commands | Planning truth can be refined before execution. |
-| Run | transitions, `--finalize`, `--retry` | Execution history is append-only; it is never amended. |
+| Task, Feature, Sprint | Markdown directly; optional `--add`, `--amend`, lifecycle helpers | Planning truth can be refined at the speed of work. |
+| Run | optional Markdown handoff; CLI transitions/`--finalize` for strict audit | Useful operational history, never an administrative work gate. |
 | Review | `--run` / `--record` | A verdict is evidence, not editable prose. Record another review if it changes. |
 | Knowledge, Decision, Insight, Dossier | create + lifecycle commands | Preserve evidence lineage; supersede/deprecate rather than rewrite confirmed truth. |
 | Guardrail | `--add` / `--retire` | Policy history must remain auditable. |
@@ -80,14 +80,14 @@ scrumrun review release --run
 ```text
 scrumrun config project --show|--language|--interaction|--approval|--quick-tasks
 scrumrun config init --local|--shared|--lean|--no-agent-hint|--force
-scrumrun config update [all|codex|opencode|claude] [--migrate]
+scrumrun config update [all|codex|opencode|claude] [--project] [--migrate]
 scrumrun config migrate --to 2 --dry-run|--apply|--rollback
 scrumrun config doctor [all|codex|opencode|claude] [--strict] [--recover]
 scrumrun config uninstall --force
 scrumrun config help <topic>
 ```
 
-Top-level CLI aliases (`init`, `update`, `migrate`, `doctor`, `uninstall`, `status`) remain available for shell automation. Ordinary update runs only a read-only migration preflight; `--migrate` is explicit application consent.
+Top-level CLI aliases (`init`, `update`, `migrate`, `doctor`, `uninstall`, `status`) remain available for shell automation. `update --project` refreshes the packaged Markdown-first Core and recognized generated agent instructions with local backup; ordinary update does not inspect migrations, while `--migrate` explicitly does so and applies the verified plan.
 
 Run transitions accept typed evidence through `--command`, `--test`, `--file`, `--review`, `--decision`, `--insight`, `--risk`, or generic `--evidence kind:value`. `doctor --recover` is an explicit write that resolves only safe pending kernel transactions; doctor without it remains read-only.
 

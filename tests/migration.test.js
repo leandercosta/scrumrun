@@ -152,21 +152,19 @@ test("bare migrate never mutates or guesses a target version", () => {
   assert.equal(inventoryTree(scrum).rootSha256, before.rootSha256);
 });
 
-test("update preflights an ongoing v1 project without changing it", () => {
+test("ordinary update refreshes integrations without inspecting an ongoing v1 project", () => {
   const dir = makeV1Project();
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-update-home-"));
   const scrum = path.join(dir, ".scrumrun");
   const before = inventoryTree(scrum);
 
-  const output = execFileSync(process.execPath, [bin, "update", "codex", "--no-migrate"], {
+  const output = execFileSync(process.execPath, [bin, "update", "codex"], {
     cwd: dir,
     env: { ...process.env, HOME: home },
     encoding: "utf8"
   });
 
-  assert.match(output, /Project migration preflight/);
-  assert.match(output, /Status: dry-run/);
-  assert.match(output, /update to apply/i);
+  assert.doesNotMatch(output, /Project migration preflight/);
   assert.equal(inventoryTree(scrum).rootSha256, before.rootSha256);
   assert.equal(fs.existsSync(path.join(home, ".codex", "prompts", "sc.md")), true);
 });

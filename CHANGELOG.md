@@ -4,6 +4,18 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 3.1.0 - 2026-08-31
+
+### Changed
+
+- **Markdown-first daily workflow.** `.scrumrun/` is now the normal runtime: agents create and update Task handoffs directly instead of making CLI state transitions their prerequisite. Feature, Sprint, and Run are optional context/audit records; malformed or missing administrative metadata no longer blocks approved work.
+- **CLI at the edges.** The CLI is now positioned for `init`, `update --project`, migration, repair, doctor, reports, and release checks. Strict ledger finalization and edit permits remain opt-in for teams that explicitly want them.
+- **Existing projects.** `scrumrun update --project` refreshes packaged `core.md` and recognized generated `AGENTS.md`, preserving byte-exact local backups before replacement. Ordinary `update` no longer applies a migration implicitly; only `update --migrate` may do so.
+
+### Safety
+
+- Agents block only for active Guardrails, security/secret risks, destructive work without approval, or unmet required Acceptance Criteria. Missing Runs, legacy status vocabulary, stale derived views, and optional test coverage are documented warnings/follow-ups, not workflow blockers.
+
 ## 3.0.3 - 2026-08-31
 
 ### Fixed

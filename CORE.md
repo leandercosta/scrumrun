@@ -84,9 +84,11 @@ AGENTS.md
 
 **Before querying project state, read `.scrumrun/method.json`.** Its `paths` block is the authoritative index of every canonical location in this project. Navigate by that index; if a path is not declared there, it is not canonical truth. Directory listing and grep are fallbacks — never the first step. A ScrumRun-aware agent must never search for `goals/`, `backlog.md`, `sprint.md`, or any legacy layout: those are absent by design once migration completes and are surfaced only through `.scrumrun/.migration-backup/`.
 
-**Never write Run events by hand.** After approval, work directly in code and in the linked Task Markdown. Finish the normal session once with `scrumrun plan run --finalize RUN-NNN`; the CLI then audits the complete workspace delta, verifies Guardrails and evidence, and writes the validated Run event chain. Do not use `npx scrumrun@latest` during execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` operations remain available only for an owner-requested strict path. Existing hand-written Runs can be recovered with `scrumrun plan run --normalize-legacy` (byte-exact original preserved in `.scrumrun/.migration-backup/runs/`).
+**Markdown is the normal runtime.** After explicit approval, work directly in source files and relevant `.scrumrun/` Markdown. A Task is free to be created, refined, started, completed, and handed off in Markdown; a Run is optional audit context, never a state machine that can prevent daily work. Update the Task's scope, Acceptance Criteria, Technical Summary, and Follow-ups directly. Do not use `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution.
 
-**Amend planning truth through the CLI, never by hand.** Before execution, use `scrumrun plan task|feature|sprint --amend <ID>` to adjust the title, structured fields, or any named body section (`--section "Heading=content"`). A Task may be amended only in `backlog` or `proposed`; changing its `--feature` or `--sprint` also synchronizes the related projections atomically. Runs, Reviews, confirmed memory, and Guardrails are evidence/history and are not amendable: append a transition, record a new Review, or supersede/deprecate the old fact instead.
+**The CLI is maintenance, not a work gate.** Use it for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, and release checks. Strict per-edit permits and ledger finalization remain available only when the owner asks for that audit level. Missing/invalid Runs, old status vocabulary, stale projections, and optional tests are warnings to reconcile in Markdown — never an automatic blocker.
+
+**Block only on real constraints.** An agent must stop for an explicit active Guardrail, secret/security risk, destructive action without approval, or an unmet required Acceptance Criterion. It must not manufacture a failed/blocked Run because optional E2E coverage, an optional reviewer, or a non-required environment is unavailable; record meaningful gaps in `## Follow-ups` or a risk note.
 
 Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
@@ -164,34 +166,22 @@ Before approval, do not create canonical files, update status, edit application 
 
 ## Execution lifecycle
 
-Explicit approval creates or updates the Task and creates a Run:
+Explicit approval authorizes direct source and Markdown work. The normal lifecycle is a human-readable Task handoff:
 
 ```text
-executing
-  → validating
-  → learning
-  → completed
-       ↘ failed
-       ↘ blocked
+understand → approve → work → validate required criteria → hand off
 ```
 
 Rules:
 
-- one Run belongs to one Task;
-- one Task may have multiple immutable attempts;
-- every state transition writes exactly one append-only `RUN-NNN-EVT-NNN` JSON event with RFC3339 time, actor, reason, and typed evidence;
-- the Run ledger is operational history; Task synchronizes current status without copying the Run event;
-- validation, learning, completion, failure, block, and resume require a reason or evidence;
-- validation must match the risk and acceptance criteria;
-- tests, reviews, and environments are completion gates only when explicitly required by the owner, the Task's Acceptance Criteria, or an active Guardrail; missing optional coverage is a follow-up/risk, never a reason by itself to fail or block an otherwise accepted Task;
-- each Task declares its `## Acceptance Criteria` before execution; check them off as evidence, never mark done on vibes;
-- configured reviews run before completion;
-- every deferred policy result is persisted as a Run Guardrail obligation;
-- before changing application/source files, issue a short-lived path-scoped mutation permit and record the verified before/after hashes in the Run;
-- unrecorded workspace drift, policy drift, out-of-scope paths, unsafe symlinks, new secret-like content, or unresolved obligations block validation/completion;
-- learning proposes memory candidates after validation and never auto-confirms AI inference;
-- record a `## Technical Summary` at completion with `scrumrun plan run --complete --summary "…"` so the next agent inherits what was actually done;
-- complete a Sprint only when all its included Tasks meet the Sprint exit gate;
+- a Task carries the intended scope, `## Acceptance Criteria`, `## Technical Summary`, and relevant `## Follow-ups`;
+- validation matches risk and acceptance criteria; tests, reviews, and environments are gates only when explicitly required by the owner, the Task, or an active Guardrail;
+- direct Markdown workflow never blocks on Run linkage, status syntax, stale generated views, or missing optional coverage. If an optional check matters, record it as a follow-up/risk instead of fabricating failure;
+- configured reviews run only when a Guardrail requires one;
+- a structured Run may be created for audit/release work. When used, it follows `executing → validating → learning → completed|failed|blocked` and preserves prior attempts;
+- strict permits, workspace-drift checks, and append-only Guardrail obligations apply only to that optional strict audit path;
+- learning proposes memory candidates when work reveals reusable context and never auto-confirms AI inference;
+- complete a Sprint only when its included Tasks meet its real exit gate;
 - do not mark work complete merely because time or token budget ended.
 
 Canonical mutations are schema-validated, lossless, and atomic. Preserve unknown fields, prose, and unrelated owner edits. A failed mutation must leave canonical state unchanged or recoverable.
@@ -200,7 +190,7 @@ Task/Run pair mutations use an ignored durable journal under `.scrumrun/.backup/
 
 ### Backlog and sequencing
 
-Backlog is the queue of Tasks with `status: backlog`, ordered oldest-first by id. When a Run completes, the briefing's `## Next Up` names the next backlog Task. `scrumrun plan task --next` shows it; `scrumrun plan task --start [TASK-NNN]` promotes it to `running`, creates its first Run, re-evaluates policy, and records the agent identity. Starting is itself the explicit approval (I-01): no work executes silently, and the owner can always say "not now".
+Backlog is the queue of Tasks that are intentionally parked. The briefing may name the next one, but an explicit owner request/approval starts work; no CLI state transition is required.
 
 ### Agent identity and assignment
 
@@ -251,7 +241,7 @@ scrumrun migrate --to 2 --apply
 scrumrun migrate --to 2 --rollback
 ```
 
-- ordinary install/update never applies a migration; update performs a read-only v1 preflight, and only explicit `update --migrate` applies its verified plan;
+- ordinary install/update never inspects or applies a migration; only explicit `update --migrate` performs and applies its verified migration plan;
 - early v2 Run prose is also preflighted read-only and upgraded explicitly to ledger schema 1 with byte-exact backup and safe rollback;
 - dry-run writes no project data;
 - apply inventories source hashes, creates a byte-exact local backup, transforms in staging, validates, and activates by atomic directory swap;

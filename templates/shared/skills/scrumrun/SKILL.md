@@ -36,15 +36,15 @@ Normal hot path:
 5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `scrumrun knowledge study "<topic>"`);
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
-**Never write Run events by hand.** Work directly in code and the linked Task Markdown after approval, then let the one final CLI checkpoint mutate `runs/RUN-NNN.md`: `scrumrun plan run --finalize RUN-NNN`. It creates the validated transition ledger, audits the full workspace delta, and records the Guardrail results together. Do not invoke `npx scrumrun@latest` during normal execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` commands remain only for owner-requested strict mode. Recover hand-written Runs via `scrumrun plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
+**Markdown is the daily runtime.** After approval, work directly in source files and the relevant `.scrumrun/` Markdown. Create/refine the Task, its acceptance criteria, technical summary, follow-ups, and optional Run handoff without waiting for a CLI transition. Do not invoke `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution. The CLI is optional maintenance for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, and release checks.
 
-**Never hand-edit canonical planning Markdown.** Before a Task starts, refine it with `scrumrun plan task --amend TASK-NNN`; use title/request/acceptance/relation options or generic repeated `--section "Heading=content"`. Feature and Sprint support the same `--amend` pattern. Runs, Reviews, confirmed memory, and Guardrails are append-only evidence/policy, so record a new event or supersede them instead of rewriting them.
+**Do not block on administrative state.** A missing/invalid Run, legacy status vocabulary, stale generated view, or optional unrun test is a warning to reconcile in Markdown, not a reason to refuse productive work. Block only for an explicit Guardrail, security/secret risk, destructive action without approval, or an unmet required Acceptance Criterion. Optional E2E/integration/review coverage belongs in `## Follow-ups` or a risk note, never in a fabricated failed Run.
 
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
 Generated state and semantic indexes use a metadata-watch fast path with a full content-hash fallback. Treat cache-schema mismatch as a request to rebuild the disposable projection, never as permission to rewrite canonical Markdown.
 
-For a v1 project without canonical v2 artifacts, use the dual-layout reader conceptually and recommend `scrumrun migrate --to 2 --dry-run`. `update` may run that read-only preflight automatically, but only explicit `update --migrate` may apply it.
+For a v1 project without canonical v2 artifacts, recommend `scrumrun migrate --to 2 --dry-run`. `update` refreshes integrations only; only explicit `update --migrate` may inspect and apply migration.
 
 ## Domain model
 
@@ -91,7 +91,7 @@ The approval token binds both canonical context and a complete workspace fingerp
 
 ## Approved execution
 
-Explicit approval creates/updates the Task and creates a Run. The Run follows:
+Explicit approval authorizes the Task and source changes. A Run may be created as an audit/handoff record when useful; it never gates daily work. When used, its historical lifecycle is:
 
 ```text
 executing → validating → learning → completed
@@ -103,17 +103,17 @@ During execution:
 1. keep the change inside the approved Task scope;
 2. preserve existing owner work and unrelated dirty files;
 3. define or confirm the Task's `## Acceptance Criteria` before execution and check them off as evidence;
-4. work normally: edit code and update the Task's `## Technical Summary` and, for non-automatic rules, `## Guardrail Evidence` as evidence becomes available;
-5. validate in proportion to risk and against the acceptance criteria. Tests, reviews, and environments are required only when the owner, Acceptance Criteria, or an active Guardrail says so. Do not fail or block an otherwise accepted Task merely because an optional E2E/integration suite does not exist or was not run; record a material coverage gap as a follow-up/risk instead;
-6. run configured reviewers when a Guardrail requires one;
-7. finish once with `scrumrun plan run --finalize RUN-NNN`; it verifies every changed path, policy, secret boundary, and guardrail evidence before creating the structured Run events and completing the Task;
+4. work normally: edit code and update the Task's `## Technical Summary`, `## Follow-ups`, and any Guardrail evidence required by an active rule;
+5. validate in proportion to risk and against the acceptance criteria. Tests, reviews, and environments are required only when the owner, Acceptance Criteria, or an active Guardrail says so. Do not fail or block an otherwise accepted Task merely because an optional E2E/integration suite does not exist or was not run;
+6. run a configured reviewer only when a Guardrail requires it;
+7. complete the Task directly in Markdown after the required work is satisfied; use CLI release/doctor/repair commands only when their audit or recovery value is wanted;
 8. use path-scoped Mutation Gateway commands only when the owner explicitly requests strict execution.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
 
 When a Run completes and work remains queued, the briefing's `## Next Up` names the next backlog Task. Surface it with `scrumrun plan task --next` and start it with `scrumrun plan task --start [TASK-NNN]` — starting is the explicit approval; the owner can always decline. Each agent declares its identity via `SCRUMRUN_AGENT` (or `Agent Identity` in `config.md`); it is recorded as the Task `assignee` and the Run event `actor`.
 
-Every deferred policy result is an append-only Run obligation. The final checkpoint fails closed on policy drift, protected-path changes, unsafe symlinks, unscannable content, newly introduced secret-like content, or missing Guardrail Evidence. In strict mode it additionally requires the permit chain. The ignored permit cache is disposable; deleting it invalidates outstanding strict-mode permits and never creates authority.
+Every explicit Guardrail remains mandatory. In strict mode, the CLI final checkpoint fails closed on policy drift, protected-path changes, unsafe symlinks, unscannable content, newly introduced secret-like content, or missing Guardrail Evidence. The ignored permit cache is disposable; deleting it invalidates outstanding strict-mode permits and never creates authority.
 
 Run is the sole operational-history authority. Task synchronizes current status without copying Run events. Validation, learning, completion, failure, block, and resume require a reason or structured evidence; completion also requires evidenced validation and learning. Early v2 prose Runs are migrated explicitly, with deterministic chains recovered and uncertain history represented as an evidenced snapshot.
 
@@ -157,7 +157,7 @@ scrumrun migrate --to 2 --apply
 scrumrun migrate --to 2 --rollback
 ```
 
-Inside a v1 project, `scrumrun update` runs a read-only preflight. `update --migrate` explicitly approves application of that verified plan and keeps rollback available.
+Inside a v1 project, `scrumrun update --migrate` explicitly inspects and approves application of the verified plan; ordinary update never performs migration work.
 
 Dry-run must not write project data. Apply requires a hashed inventory, byte-exact local backup, staged validation, atomic switch, mapping report, and idempotent replay. Incomplete hybrid trees reuse existing evidenced v2 relations rather than duplicating them; early v2 prose Runs upgrade to ledger schema 1 only through the same explicit apply gate. Legacy-only aggregates leave the active tree but remain byte-exact in the ignored backup. Ambiguous records are preserved as warnings or evidenced snapshots, never guessed. Vault content remains local and is never rendered. Rollback must refuse if it would erase post-migration changes.
 
@@ -165,7 +165,7 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 
 ### `scrumrun plan`
 
-- `task`: add/amend/list/show/run/audit/cancel/retry atomic work; use `--amend TASK-NNN` before it starts to refine planning truth without hand-editing Markdown. Use `type: fix` for fixes and `status: backlog` for parked work. `--next` surfaces the oldest backlog Task; `--start [TASK-NNN]` promotes it and creates its first Run.
+- `task`: optional add/amend/list/show/run/audit/cancel/retry helpers. Daily Task planning and handoff are Markdown-first; use the helpers for reports/recovery when useful.
 - `sprint`: add/amend/list/show/start/complete/block a real Task batch/timebox.
 - `feature`: add/amend/list/show/activate/complete long-lived initiatives.
 - `run`: list/show/render/stats/normalize-legacy/authorize-mutation/record-mutation/satisfy-guardrail/validate/learn/complete/resume/fail/block concrete Task attempts. `--complete` accepts `--summary "…"` to store a technical summary.

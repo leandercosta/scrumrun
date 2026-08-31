@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `3.0.3` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `3.1.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -79,33 +79,29 @@ RECEIVED → CONTEXTUALIZING → POLICY → RISK → CLASSIFICATION
 
 The agent may assert the classification (`--type fix|task|feature|docs|discovery`) and attach a short technical preview (`--preview "…"`), rendered with color in the terminal before any Task exists. Nothing canonical is persisted before approval.
 
-Explicit approval atomically materializes the required plan artifacts and always creates the linked Task and Run. Feature and Sprint artifacts are created automatically when the request calls for them. Execution then follows:
+Explicit approval authorizes work. In 3.1, the daily runtime is the `.scrumrun/` folder: the agent creates or refines the relevant Task Markdown, works in code, and leaves a short handoff. Feature, Sprint, and Run are optional context, not prerequisites. A structured CLI audit path remains available when a team wants it.
 
 ```text
 EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 ```
 
-Every approved Task carries an `## Acceptance Criteria` section so "done" is defined before work begins. After approval, the agent works directly in code and the Task Markdown. It adds `## Technical Summary` and, when a non-automatic rule needs proof, a compact `## Guardrail Evidence` section. One final checkpoint closes the work:
+Every Task carries `## Acceptance Criteria` so "done" is defined before work begins. After approval, the agent works directly in code and Task Markdown, updating `## Technical Summary` and `## Follow-ups`. The normal close is simply the documented Task handoff — no CLI transition is required.
+
+Guardrails still apply. An agent stops only for an explicit active Guardrail, a secret/security risk, destructive work without approval, or an unmet required Acceptance Criterion. Tests, reviews, and environments are gates only when the owner, Acceptance Criteria, or a Guardrail explicitly requires them. Optional missing E2E coverage is a follow-up/risk, not a failed Task.
+
+Use the CLI at the edges, where its safety is valuable:
 
 ```bash
-scrumrun plan run --finalize RUN-001
+scrumrun init
+scrumrun update --project
+scrumrun doctor
+scrumrun repair --recover-orphan-tasks --apply
+scrumrun review release --run
 ```
 
-The checkpoint validates the complete delta, policy, protected paths, secret boundary, Task summary, and every applicable Guardrail before writing the Run ledger and synchronizing the Task. Failed retries remain available as separate Runs. Tests, reviews, and environments are a completion gate only when the owner, Acceptance Criteria, or an active Guardrail explicitly requires them; an optional missing E2E suite is a follow-up/risk, not a failed Task.
+`update --project` refreshes packaged `core.md` and recognized generated `AGENTS.md` with a local byte-exact backup before replacing them. The CLI can still generate/validate Task, Feature, Sprint, and Run records when desired, but it must never become a routine blocker.
 
-Before a Task starts, refine it through the CLI rather than hand-editing Markdown. `--amend` updates title, request, acceptance criteria, Feature/Sprint links, task type, or any named section while preserving its ID and status. It synchronizes related Feature/Sprint projections atomically.
-
-```bash
-scrumrun plan task --amend TASK-153 \
-  --title "Organization Aside and context selector" \
-  --request "Add shared organization navigation, context selection, routes, and authorization boundaries." \
-  --acceptance "Organization context is available before protected routes render." \
-  --section "Architecture Notes=Navigation stays in the Aside; authorization stays server-side."
-```
-
-Tasks become immutable in scope once started; create a follow-up Task for a new request. Runs, Reviews, confirmed memory, and Guardrails are deliberately append-only/evidence-led rather than editable. See [the command reference](docs/COMMANDS.md#what-can-be-changed) for the complete artifact matrix.
-
-Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
+Each optional structured Run contains a machine-validated event ledger. It remains useful for strict audit/release work, but daily history can stay as concise, human-readable Task handoff Markdown.
 
 Linked Task/Run writes use a durable ignored transaction journal. Captured failures roll back immediately; interrupted operations are recovered byte-exactly on retry or through explicit `doctor --recover`. Read-only audit reports pending recovery and never repairs state silently.
 
@@ -163,10 +159,10 @@ It is progressive disclosure: the briefing is enough for most work; the agent fo
 
 ## Migrating an ongoing v1 project
 
-Update the client integrations and automatically run a read-only migration preflight:
+Update the client integrations. For an existing project, refresh the Markdown-first guidance explicitly:
 
 ```bash
-scrumrun update
+scrumrun update --project
 ```
 
 This shows the source inventory, proposed mappings, and blockers without changing project data. Apply only the verified plan with:

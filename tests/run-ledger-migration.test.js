@@ -88,18 +88,17 @@ test("Run ledger migration failure and rollback restore exact source bytes", () 
   assert.deepEqual(fs.readFileSync(markerFile), markerBefore);
 });
 
-test("ordinary update preflights an early v2 Run ledger without project writes", () => {
+test("ordinary update leaves an early v2 Run ledger alone without project writes", () => {
   const dir = earlyV2Project();
   const scrum = path.join(dir, ".scrumrun");
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-ledger-home-"));
   const before = inventoryTree(scrum);
-  const output = execFileSync(process.execPath, [bin, "update", "codex", "--no-migrate"], {
+  const output = execFileSync(process.execPath, [bin, "update", "codex"], {
     cwd: dir,
     encoding: "utf8",
     env: { ...process.env, HOME: home }
   });
-  assert.match(output, /Project schema migration preflight/);
-  assert.match(output, /project remains unchanged/i);
+  assert.doesNotMatch(output, /Project schema migration preflight/);
   assert.equal(inventoryTree(scrum).rootSha256, before.rootSha256);
 });
 
