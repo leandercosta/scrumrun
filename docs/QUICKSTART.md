@@ -22,8 +22,8 @@ can follow it.
 You need Node.js 22.13 or newer.
 
 ```bash
-npx scrumrun@latest install    # installs the agent integration for your client
-npx scrumrun@latest init       # creates the .scrumrun/ tree in the current repo
+scrumrun install    # installs the agent integration for your client
+scrumrun init       # creates the .scrumrun/ tree in the current repo
 ```
 
 By default `.scrumrun/` is added to `.git/info/exclude` — the methodology
@@ -47,7 +47,7 @@ Classification: Task (fix)
 Risk: high — financial path
 Why: Payment behavior changed after completed work; corrective Task
      linked to the original Run history.
-Next: /sc plan intake "double charge on refresh"
+Next: scrumrun plan intake "double charge on refresh"
 Awaiting owner approval.
 ```
 
@@ -55,7 +55,7 @@ Nothing has been written yet. The classification, risk, and plan are
 proposals. Approving is one command:
 
 ```bash
-npx scrumrun@latest sc plan intake --approve <token>
+scrumrun plan intake --approve <token>
 ```
 
 In an interactive terminal, the output is rendered as a boxed intake
@@ -87,7 +87,7 @@ You can render a Run's ledger as a human timeline instead of reading the
 raw JSON:
 
 ```bash
-npx scrumrun@latest sc plan run --render RUN-001
+scrumrun plan run --render RUN-001
 ```
 
 For aggregate signal across every Run in the project — status mix, p50
@@ -95,9 +95,9 @@ and p95 time in `VALIDATING`, retries per Task, guardrail check counts —
 use `--stats`:
 
 ```bash
-npx scrumrun@latest sc plan run --stats
-npx scrumrun@latest sc plan run --stats --task TASK-001
-npx scrumrun@latest sc plan run --stats --json
+scrumrun plan run --stats
+scrumrun plan run --stats --task TASK-001
+scrumrun plan run --stats --json
 ```
 
 ## Reading the memory
@@ -113,8 +113,8 @@ Nothing becomes canonical without confirmation. AI extraction creates
 candidates; you promote them with evidence.
 
 ```bash
-npx scrumrun@latest sc knowledge insight --propose "..." --evidence src/foo.ts
-npx scrumrun@latest sc knowledge insight --confirm INS-001
+scrumrun knowledge insight --propose "..." --evidence src/foo.ts
+scrumrun knowledge insight --confirm INS-001
 ```
 
 Ask the agent things like *"why is calculateFinalPrice in checkout?"* or
@@ -134,10 +134,10 @@ the memory index, not by guessing.
 
 ## Common questions
 
-**Do I have to type `/sc` commands?** No. Natural language is the primary
-entry point. The `/sc` grammar exists for scripting and reproducibility.
+**Do I have to type commands?** No. Natural language is the primary entry
+point. For scripting and reproducibility, use `scrumrun <noun> <subject> <action>`; `/sc` is only an AI-client shortcut.
 
-**What if I already use v1?** Run `npx scrumrun@latest update` for a
+**What if I already use v1?** Run `scrumrun update` for a
 read-only migration preflight, then `update --migrate` when you are
 satisfied with the plan.
 
@@ -158,5 +158,5 @@ for the exact remediation. If a canonical transaction was interrupted,
 preview the repair before running it:
 
 ```bash
-npx scrumrun@latest sc config doctor --recover --dry-run
+scrumrun config doctor --recover --dry-run
 ```

@@ -65,8 +65,8 @@ SR-E-102 Run transition rejected: missing validation or learning evidence.
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-100` | Run not found. | Check the RUN-NNN id with `sc plan run --list`. |
-| `SR-E-101` | Run ledger contains an invalid event. | Inspect the reported event id; use `sc plan run --render` for a human view or restore from git history. |
+| `SR-E-100` | Run not found. | Check the RUN-NNN id with `scrumrun plan run --list`. |
+| `SR-E-101` | Run ledger contains an invalid event. | Inspect the reported event id; use `scrumrun plan run --render` for a human view or restore from git history. |
 | `SR-E-102` | Run transition rejected: missing validation or learning evidence. | Complete `--validate` and `--learn` with typed evidence before `--complete`. |
 | `SR-E-103` | Retry rejected because the previous Run is still active. | Complete, fail, or block the current Run before creating a retry. |
 
@@ -75,14 +75,14 @@ SR-E-102 Run transition rejected: missing validation or learning evidence.
 | Code | Summary | Remediation |
 |---|---|---|
 | `SR-E-150` | Guardrail check blocked the operation. | Read the reported GR-NNN, satisfy or retire it explicitly; guardrails never bypass silently. |
-| `SR-E-151` | Guardrail obligation is still pending. | Resolve each pending guardrail via `sc plan run --satisfy-guardrail` before completing the Run. |
+| `SR-E-151` | Guardrail obligation is still pending. | Resolve each pending guardrail via `scrumrun plan run --satisfy-guardrail` before completing the Run. |
 | `SR-E-152` | Guardrail declaration is malformed. | Every active guardrail requires Status, Enforcement, Scope, and Rule fields; check `.scrumrun/guardrails.md`. |
 
 ### Edit permits (Mutation Gateway)
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-200` | No edit permit for this path. | Request one with `sc plan run --authorize-mutation RUN-NNN --path <path>` before editing canonical or source files. |
+| `SR-E-200` | No edit permit for this path. | Request one with `scrumrun plan run --authorize-mutation RUN-NNN --path <path>` before editing canonical or source files. |
 | `SR-E-201` | Edit permit expired. | Permits last 15 minutes. Authorize a new one and record the change immediately. |
 | `SR-E-202` | Edit permit path scope mismatch. | The permit does not cover the modified path. Request a new permit that lists it. |
 | `SR-E-203` | File hash changed unexpectedly since the permit was issued. | Someone else modified the file. Re-plan the change and request a fresh permit. |
@@ -91,28 +91,28 @@ SR-E-102 Run transition rejected: missing validation or learning evidence.
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-250` | Pending kernel transaction cannot be recovered automatically. | Run `sc config doctor --recover --dry-run` to preview; if it shows "would overwrite owner changes", reconcile the file manually before applying. |
+| `SR-E-250` | Pending kernel transaction cannot be recovered automatically. | Run `scrumrun config doctor --recover --dry-run` to preview; if it shows "would overwrite owner changes", reconcile the file manually before applying. |
 | `SR-E-251` | Journal fails integrity check. | Inspect `.scrumrun/.transactions/pending`. Do not delete; contact support or restore from backup. |
 
 ### Memory
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-300` | Memory candidate rejected: missing resolvable evidence. | Attach at least one `--evidence` path or `sc knowledge <subject> --propose` before `--confirm`. |
+| `SR-E-300` | Memory candidate rejected: missing resolvable evidence. | Attach at least one `--evidence` path or `scrumrun knowledge <subject> --propose` before `--confirm`. |
 | `SR-E-301` | Attempt to write into vault via canonical channel. | `vault.local.md` is local-only and never indexed. Edit the file directly. |
 
 ### Semantic index and code intelligence
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-350` | Semantic index is stale. | Rebuild with `sc knowledge map --build`. Cache is disposable; canonical memory is unaffected. |
-| `SR-E-351` | Search backend advertised in the cache does not match this runtime. | Delete `.scrumrun/.cache/semantic-index.sqlite` and re-run any `sc knowledge` query to rebuild against the current runtime. |
+| `SR-E-350` | Semantic index is stale. | Rebuild with `scrumrun knowledge map --build`. Cache is disposable; canonical memory is unaffected. |
+| `SR-E-351` | Search backend advertised in the cache does not match this runtime. | Delete `.scrumrun/.cache/semantic-index.sqlite` and re-run any `scrumrun knowledge` query to rebuild against the current runtime. |
 
 ### Migration
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-400` | Migration preflight failed. | Run `npx scrumrun@latest update` (dry) to see blockers, resolve them, then apply with `--migrate`. |
+| `SR-E-400` | Migration preflight failed. | Run `scrumrun update` (dry) to see blockers, resolve them, then apply with `--migrate`. |
 | `SR-E-401` | Migration rollback requested but no backup was found. | Rollback needs the ignored byte-exact backup created during `--migrate`. Restore from version control if the backup is gone. |
 
 ### Conformance and doctor
@@ -120,13 +120,13 @@ SR-E-102 Run transition rejected: missing validation or learning evidence.
 | Code | Summary | Remediation |
 |---|---|---|
 | `SR-E-450` | Conformance check failed. | The reported invariant identifies the exact violation; the message includes the file and expected shape. |
-| `SR-E-451` | Installed client asset is stale. | Re-run `npx scrumrun@latest update` for the specific client. `doctor --strict` shows which files diverge. |
+| `SR-E-451` | Installed client asset is stale. | Re-run `scrumrun update` for the specific client. `doctor --strict` shows which files diverge. |
 
 ### Configuration and installation
 
 | Code | Summary | Remediation |
 |---|---|---|
-| `SR-E-500` | ScrumRun project not initialized. | Run `npx scrumrun@latest init` in the repository root. |
+| `SR-E-500` | ScrumRun project not initialized. | Run `scrumrun init` in the repository root. |
 | `SR-E-501` | Unsupported Node.js runtime. | ScrumRun requires Node.js >=22.13.0 for native SQLite. Upgrade Node and retry. |
 
 ## Adding a new code

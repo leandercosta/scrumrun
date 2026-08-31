@@ -11,7 +11,7 @@ npm test
 npm run benchmark
 git diff --check
 npm pack --dry-run
-npx scrumrun@latest sc review artifact --run   # in a clean v2 fixture/current package equivalent
+scrumrun review artifact --run   # in a clean v2 fixture/current package equivalent
 ```
 
 Confirm package contents exclude repository-local `.scrumrun/` state, caches, migration records, backups, vaults, tests, and secrets. The `.scrumrun/` directory inside project templates is expected. Confirm package metadata, README, changelog, tarball filename, checksum, and Git tag agree on `2.1.1`; SPEC, CORE, artifact frontmatter, migration, and installed skill continue to declare method `2.0.0`.

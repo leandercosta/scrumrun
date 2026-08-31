@@ -71,17 +71,18 @@ test("compatibility prompts execute the canonical route instead of asking for re
     assert.match(content, /Do not ask the user to re-enter/);
     assert.match(content, /deprecation note/);
     assert.doesNotMatch(content, /Use `\/sc-/);
+    assert.match(content, /scrumrun /);
   }
 });
 
 test("CLI command listing is rendered from the same five-noun manifest", () => {
   const output = run(["commands"]);
   assert.match(output, /ScrumRun 2\.0\.0 command grammar/);
-  assert.match(output, /\/sc <noun> <subject> <action>/);
-  for (const noun of Object.keys(nouns)) assert.match(output, new RegExp(`/sc ${noun}`));
+  assert.match(output, /scrumrun <noun> <subject> <action>/);
+  for (const noun of Object.keys(nouns)) assert.match(output, new RegExp(`scrumrun ${noun}`));
   for (const [alias, spec] of Object.entries(aliases)) {
     assert.ok(output.includes(`/${alias}`));
-    assert.ok(output.includes(`/sc ${spec.target.join(" ")}`));
+    assert.ok(output.includes(`scrumrun ${spec.target.join(" ")}`));
   }
 });
 
@@ -96,6 +97,10 @@ test("CLI root dispatches implemented helpers and rejects unknown actions", () =
     cwd: dir,
     stdio: ["ignore", "pipe", "pipe"]
   }), /Command failed/);
+
+  run(["knowledge", "decision", "--add", "Direct grammar"], { cwd: dir });
+  const direct = run(["knowledge", "decision", "--list"], { cwd: dir });
+  assert.match(direct, /Direct grammar/);
 });
 
 test("CLI plan task --add creates a backlog Task and lists it", () => {
@@ -111,6 +116,17 @@ test("CLI plan task --add creates a backlog Task and lists it", () => {
   assert.match(sprint, /Created proposed SPRINT-001/);
   assert.match(run(["sc", "plan", "feature", "--list"], { cwd: dir }), /FEAT-001 \| backlog \| Onboarding v2/);
   assert.match(run(["sc", "plan", "sprint", "--list"], { cwd: dir }), /SPRINT-001 \| proposed \| Sprint 01/);
+});
+
+test("direct CLI grammar is canonical while sc remains a compatibility alias", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-direct-"));
+  run(["init", "--lean", "--force"], { cwd: dir });
+  const added = run(["plan", "task", "--add", "Direct Task"], { cwd: dir });
+  assert.match(added, /Created backlog TASK-001/);
+  const listed = run(["plan", "task", "--list"], { cwd: dir });
+  assert.match(listed, /TASK-001 \| backlog \| Direct Task/);
+  const compatibility = run(["sc", "plan", "task", "--list"], { cwd: dir });
+  assert.match(compatibility, /TASK-001 \| backlog \| Direct Task/);
 });
 
 test("CLI plan task --add resolves the project root from a subdirectory", () => {
@@ -227,7 +243,7 @@ test("manual CORE and installed skill use the same v2 root and entity model", ()
   const core = read(path.join(root, "CORE.md"));
   const skill = read(path.join(root, "templates", "shared", "skills", "scrumrun", "SKILL.md"));
   for (const content of [core, skill]) {
-    assert.match(content, /\/sc <noun> <subject> <action>/);
+    assert.match(content, /scrumrun <noun> <subject> <action>/);
     assert.match(content, /Feature \(`FEAT-NNN`\)/);
     assert.match(content, /Task \(`TASK-NNN`\)/);
     assert.match(content, /Run \(`RUN-NNN`\)/);

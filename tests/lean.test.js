@@ -57,7 +57,7 @@ test("status recognizes native v2 layout instead of reporting missing v1 files",
   const output = execFileSync(process.execPath, [bin, "status"], { cwd: dir, encoding: "utf8" });
   assert.match(output, /Method: 2\.0\.0/);
   assert.match(output, /task: 0 total, 0 active/);
-  assert.match(output, /Canonical command: \/sc/);
+  assert.match(output, /Canonical command: scrumrun/);
   assert.doesNotMatch(output, /missing .*golden-rules/);
 });
 

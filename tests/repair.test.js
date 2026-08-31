@@ -49,3 +49,27 @@ test("repair reconciles Task.sprint references into the Sprint projection", () =
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("repair explicitly recovers an active Task with no Run without inventing history", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sr-repair-orphan-task-"));
+  try {
+    execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: dir, stdio: "ignore" });
+    const scrum = path.join(dir, ".scrumrun");
+    const taskFile = path.join(scrum, "tasks", "TASK-001.md");
+    fs.writeFileSync(taskFile, "---\nid: TASK-001\nkind: task\nstatus: running\ncreated: 2026-08-31\nupdated: 2026-08-31\nmethod: 2.0.0\ntype: task\nfeature: null\nsprint: null\n---\n\n# Recover me\n\n## Acceptance Criteria\n\n- Resume with a real Run.\n");
+
+    const preview = repair(scrum);
+    assert.equal(preview.plan.orphanTasks.length, 1);
+    assert.match(preview.report, /not changed automatically/);
+    assert.match(preview.report, /--recover-orphan-tasks --apply/);
+    assert.match(fs.readFileSync(taskFile, "utf8"), /^status: running$/m);
+
+    const applied = repair(scrum, { apply: true, recoverOrphanTasks: true });
+    assert.equal(applied.applied.recoveredTasks.length, 1);
+    assert.match(fs.readFileSync(taskFile, "utf8"), /^status: backlog$/m);
+    assert.ok(fs.existsSync(path.join(scrum, ".migration-backup", "repair", "tasks", "TASK-001.md")));
+    assert.deepEqual(fs.readdirSync(path.join(scrum, "runs")).filter((name) => /^RUN-/.test(name)), []);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

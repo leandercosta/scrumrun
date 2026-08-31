@@ -142,6 +142,18 @@ test("conformance warns when an active Task lacks Acceptance Criteria", () => {
   assert.ok(audit.findings.some((f) => f.code === "ACCEPTANCE_CRITERIA_MISSING" && f.severity === "warning"));
 });
 
+test("conformance identifies an active Task with no Run and points to explicit recovery", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-orphan-task-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-08-31", updated: "2026-08-31", method: METHOD_VERSION };
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "running" }, "# Work\n\n## Acceptance Criteria\n\n- Resume safely.");
+  const audit = auditProject(project);
+  const orphan = audit.findings.find((item) => item.code === "TASK_ORPHANED");
+  assert.ok(orphan);
+  assert.match(orphan.message, /repair --recover-orphan-tasks/);
+});
+
 test("completing a Run with --summary stores it and context surfaces it", () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-summary-"));
   execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });

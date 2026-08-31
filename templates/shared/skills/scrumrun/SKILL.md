@@ -5,13 +5,13 @@ description: Use when initializing or migrating ScrumRun, handling product reque
 
 # ScrumRun 2.0
 
-ScrumRun is an evidence-driven Agile runtime for AI agents. Its canonical command is:
+ScrumRun is an evidence-driven Agile runtime for AI agents. Its canonical shell command is:
 
 ```text
-/sc <noun> <subject> <action> [args]
+scrumrun <noun> <subject> <action> [args]
 ```
 
-The five nouns are `plan`, `knowledge`, `rules`, `review`, and `config`. If the command is incomplete, show only the valid next tokens and do not guess.
+The five nouns are `plan`, `knowledge`, `rules`, `review`, and `config`. `/sc` is an optional AI-client shortcut; `scrumrun sc ...` is a compatibility alias. If the command is incomplete, show only the valid next tokens and do not guess.
 
 When a project contains `.scrumrun/`, use ScrumRun for product work even if the user did not type `/sc`. Natural-language work begins as `plan intake`.
 
@@ -33,10 +33,10 @@ Normal hot path:
 2. read `AGENTS.md`;
 3. read `.scrumrun/guardrails.md`;
 4. read `.scrumrun/state.md` — the **briefing**: active work, recent completions with their technical summaries, open decisions, active memory, backlog queue, and pointers;
-5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `sc knowledge study "<topic>"`);
+5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `scrumrun knowledge study "<topic>"`);
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
-**Never write Run events by hand.** Work directly in code and the linked Task Markdown after approval, then let the one final CLI checkpoint mutate `runs/RUN-NNN.md`: `scrumrun sc plan run --finalize RUN-NNN`. It creates the validated transition ledger, audits the full workspace delta, and records the Guardrail results together. Do not invoke `npx scrumrun@latest` during normal execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` commands remain only for owner-requested strict mode. Recover hand-written Runs via `sc plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
+**Never write Run events by hand.** Work directly in code and the linked Task Markdown after approval, then let the one final CLI checkpoint mutate `runs/RUN-NNN.md`: `scrumrun plan run --finalize RUN-NNN`. It creates the validated transition ledger, audits the full workspace delta, and records the Guardrail results together. Do not invoke `scrumrun` during normal execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` commands remain only for owner-requested strict mode. Recover hand-written Runs via `scrumrun plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
 
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
@@ -81,7 +81,7 @@ At intake:
 
 Evaluate every active Guardrail into a structured `passed`, `blocked`, or `deferred` result. Report blocked results with the exact `GR-NNN` id and reason code. Keep deferred results visible and enforce them at the mutation, migration, review, or owner gate they identify; never describe a deferred check as passed.
 
-Assert the classification explicitly when the keyword inference is wrong: `sc plan intake "…" --type fix|task|feature|docs|discovery`. Attach a short technical explanation before approval with `--preview "…"` (rendered in the terminal, bound into the token, stored as `## Preview` on the Task).
+Assert the classification explicitly when the keyword inference is wrong: `scrumrun plan intake "…" --type fix|task|feature|docs|discovery`. Attach a short technical explanation before approval with `--preview "…"` (rendered in the terminal, bound into the token, stored as `## Preview` on the Task).
 
 Do not create canonical artifacts, change status, edit application code, or treat ambiguous acknowledgement as approval. Temporary context may exist only in ignored disposable cache.
 
@@ -104,12 +104,12 @@ During execution:
 4. work normally: edit code and update the Task's `## Technical Summary` and, for non-automatic rules, `## Guardrail Evidence` as evidence becomes available;
 5. validate in proportion to risk and against the acceptance criteria;
 6. run configured reviewers when a Guardrail requires one;
-7. finish once with `scrumrun sc plan run --finalize RUN-NNN`; it verifies every changed path, policy, secret boundary, and guardrail evidence before creating the structured Run events and completing the Task;
+7. finish once with `scrumrun plan run --finalize RUN-NNN`; it verifies every changed path, policy, secret boundary, and guardrail evidence before creating the structured Run events and completing the Task;
 8. use path-scoped Mutation Gateway commands only when the owner explicitly requests strict execution.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
 
-When a Run completes and work remains queued, the briefing's `## Next Up` names the next backlog Task. Surface it with `sc plan task --next` and start it with `sc plan task --start [TASK-NNN]` — starting is the explicit approval; the owner can always decline. Each agent declares its identity via `SCRUMRUN_AGENT` (or `Agent Identity` in `config.md`); it is recorded as the Task `assignee` and the Run event `actor`.
+When a Run completes and work remains queued, the briefing's `## Next Up` names the next backlog Task. Surface it with `scrumrun plan task --next` and start it with `scrumrun plan task --start [TASK-NNN]` — starting is the explicit approval; the owner can always decline. Each agent declares its identity via `SCRUMRUN_AGENT` (or `Agent Identity` in `config.md`); it is recorded as the Task `assignee` and the Run event `actor`.
 
 Every deferred policy result is an append-only Run obligation. The final checkpoint fails closed on policy drift, protected-path changes, unsafe symlinks, unscannable content, newly introduced secret-like content, or missing Guardrail Evidence. In strict mode it additionally requires the permit chain. The ignored permit cache is disposable; deleting it invalidates outstanding strict-mode permits and never creates authority.
 
@@ -155,13 +155,13 @@ scrumrun migrate --to 2 --apply
 scrumrun migrate --to 2 --rollback
 ```
 
-Inside a v1 project, `npx scrumrun@latest update` runs a read-only preflight. `update --migrate` explicitly approves application of that verified plan and keeps rollback available.
+Inside a v1 project, `scrumrun update` runs a read-only preflight. `update --migrate` explicitly approves application of that verified plan and keeps rollback available.
 
 Dry-run must not write project data. Apply requires a hashed inventory, byte-exact local backup, staged validation, atomic switch, mapping report, and idempotent replay. Incomplete hybrid trees reuse existing evidenced v2 relations rather than duplicating them; early v2 prose Runs upgrade to ledger schema 1 only through the same explicit apply gate. Legacy-only aggregates leave the active tree but remain byte-exact in the ignored backup. Ambiguous records are preserved as warnings or evidenced snapshots, never guessed. Vault content remains local and is never rendered. Rollback must refuse if it would erase post-migration changes.
 
 ## Command grammar
 
-### `/sc plan`
+### `scrumrun plan`
 
 - `task`: add/list/show/run/audit/cancel/retry atomic work; use `type: fix` for fixes and `status: backlog` for parked work. `--next` surfaces the oldest backlog Task; `--start [TASK-NNN]` promotes it and creates its first Run.
 - `sprint`: add/list/show/start/complete/block a real Task batch/timebox.
@@ -170,7 +170,7 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 - `intake <request>`: execute the read-only request pipeline; accepts `--type fix|task|feature|docs|discovery` and `--preview "…"`.
 - `challenge <question>`: deep read-only analysis with evidence, risks, options, and recommendation.
 
-### `/sc knowledge`
+### `scrumrun knowledge`
 
 - `fact`: add/list/show/approve/reject/deprecate/invalidate `K-NNN` records.
 - `decision`: add/list/show/resolve/deprecate/invalidate `DEC-NNN` records.
@@ -181,12 +181,12 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 - `study <focus>`: deep read-only discovery with precise evidence.
 - `vault`: add/list/show/remove/path for explicitly requested local development values; list redacts values.
 
-### `/sc rules`
+### `scrumrun rules`
 
 - `guardrail`: add/list/show/retire project rules. Adding/retiring requires explicit approval.
 - `reviewer`: add/list/show/run configured review roles.
 
-### `/sc review`
+### `scrumrun review`
 
 - `code --run`: review code changes by severity with file/line evidence.
 - `artifact --run`: validate method artifacts and relations.
@@ -195,7 +195,7 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 
 Review is read-only unless the user separately authorizes fixes.
 
-### `/sc config`
+### `scrumrun config`
 
 - `project`: show/set language, interaction, approval, and quick-task preferences.
 - `init`: initialize ScrumRun without overwriting existing state silently.
@@ -207,16 +207,16 @@ Review is read-only unless the user separately authorizes fixes.
 
 ## Compatibility
 
-Upgrade installs may provide thin v1 adapters for one release cycle. An adapter must execute the mapped `/sc` route in the same turn and emit one concise deprecation note; it must not merely ask the user to invoke another command.
+Upgrade installs may provide thin v1 adapters for one release cycle. An adapter must execute the mapped direct route in the same turn and emit one concise deprecation note; it must not merely ask the user to invoke another command.
 
 Important mappings:
 
-- `/sc-sprint` → `/sc plan sprint`
-- `/sc-fix` → `/sc plan task` with `type: fix`
-- `/sc-backlog` → `/sc plan task` with `status: backlog`
-- `/sc-decisions` → `/sc knowledge decision`
-- `/sc-know` → `/sc knowledge fact`
-- `/sc-golden` → `/sc rules guardrail`
-- `/sc-agent` → `/sc rules reviewer`
+- `/sc-sprint` → `scrumrun plan sprint`
+- `/sc-fix` → `scrumrun plan task` with `type: fix`
+- `/sc-backlog` → `scrumrun plan task` with `status: backlog`
+- `/sc-decisions` → `scrumrun knowledge decision`
+- `/sc-know` → `scrumrun knowledge fact`
+- `/sc-golden` → `scrumrun rules guardrail`
+- `/sc-agent` → `scrumrun rules reviewer`
 
-Always generate and recommend the canonical `/sc` grammar.
+Always generate and recommend the canonical direct CLI grammar.

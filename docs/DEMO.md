@@ -28,13 +28,13 @@ Inside the recording, run these commands slowly (about 5 seconds of
 reading between each), typing them yourself so viewers see the cadence:
 
 ```bash
-npx scrumrun@latest install --client claude
-npx scrumrun@latest init
-npx scrumrun@latest sc plan intake "Fix duplicate charges after refresh"
+scrumrun install --client claude
+scrumrun init
+scrumrun plan intake "Fix duplicate charges after refresh"
 # copy the approval token printed above
-npx scrumrun@latest sc plan intake --approve <token>
-npx scrumrun@latest sc plan run --render RUN-001
-npx scrumrun@latest sc plan run --stats
+scrumrun plan intake --approve <token>
+scrumrun plan run --render RUN-001
+scrumrun plan run --stats
 ```
 
 Exit the shell (`exit`) to stop the recording.

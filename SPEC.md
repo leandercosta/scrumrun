@@ -274,7 +274,7 @@ scrumrun migrate --to 2 --apply
 scrumrun migrate --to 2 --rollback
 ```
 
-`npx scrumrun@latest update` performs the same read-only preflight when run inside a v1 project and leaves project data untouched. `update --migrate` is an explicit request to apply the verified plan; it is not implicit migration.
+`scrumrun update` performs the same read-only preflight when run inside a v1 project and leaves project data untouched. `update --migrate` is an explicit request to apply the verified plan; it is not implicit migration.
 
 Inside an early v2 project, the same commands preflight and explicitly upgrade legacy Run prose to ledger schema 1. Deterministic transition chains are recovered; incomplete history becomes an evidenced snapshot. Apply keeps byte-exact ignored backups, verifies hashes, is idempotent, and supports rollback that refuses to erase later Run changes.
 
@@ -318,17 +318,17 @@ Legacy sprint entries become Tasks. History entries become Runs only with an evi
 - **I-21** Material mutations are policy-bound, path-scoped, hash-verified, append-only, and fail closed on bypass; unresolved Guardrail obligations block completion.
 - **I-22** The semantic index's declared search backend must match the runtime capabilities of the current Node.js SQLite build; conformance flags a mismatch instead of relying on lazy runtime fallback.
 - **I-23** `method.json` declares the canonical path index for every artifact family so agents navigate by declaration, not by search. Missing or drifted paths fail conformance; grep and directory scans are fallbacks, never the first step.
-- **I-24** Runs are only mutated through the CLI. A canonical Run whose ledger fails validation is a bypass — conformance reports `RUN_WRITE_BYPASS` with a pointer to the recovery command `sc plan run --normalize-legacy`, which collapses the bad ledger into a single `snapshot` event and preserves the byte-exact original under `.scrumrun/.migration-backup/runs/`.
+- **I-24** Runs are only mutated through the CLI. A canonical Run whose ledger fails validation is a bypass — conformance reports `RUN_WRITE_BYPASS` with a pointer to the recovery command `scrumrun plan run --normalize-legacy`, which collapses the bad ledger into a single `snapshot` event and preserves the byte-exact original under `.scrumrun/.migration-backup/runs/`.
 
 ## 11. Command grammar
 
 The only canonical root is:
 
 ```text
-/sc <noun> <subject> <action> [args]
+scrumrun <noun> <subject> <action> [args]
 ```
 
-Exactly five nouns exist: `plan`, `knowledge`, `rules`, `review`, and `config`. The implementation manifest is the command source of truth for help and client adapters. Fresh installs expose `/sc`; generated v1 aliases may remain for one compatibility cycle and must execute the canonical route.
+Exactly five nouns exist: `plan`, `knowledge`, `rules`, `review`, and `config`. The implementation manifest is the command source of truth for help and client adapters. The installed direct CLI is canonical; `/sc` and generated v1 aliases may remain as compatibility shortcuts for one release cycle and must execute the canonical route.
 
 Unknown syntax fails deterministically and never guesses a mutation.
 

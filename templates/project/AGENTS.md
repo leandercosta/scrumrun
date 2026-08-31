@@ -2,7 +2,7 @@
 
 ## ScrumRun 3.0
 
-This project uses ScrumRun. The method is mandatory; `/sc` is its single optional shortcut.
+This project uses ScrumRun. The method is mandatory; the direct CLI is `scrumrun <noun> <subject> <action>`. `/sc` is only an optional client shortcut.
 
 For normal work, read:
 
@@ -21,11 +21,11 @@ After approval:
 - a retry creates a new Run and preserves the old one;
 - record a `## Technical Summary` at completion so the next agent inherits what was done;
 - work directly in code and the linked Task Markdown after approval; do not call `npx scrumrun@latest` during execution;
-- record one `## Guardrail Evidence` line per non-automatic guardrail in the Task, then run `scrumrun sc plan run --finalize RUN-NNN` once to validate and close the Run;
-- when a Run completes and work remains queued, surface it with `sc plan task --next` and start it with `sc plan task --start` — starting is explicit approval;
+- record one `## Guardrail Evidence` line per non-automatic guardrail in the Task, then run `scrumrun plan run --finalize RUN-NNN` once to validate and close the Run;
+- when a Run completes and work remains queued, surface it with `scrumrun plan task --next` and start it with `scrumrun plan task --start` — starting is explicit approval;
 - learning proposes evidence-backed Knowledge, Decisions, or candidate Insights;
 - the final checkpoint verifies all Guardrails, workspace changes, protected paths, and secret boundaries before completion; use the path-scoped Mutation Gateway only when the owner requests strict execution.
 
 Never bypass guardrails or edit around the Mutation Gateway, overwrite owner work, treat generated state/cache as truth, auto-confirm AI knowledge, auto-migrate a v1 project, or print vault values.
 
-If `/sc` is unavailable, follow the equivalent workflow in `.scrumrun/core.md` manually.
+Never use `npx scrumrun@latest` in the normal work loop. If the installed CLI is unavailable, stop and report that blocker rather than substituting a network command.

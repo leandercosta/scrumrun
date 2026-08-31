@@ -2,7 +2,7 @@
 
 ## “Project must be explicitly migrated to v2”
 
-Run `npx scrumrun@latest update` for a read-only preflight, then review and apply with `update --migrate`. See [`MIGRATION-1-to-2.md`](../MIGRATION-1-to-2.md).
+Run `scrumrun update` for a read-only preflight, then review and apply with `update --migrate`. See [`MIGRATION-1-to-2.md`](../MIGRATION-1-to-2.md).
 
 ## Migration is blocked
 
@@ -22,7 +22,7 @@ Rollback detected post-migration work that it would erase. Copy/export wanted ch
 `state.md` refreshes after runtime transitions. Rebuild the semantic map with:
 
 ```bash
-npx scrumrun@latest sc knowledge map --build
+scrumrun knowledge map --build
 ```
 
 Fresh projections include a source fingerprint and a watch fingerprint. A matching watch avoids a full read. If file metadata changed, ScrumRun hashes canonical/source content before deciding whether the projection is actually stale. `check: "schema"` means the disposable SQLite format changed and one rebuild is required; `check: "hash"` means the safe fallback was used.
@@ -34,7 +34,7 @@ Stale generated views are warnings, not canonical corruption.
 An approved multi-file mutation was interrupted after its durable journal was prepared. Ordinary doctor/audit is read-only and leaves the evidence untouched. Either retry the same approved operation, which recovers before writing, or explicitly run:
 
 ```bash
-npx scrumrun@latest doctor codex --recover --strict
+scrumrun doctor codex --recover --strict
 ```
 
 Prepared transactions restore their original bytes; committed transactions verify the applied bytes and finalize. Recovery refuses if a target changed to content matching neither journal side, because that would overwrite later owner work. Receipts contain hashes and outcomes, not file contents.
@@ -44,8 +44,8 @@ Prepared transactions restore their original bytes; committed transactions verif
 Delete or clear only the disposable cache:
 
 ```bash
-npx scrumrun@latest sc knowledge context --clear
-npx scrumrun@latest sc knowledge map --build
+scrumrun knowledge context --clear
+scrumrun knowledge map --build
 ```
 
 Canonical Markdown is unchanged. Query automatically rebuilds a missing/stale index.
@@ -61,10 +61,10 @@ Inspect its invalidation warning and code/evidence relations. For a real code mo
 ## Doctor reports missing clients
 
 ```bash
-npx scrumrun@latest install codex
-npx scrumrun@latest install claude
-npx scrumrun@latest install opencode
-npx scrumrun@latest doctor all
+scrumrun install codex
+scrumrun install claude
+scrumrun install opencode
+scrumrun doctor all
 ```
 
 Use `doctor --compat` only while validating one-cycle v1 adapters.

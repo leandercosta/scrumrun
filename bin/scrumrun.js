@@ -55,8 +55,8 @@ function usage() {
 
 Usage:
   scrumrun --version
-  scrumrun sc
-  scrumrun sc <noun> <subject> <action> [args]
+  scrumrun <noun> <subject> <action> [args]
+  scrumrun sc <noun> <subject> <action> [args]  # compatibility alias
   scrumrun install [all|codex|opencode|claude] [--force]
   scrumrun update  [all|codex|opencode|claude] [--no-migrate] [--verbose]
   scrumrun init [--local|--shared] [--lean] [--no-agent-hint] [--force]
@@ -67,18 +67,18 @@ Usage:
   scrumrun migrate --to 2 --apply
   scrumrun migrate --to 2 --rollback
   scrumrun doctor [all|codex|opencode|claude] [--strict] [--recover]
-  scrumrun repair [--apply]
+  scrumrun repair [--recover-orphan-tasks] [--apply]
   scrumrun uninstall [--force]
 
 Install:
   npm i -g scrumrun@latest          # recommended
-  npx scrumrun@latest <command>     # also works; pin @latest to avoid stale npx cache
+  npx scrumrun@latest <command>     # one-off recovery only; never use in an agent loop
 
 Examples:
   scrumrun install
   scrumrun init
   scrumrun status
-  scrumrun sc knowledge decision --list
+  scrumrun knowledge decision --list
   scrumrun migrate --to 2 --dry-run
 `);
 }
@@ -318,14 +318,14 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
           return { status: "blocked" };
         }
         if (!apply) {
-          console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: npx scrumrun@latest update --no-migrate");
+          console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: scrumrun update --no-migrate");
           return { status: "ready" };
         }
         const result = applyRunLedgerMigration(process.cwd());
         refreshState(path.join(process.cwd(), ".scrumrun"));
         console.log("\nApplied the verified ScrumRun Run ledger schema migration.");
         console.log(`Source fingerprint: ${result.plan.fingerprint}`);
-        console.log("Rollback remains available with: npx scrumrun@latest migrate --to 2 --rollback");
+        console.log("Rollback remains available with: scrumrun migrate --to 2 --rollback");
         return { status: result.status, result };
       }
     } catch {
@@ -344,13 +344,13 @@ function migrationPreflightOnUpdate({ apply = false } = {}) {
       return { status: "blocked" };
     }
     if (!apply) {
-      console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: npx scrumrun@latest update --no-migrate");
+      console.log("\nThe project remains unchanged. Re-run update to apply the verified plan, or keep opt-out with: scrumrun update --no-migrate");
       return { status: "ready" };
     }
     const result = applyMigration(process.cwd(), { plan: preview.plan });
     console.log("\nApplied the verified ScrumRun v1 → v2 project migration.");
     console.log(`Source fingerprint: ${result.manifest.sourceInventory.rootSha256}`);
-    console.log("Rollback remains available with: npx scrumrun@latest migrate --to 2 --rollback");
+    console.log("Rollback remains available with: scrumrun migrate --to 2 --rollback");
     return { status: "applied", result };
   } catch (error) {
     console.error(`Project migration preflight failed: ${error.message}`);
@@ -1157,7 +1157,7 @@ function commandList() {
 CLI helpers:
   scrumrun status
   scrumrun commands
-  scrumrun sc knowledge decision --list
+  scrumrun knowledge decision --list
   scrumrun vault add "NAME" "local-dev-value"
   scrumrun context show
   scrumrun backlog add "Sprint 01"
@@ -1392,7 +1392,7 @@ function runSemanticContext(subject, args) {
     }
     const mapFile = path.join(process.cwd(), ".scrumrun", "map.md");
     const status = mapStatus(process.cwd());
-    if (status.stale) throw new Error(`Generated map.md is stale (${status.reason || status.error || "unknown reason"}); run /sc knowledge map --build.`);
+    if (status.stale) throw new Error(`Generated map.md is stale (${status.reason || status.error || "unknown reason"}); run scrumrun knowledge map --build.`);
     console.log(fs.readFileSync(mapFile, "utf8"));
     return;
   }
@@ -1456,7 +1456,7 @@ function executeRootRoute(route) {
       return;
     }
     console.log(`Next backlog Task: ${next.id} — ${next.title || next.id}`);
-    console.log(`Start it with: scrumrun sc plan task --start ${next.id}`);
+    console.log(`Start it with: scrumrun plan task --start ${next.id}`);
     return;
   }
   if (noun === "plan" && subject === "task" && routeArgs[0] === "--start") {
@@ -1689,7 +1689,7 @@ function runRoot(parts) {
 
 function runCompatibilityAlias(alias, parts) {
   const route = resolveAlias(alias, parts);
-  console.warn(`Deprecated: ${alias} now executes /sc ${route.noun} ${route.subject}.`);
+  console.warn(`Deprecated: ${alias} now executes scrumrun ${route.noun} ${route.subject}.`);
   if (route.note) console.warn(route.note);
   if (alias === "sc-backlog") return runBacklog(parts);
   if (alias !== "sc-init") chdirToProjectRoot();
@@ -1705,7 +1705,7 @@ function printCore({ pathOnly = false, promptOnly = false } = {}) {
   if (promptOnly) {
     console.log(`Read AGENTS.md, .scrumrun/guardrails.md, and .scrumrun/state.md first.
 Follow ScrumRun 2.0 and load only the canonical ids/evidence relevant to the request.
-If /sc is unavailable, execute the equivalent /sc <noun> <subject> <action> workflow from .scrumrun/core.md manually.
+Use the installed CLI as scrumrun <noun> <subject> <action>; /sc is only a client shortcut.
 Keep intake read-only; do not create a Task or Run until explicit approval.`);
     return;
   }
@@ -2180,7 +2180,7 @@ function statusProject() {
     }
     console.log("");
     console.log(`Migration record: ${fs.existsSync(path.join(scrumDir, ".migration", "v1-to-v2", "manifest.json")) ? "v1-to-v2 applied" : "not applicable / native v2"}`);
-    console.log(`Canonical command: /sc`);
+    console.log(`Canonical command: scrumrun <noun> <subject> <action>`);
     return;
   }
   const required = [
@@ -2236,24 +2236,24 @@ function promptCommand(parts) {
   const kind = parts[0];
   const text = joinText(parts.slice(1));
   const prompts = {
-    intake: `/sc plan intake ${text}`.trim(),
-    study: `/sc knowledge study${text ? ` ${text}` : ""}`,
-    challenge: `/sc plan challenge ${text}`.trim(),
-    know: `/sc knowledge fact --add ${text}`.trim(),
-    "context-build": `/sc knowledge context --build${text ? ` ${text}` : ""}`,
-    "context-update": `/sc knowledge context --update${text ? ` ${text}` : ""}`,
-    "context-show": `/sc knowledge context --show${text ? ` ${text}` : ""}`,
-    context: `/sc knowledge context ${text}`.trim(),
-    vault: `/sc knowledge vault ${text}`.trim(),
-    "goal-set": `/sc plan feature --add ${text}`.trim(),
-    "goal-new": `/sc plan feature --add ${text}`.trim(),
-    goal: `/sc plan feature --add ${text}`.trim(),
-    "sprint-add": `/sc plan sprint --add ${text}`.trim(),
-    "sprint-new": `/sc plan sprint --add ${text}`.trim(),
-    "sprint-run": `/sc plan task --run ${text}`.trim(),
-    "backlog-add": `/sc plan task --add ${text} --status backlog`.trim(),
-    backlog: `/sc plan task --add ${text} --status backlog`.trim(),
-    status: `/sc plan sprint --show${text ? ` ${text}` : ""}`
+    intake: `scrumrun plan intake ${text}`.trim(),
+    study: `scrumrun knowledge study${text ? ` ${text}` : ""}`,
+    challenge: `scrumrun plan challenge ${text}`.trim(),
+    know: `scrumrun knowledge fact --add ${text}`.trim(),
+    "context-build": `scrumrun knowledge context --build${text ? ` ${text}` : ""}`,
+    "context-update": `scrumrun knowledge context --update${text ? ` ${text}` : ""}`,
+    "context-show": `scrumrun knowledge context --show${text ? ` ${text}` : ""}`,
+    context: `scrumrun knowledge context ${text}`.trim(),
+    vault: `scrumrun knowledge vault ${text}`.trim(),
+    "goal-set": `scrumrun plan feature --add ${text}`.trim(),
+    "goal-new": `scrumrun plan feature --add ${text}`.trim(),
+    goal: `scrumrun plan feature --add ${text}`.trim(),
+    "sprint-add": `scrumrun plan sprint --add ${text}`.trim(),
+    "sprint-new": `scrumrun plan sprint --add ${text}`.trim(),
+    "sprint-run": `scrumrun plan task --run ${text}`.trim(),
+    "backlog-add": `scrumrun plan task --add ${text} --status backlog`.trim(),
+    backlog: `scrumrun plan task --add ${text} --status backlog`.trim(),
+    status: `scrumrun plan sprint --show${text ? ` ${text}` : ""}`
   };
   if (!kind || !prompts[kind]) {
     console.error("Usage: scrumrun prompt <intake|study|challenge|know|context-build|context-update|vault|goal-set|sprint-add|sprint-run|backlog-add|status> [text]");
@@ -2580,6 +2580,8 @@ if (!command || command === "--help" || command === "-h") {
   else install(target, true, { compatibility: false });
 } else if (command === "sc") {
   runRoot(args.slice(1));
+} else if (["plan", "knowledge", "rules", "review", "config"].includes(command)) {
+  runRoot(args);
 } else if (COMMAND_ALIASES[command]) {
   runCompatibilityAlias(command, args.slice(1));
 } else if (command === "init") {
@@ -2594,7 +2596,8 @@ if (!command || command === "--help" || command === "-h") {
   try {
     const { repair } = require(path.join(root, "lib", "commands", "repair"));
     const doApply = args.includes("--apply");
-    const result = repair(scrumDir, { apply: doApply });
+    const recoverOrphanTasks = args.includes("--recover-orphan-tasks");
+    const result = repair(scrumDir, { apply: doApply, recoverOrphanTasks });
     console.log(result.report);
     if (!doApply && result.plan.entries.length) process.exitCode = 0;
   } catch (error) {

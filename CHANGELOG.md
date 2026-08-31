@@ -4,6 +4,13 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 3.0.1 - 2026-08-31
+
+### Fixed
+
+- **Orphan Task recovery.** `doctor --strict` now reports `TASK_ORPHANED` when an active Task has no canonical Run. `scrumrun repair --recover-orphan-tasks` previews the affected Tasks; only `scrumrun repair --recover-orphan-tasks --apply` resets them to `backlog`, preserves a byte-exact backup, and never fabricates a Run or execution history.
+- **Direct CLI grammar.** `scrumrun plan task --start TASK-NNN` is now the canonical command form. `scrumrun sc ...` and `/sc` remain compatibility shortcuts, but generated instructions, approval output, recovery guidance, and documentation use the direct installed CLI, avoiding accidental `npx` execution loops.
+
 ## 3.0.0 - 2026-08-31
 
 ### Changed

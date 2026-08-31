@@ -9,7 +9,7 @@ Method version: `2.0.0`
 The canonical command is:
 
 ```text
-/sc <noun> <subject> <action> [args]
+scrumrun <noun> <subject> <action> [args]
 ```
 
 The five nouns are:
@@ -22,7 +22,7 @@ The five nouns are:
 
 Incomplete syntax lists only valid next tokens. Unknown syntax never guesses or mutates.
 
-The command manifest at `lib/commands/manifest.js` generates client prompts, compatibility adapters, help, and grammar tests. Fresh v2 integrations install only `/sc`. A v1 upgrade may install generated compatibility adapters for one release cycle.
+The command manifest at `lib/commands/manifest.js` generates client prompts, compatibility adapters, help, and grammar tests. The installed CLI is canonical; `/sc` is a client shortcut. A v1 upgrade may install generated compatibility adapters for one release cycle.
 
 ## Entity model
 
@@ -84,7 +84,7 @@ AGENTS.md
 
 **Before querying project state, read `.scrumrun/method.json`.** Its `paths` block is the authoritative index of every canonical location in this project. Navigate by that index; if a path is not declared there, it is not canonical truth. Directory listing and grep are fallbacks — never the first step. A ScrumRun-aware agent must never search for `goals/`, `backlog.md`, `sprint.md`, or any legacy layout: those are absent by design once migration completes and are surfaced only through `.scrumrun/.migration-backup/`.
 
-**Never write Run events by hand.** After approval, work directly in code and in the linked Task Markdown. Finish the normal session once with `scrumrun sc plan run --finalize RUN-NNN`; the CLI then audits the complete workspace delta, verifies Guardrails and evidence, and writes the validated Run event chain. Do not use `npx scrumrun@latest` during execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` operations remain available only for an owner-requested strict path. Existing hand-written Runs can be recovered with `sc plan run --normalize-legacy` (byte-exact original preserved in `.scrumrun/.migration-backup/runs/`).
+**Never write Run events by hand.** After approval, work directly in code and in the linked Task Markdown. Finish the normal session once with `scrumrun plan run --finalize RUN-NNN`; the CLI then audits the complete workspace delta, verifies Guardrails and evidence, and writes the validated Run event chain. Do not use `npx scrumrun@latest` during execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` operations remain available only for an owner-requested strict path. Existing hand-written Runs can be recovered with `scrumrun plan run --normalize-legacy` (byte-exact original preserved in `.scrumrun/.migration-backup/runs/`).
 
 Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
@@ -112,7 +112,7 @@ Normal read path:
 4. only the canonical ids and evidence relevant to current work;
 5. `.scrumrun/core.md` when method details or exceptional transitions are needed.
 
-The briefing is a progressive-disclosure index, not full context. Read it first and follow its pointers to specific artifacts (`## Where to look`, `sc knowledge study "<topic>"`). Go deeper — a Task body, a Run ledger, a Decision — only when the briefing lacks what you need. Never treat the briefing as a substitute for the canonical artifact it points to.
+The briefing is a progressive-disclosure index, not full context. Read it first and follow its pointers to specific artifacts (`## Where to look`, `scrumrun knowledge study "<topic>"`). Go deeper — a Task body, a Run ledger, a Decision — only when the briefing lacks what you need. Never treat the briefing as a substitute for the canonical artifact it points to.
 
 Lean mode is this bounded read policy; it is not permission to omit canonical truth.
 
@@ -156,7 +156,7 @@ Intake must:
 
 Policy evaluation is structured per active `GR-NNN`: `passed`, `blocked`, or `deferred`. A block must cite the exact Guardrail id and reason code. Deferred checks must be visible in the plan and re-evaluated at their named execution boundary; they are never silently counted as passed. Invalid/duplicate Guardrails or configuration that weakens approval block conformance and intake.
 
-The agent may assert the classification explicitly with `sc plan intake "…" --type fix|task|feature|docs|discovery`, overriding keyword inference (validated, with a stable reason). It may also attach a short technical explanation with `--preview "…"`, rendered in the pretty terminal layout, bound into the approval token, and stored as `## Preview` on the Task.
+The agent may assert the classification explicitly with `scrumrun plan intake "…" --type fix|task|feature|docs|discovery`, overriding keyword inference (validated, with a stable reason). It may also attach a short technical explanation with `--preview "…"`, rendered in the pretty terminal layout, bound into the approval token, and stored as `## Preview` on the Task.
 
 Before approval, do not create canonical files, update status, edit application code, or retain request content outside ignored disposable context cache. The approval token binds both canonical context and the workspace fingerprint; drift in either requires a new intake. Ambiguous acknowledgement is not approval.
 
@@ -187,7 +187,7 @@ Rules:
 - before changing application/source files, issue a short-lived path-scoped mutation permit and record the verified before/after hashes in the Run;
 - unrecorded workspace drift, policy drift, out-of-scope paths, unsafe symlinks, new secret-like content, or unresolved obligations block validation/completion;
 - learning proposes memory candidates after validation and never auto-confirms AI inference;
-- record a `## Technical Summary` at completion with `sc plan run --complete --summary "…"` so the next agent inherits what was actually done;
+- record a `## Technical Summary` at completion with `scrumrun plan run --complete --summary "…"` so the next agent inherits what was actually done;
 - complete a Sprint only when all its included Tasks meet the Sprint exit gate;
 - do not mark work complete merely because time or token budget ended.
 
@@ -197,7 +197,7 @@ Task/Run pair mutations use an ignored durable journal under `.scrumrun/.backup/
 
 ### Backlog and sequencing
 
-Backlog is the queue of Tasks with `status: backlog`, ordered oldest-first by id. When a Run completes, the briefing's `## Next Up` names the next backlog Task. `sc plan task --next` shows it; `sc plan task --start [TASK-NNN]` promotes it to `running`, creates its first Run, re-evaluates policy, and records the agent identity. Starting is itself the explicit approval (I-01): no work executes silently, and the owner can always say "not now".
+Backlog is the queue of Tasks with `status: backlog`, ordered oldest-first by id. When a Run completes, the briefing's `## Next Up` names the next backlog Task. `scrumrun plan task --next` shows it; `scrumrun plan task --start [TASK-NNN]` promotes it to `running`, creates its first Run, re-evaluates policy, and records the agent identity. Starting is itself the explicit approval (I-01): no work executes silently, and the owner can always say "not now".
 
 ### Agent identity and assignment
 
@@ -264,7 +264,7 @@ Legacy sprint plan entries normally become Tasks. History attempts become Runs w
 
 ## Command reference
 
-### `/sc plan`
+### `scrumrun plan`
 
 - `task --add|--list|--show|--run|--audit|--cancel|--retry|--next|--start [TASK-NNN]`
 - `sprint --add|--list|--show|--start|--complete|--block`
@@ -273,7 +273,7 @@ Legacy sprint plan entries normally become Tasks. History attempts become Runs w
 - `intake <request> [--type fix|task|feature|docs|discovery] [--preview "…"]`
 - `challenge <question>`
 
-### `/sc knowledge`
+### `scrumrun knowledge`
 
 - `fact --add|--list|--show|--approve|--reject|--deprecate|--invalidate`
 - `decision --add|--list|--show|--resolve|--deprecate|--invalidate`
@@ -284,12 +284,12 @@ Legacy sprint plan entries normally become Tasks. History attempts become Runs w
 - `study <focus>`
 - `vault --add|--list|--show|--remove|--path`
 
-### `/sc rules`
+### `scrumrun rules`
 
 - `guardrail --add|--list|--show|--retire`
 - `reviewer --add|--list|--show|--run`
 
-### `/sc review`
+### `scrumrun review`
 
 - `code --run`
 - `artifact --run`
@@ -298,7 +298,7 @@ Legacy sprint plan entries normally become Tasks. History attempts become Runs w
 
 Review is read-only unless fixes are separately authorized. Report findings by severity with evidence.
 
-### `/sc config`
+### `scrumrun config`
 
 - `project --show|--language|--interaction|--approval|--quick-tasks`
 - `init --local|--shared|--force`

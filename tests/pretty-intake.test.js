@@ -101,7 +101,7 @@ test("renderIntakePlain is the exact Markdown format callers used to consume", (
   assert.match(plain, /^Risk: medium — pricing surface$/m);
   assert.match(plain, /^Policy: passed \(8 checked; 2 deferred\)$/m);
   assert.match(plain, /^DEFERRED: GR-001 OWNER_WORK: /m);
-  assert.match(plain, /^Approval: scrumrun sc plan intake --approve TKN-example-abc123$/m);
+  assert.match(plain, /^Approval: scrumrun plan intake --approve TKN-example-abc123$/m);
 });
 
 test("renderIntakePlain marks blocked plans and skips the approval line", () => {

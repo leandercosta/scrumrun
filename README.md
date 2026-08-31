@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `3.0.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `3.0.1` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -52,13 +52,13 @@ Use the installed `scrumrun` command for project work. `npx` is appropriate for 
 
 `install` adds the client integration; `init` creates the project tree. Initialization is local by default: `.scrumrun/` and the generated agent hint are added to `.git/info/exclude`. Use `--shared` when the team wants to commit the project memory.
 
-ScrumRun installs one canonical agent command:
+ScrumRun's canonical CLI is:
 
 ```text
-/sc <noun> <subject> <action> [args]
+scrumrun <noun> <subject> <action> [args]
 ```
 
-The five nouns are `plan`, `knowledge`, `rules`, `review`, and `config`.
+The five nouns are `plan`, `knowledge`, `rules`, `review`, and `config`. `/sc` is an optional AI-client shortcut; `scrumrun sc ...` remains a compatibility alias for existing integrations.
 
 ## Daily flow
 
@@ -88,7 +88,7 @@ EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 Every approved Task carries an `## Acceptance Criteria` section so "done" is defined before work begins. After approval, the agent works directly in code and the Task Markdown. It adds `## Technical Summary` and, when a non-automatic rule needs proof, a compact `## Guardrail Evidence` section. One final checkpoint closes the work:
 
 ```bash
-scrumrun sc plan run --finalize RUN-001
+scrumrun plan run --finalize RUN-001
 ```
 
 The checkpoint validates the complete delta, policy, protected paths, secret boundary, acceptance evidence, and every Guardrail before writing the Run ledger and synchronizing the Task. Failed retries remain available as separate Runs.
@@ -154,21 +154,21 @@ It is progressive disclosure: the briefing is enough for most work; the agent fo
 Update the client integrations and automatically run a read-only migration preflight:
 
 ```bash
-npx scrumrun@latest update
+scrumrun update
 ```
 
 This shows the source inventory, proposed mappings, and blockers without changing project data. Apply only the verified plan with:
 
 ```bash
-npx scrumrun@latest update --migrate
+scrumrun update --migrate
 ```
 
 The standalone workflow remains available:
 
 ```bash
-npx scrumrun@latest migrate --to 2 --dry-run
-npx scrumrun@latest migrate --to 2 --apply
-npx scrumrun@latest migrate --to 2 --rollback
+scrumrun migrate --to 2 --dry-run
+scrumrun migrate --to 2 --apply
+scrumrun migrate --to 2 --rollback
 ```
 
 Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It also recognizes incomplete hybrid v1/v2 trees, reuses already-linked canonical work, and normalizes only deterministic schema aliases. Early v2 Run prose is preflighted and upgraded to the structured ledger by the same explicit `update --migrate` gate; ambiguous paths become evidenced snapshots instead of invented transitions. Legacy-only files leave the active tree but remain byte-exact in the ignored backup; vault contents remain local. Ambiguous history remains an explicit warning, and the migrator never invents a Sprint or Run.
@@ -176,16 +176,26 @@ Migration uses content hashes, a byte-exact ignored backup, staging validation, 
 For projects that already have v2 directories but contain pre-v2 Markdown records without YAML frontmatter, use the explicit repair gate:
 
 ```bash
-npx scrumrun@latest repair
-npx scrumrun@latest repair --apply
+scrumrun repair
+scrumrun repair --apply
 ```
 
 Repair converts deterministic `## Metadata` fields into v2 frontmatter, preserves the authored body, recovers IDs from canonical filenames, and stores byte-exact backups under `.scrumrun/.migration-backup/repair/`. It does not guess ambiguous relationships; validate afterward with `doctor --strict`.
 
+If `doctor --strict` reports `TASK_ORPHANED`, first inspect the exact recovery plan, then explicitly reset only those active Tasks to backlog and start the intended one normally:
+
+```bash
+scrumrun repair --recover-orphan-tasks
+scrumrun repair --recover-orphan-tasks --apply
+scrumrun plan task --start TASK-144
+```
+
+Recovery never invents a Run or historical events; it creates a byte-exact backup before changing the Task. The final `--start` is the intentional action that creates its first Run.
+
 After migration or an integration update, verify both installed assets and project state:
 
 ```bash
-npx scrumrun@latest doctor codex --strict
+scrumrun doctor codex --strict
 ```
 
 `doctor` compares managed prompt/skill contents with the package, so an obsolete installation is reported as `stale` rather than `ok` merely because the file exists.
@@ -252,42 +262,42 @@ Rules:
 scrumrun commands
 
 # plan without writes, then approve the emitted token
-scrumrun sc plan intake "Fix pricing rounding" --type fix --preview "Rounding moved after tax calc"
-scrumrun sc plan intake --approve <token>
+scrumrun plan intake "Fix pricing rounding" --type fix --preview "Rounding moved after tax calc"
+scrumrun plan intake --approve <token>
 
 # record what was done at completion, so the next agent inherits it
-scrumrun sc plan run --finalize RUN-001 --summary "Moved rounding after tax calc in checkout/pricing.ts"
+scrumrun plan run --finalize RUN-001 --summary "Moved rounding after tax calc in checkout/pricing.ts"
 
 # auto-sequencing: surface and start the next backlog Task
-scrumrun sc plan task --next
-scrumrun sc plan task --start TASK-009
+scrumrun plan task --next
+scrumrun plan task --start TASK-009
 
 # authorize and record a material source mutation
-scrumrun sc plan run --authorize-mutation RUN-001 --path src/pricing.ts  # strict mode only
-scrumrun sc plan run --record-mutation RUN-001 --permit MUT-... --note "Pricing change recorded"
+scrumrun plan run --authorize-mutation RUN-001 --path src/pricing.ts  # strict mode only
+scrumrun plan run --record-mutation RUN-001 --permit MUT-... --note "Pricing change recorded"
 
 # record an audit-derived Review, then resolve a persisted completion gate
-scrumrun sc review artifact --run
-scrumrun sc review artifact --record --task TASK-001 --run RUN-001 --evidence "npm test: passed"
+scrumrun review artifact --run
+scrumrun review artifact --record --task TASK-001 --run RUN-001 --evidence "npm test: passed"
 
 # memory lifecycle
-scrumrun sc knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts
-scrumrun sc knowledge insight --confirm INS-001
-scrumrun sc knowledge study calculateFinalPrice
+scrumrun knowledge insight --propose "Pricing stays in backend" --evidence src/pricing.ts
+scrumrun knowledge insight --confirm INS-001
+scrumrun knowledge study calculateFinalPrice
 
 # rebuild or inspect the derived graph
-scrumrun sc knowledge map --build
-scrumrun sc knowledge map --show
+scrumrun knowledge map --build
+scrumrun knowledge map --show
 
 # read a Run as a human timeline instead of raw ledger JSON
-scrumrun sc plan run --render RUN-001
+scrumrun plan run --render RUN-001
 
 # aggregate every Run in the project (p50/p95 durations, retries, guardrail counts)
-scrumrun sc plan run --stats
-scrumrun sc plan run --stats --task TASK-001 --json
+scrumrun plan run --stats
+scrumrun plan run --stats --task TASK-001 --json
 
 # preview a canonical-transaction recovery before touching disk
-npx scrumrun@latest sc config doctor --recover --dry-run
+scrumrun config doctor --recover --dry-run
 ```
 
 The command manifest in `lib/commands/manifest.js` generates help and compatibility adapters, preventing client grammar drift. A recorded artifact Review cannot self-declare success: ScrumRun reruns the audit and derives the `REV-NNN` verdict from the result.
