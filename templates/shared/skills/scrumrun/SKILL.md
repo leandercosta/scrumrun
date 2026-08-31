@@ -40,6 +40,8 @@ Normal hot path:
 
 **Do not block on administrative state.** A missing/invalid Run, legacy status vocabulary, stale generated view, or optional unrun test is a warning to reconcile in Markdown, not a reason to refuse productive work. Block only for an explicit Guardrail, security/secret risk, destructive action without approval, or an unmet required Acceptance Criterion. Optional E2E/integration/review coverage belongs in `## Follow-ups` or a risk note, never in a fabricated failed Run.
 
+**Normal-operation command ban.** Do not invoke `scrumrun plan run --fail`, `--block`, `--retry`, `--finalize`, `--complete`, `--validate`, or `scrumrun plan task --start` during ordinary work. Those are optional strict-audit tools and cannot be used to decide whether a Task is delivered. If an old Run is already failed for an administrative reason, leave it as historical evidence, continue the Task directly, and write the corrected outcome in the Task's Technical Summary and Follow-ups.
+
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
 Generated state and semantic indexes use a metadata-watch fast path with a full content-hash fallback. Treat cache-schema mismatch as a request to rebuild the disposable projection, never as permission to rewrite canonical Markdown.
@@ -55,7 +57,7 @@ For a v1 project without canonical v2 artifacts, recommend `scrumrun migrate --t
 - Memory — what was learned and why: `K-NNN`, `DEC-NNN`, `INS-NNN`, and dossiers.
 - Review (`REV-NNN`) — evidence from a scoped quality gate.
 
-Never create a Sprint merely because work exists. A standalone Task is valid. A retry creates a new Run and preserves the failed/blocked prior Run.
+Never create a Sprint merely because work exists. A standalone Task is valid. Strict audit retries preserve their prior Runs, but retries are never part of the normal workflow.
 
 ## Request pipeline
 
@@ -111,11 +113,11 @@ During execution:
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
 
-When a Run completes and work remains queued, the briefing's `## Next Up` names the next backlog Task. Surface it with `scrumrun plan task --next` and start it with `scrumrun plan task --start [TASK-NNN]` — starting is the explicit approval; the owner can always decline. Each agent declares its identity via `SCRUMRUN_AGENT` (or `Agent Identity` in `config.md`); it is recorded as the Task `assignee` and the Run event `actor`.
+When work remains queued, the briefing may name the next backlog Task. The owner starts it through natural-language approval; do not call CLI start/retry commands to manufacture operational state. Each agent may record its identity in the Task handoff when useful.
 
 Every explicit Guardrail remains mandatory. In strict mode, the CLI final checkpoint fails closed on policy drift, protected-path changes, unsafe symlinks, unscannable content, newly introduced secret-like content, or missing Guardrail Evidence. The ignored permit cache is disposable; deleting it invalidates outstanding strict-mode permits and never creates authority.
 
-Run is the sole operational-history authority. Task synchronizes current status without copying Run events. Validation, learning, completion, failure, block, and resume require a reason or structured evidence; completion also requires evidenced validation and learning. Early v2 prose Runs are migrated explicitly, with deterministic chains recovered and uncertain history represented as an evidenced snapshot.
+Task Markdown is the daily operational handoff authority. A structured Run is optional strict audit history only. Early v2 prose Runs may be repaired/migrated explicitly, but their state never overrides the Task's direct handoff or blocks approved work.
 
 Linked canonical writes use the ignored durable transaction journal. An interrupted prepared mutation rolls back before the next approved mutation; a committed journal is verified and finalized. Audit remains read-only and reports pending recovery. Use `doctor --recover` only when explicitly requested, and never overwrite bytes changed after interruption.
 

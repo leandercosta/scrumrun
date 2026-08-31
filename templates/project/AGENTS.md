@@ -23,6 +23,7 @@ After approval:
 - record a `## Technical Summary` at completion so the next agent inherits what was done; record optional missing coverage in `## Follow-ups`;
 - work directly in code and Task Markdown after approval; do not call `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution;
 - use the CLI only for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, or release checks. It audits/repairs the folder; it does not own the daily workflow;
+- never invoke `plan run --fail`, `--block`, `--retry`, `--finalize`, `--complete`, `--validate`, or `plan task --start` in normal work. A failed legacy Run due to administrative state remains historical; write the corrected delivery outcome directly in the Task instead;
 - learning proposes evidence-backed Knowledge, Decisions, or candidate Insights when the work reveals reusable context;
 - guardrails remain mandatory: stop only for an explicit Guardrail, security/secret risk, destructive action without approval, or an unmet required Acceptance Criterion. Status vocabulary, missing Runs, unavailable optional tests, and stale generated state are warnings to reconcile, not blockers.
 

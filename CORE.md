@@ -90,6 +90,8 @@ AGENTS.md
 
 **Block only on real constraints.** An agent must stop for an explicit active Guardrail, secret/security risk, destructive action without approval, or an unmet required Acceptance Criterion. It must not manufacture a failed/blocked Run because optional E2E coverage, an optional reviewer, or a non-required environment is unavailable; record meaningful gaps in `## Follow-ups` or a risk note.
 
+**Normal operation never mutates Run state through the CLI.** Do not call `plan run --fail|--block|--retry|--finalize|--complete|--validate` or `plan task --start` in daily work. Those are owner-requested strict audit tools only. When a legacy Run already has the wrong administrative outcome, preserve it as history and correct the delivery record directly in the Task's Technical Summary and Follow-ups.
+
 Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
 `state.md` and the semantic index use two-tier freshness checks. Matching path/stat watch fingerprints avoid rereading unchanged sources; any metadata drift falls back to complete content hashing. A cache schema mismatch rebuilds the disposable index once. Watch metadata is only an optimization and never authority.

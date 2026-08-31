@@ -18,3 +18,5 @@ Guardrails are mandatory, but administrative state is not: block only for an exp
 `.scrumrun/guardrails.md` is canonical policy. Never bypass it, overwrite owner work, auto-confirm AI knowledge, auto-migrate v1 state, or print vault values.
 
 Use the installed CLI only for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, and release checks. For daily product work, follow `.scrumrun/core.md` and edit the relevant Markdown directly.
+
+Never invoke `plan run --fail`, `--block`, `--retry`, `--finalize`, `--complete`, `--validate`, or `plan task --start` during normal work. If an old Run says failed for an administrative reason, leave it as history and record the actual delivered outcome in the Task's Technical Summary and Follow-ups.

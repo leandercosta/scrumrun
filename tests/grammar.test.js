@@ -303,3 +303,12 @@ test("manual CORE and installed skill use the same v2 root and entity model", ()
     assert.doesNotMatch(content, /Preferred v2 layout/);
   }
 });
+
+test("Markdown-first guidance forbids strict Run commands in normal operation", () => {
+  const core = read(path.join(root, "CORE.md"));
+  const skill = read(path.join(root, "templates", "shared", "skills", "scrumrun", "SKILL.md"));
+  for (const content of [core, skill]) {
+    assert.match(content, /plan run --fail.*--block.*--retry.*--finalize/s);
+    assert.match(content, /(old Run.*historical|legacy Run.*history)/i);
+  }
+});
