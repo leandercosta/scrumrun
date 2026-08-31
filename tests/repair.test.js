@@ -31,3 +31,21 @@ test("repair converts legacy Metadata artifacts in canonical directories without
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("repair reconciles Task.sprint references into the Sprint projection", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sr-repair-membership-"));
+  try {
+    execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: dir, stdio: "ignore" });
+    const scrum = path.join(dir, ".scrumrun");
+    fs.writeFileSync(path.join(scrum, "sprints", "SPRINT-001.md"), "---\nid: SPRINT-001\nkind: sprint\nstatus: proposed\ncreated: 2026-08-31\nupdated: 2026-08-31\nmethod: 2.0.0\n---\n\n# Sprint\n\n## Tasks\n\n- TASK-001\n\n## Notes\n\nKeep notes.\n");
+    fs.writeFileSync(path.join(scrum, "tasks", "TASK-002.md"), "---\nid: TASK-002\nkind: task\nstatus: completed\ncreated: 2026-08-31\nupdated: 2026-08-31\nmethod: 2.0.0\ntype: feature\nfeature: null\nsprint: SPRINT-001\n---\n\n# Task\n\n## Acceptance Criteria\n\n- Done\n");
+    const result = repair(scrum, { apply: true });
+    assert.ok(result.applied.applied.some((entry) => entry.file === "sprints/SPRINT-001.md"));
+    const sprint = fs.readFileSync(path.join(scrum, "sprints", "SPRINT-001.md"), "utf8");
+    assert.match(sprint, /^- TASK-002$/m);
+    assert.match(sprint, /Keep notes\./);
+    assert.ok(fs.existsSync(path.join(scrum, ".migration-backup", "repair", "sprints", "SPRINT-001.md")));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
