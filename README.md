@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `2.7.8` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `2.7.9` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -166,6 +166,15 @@ npx scrumrun@latest migrate --to 2 --rollback
 ```
 
 Migration uses content hashes, a byte-exact ignored backup, staging validation, an atomic directory switch, a source-to-destination report, idempotent replay, and rollback protection. It also recognizes incomplete hybrid v1/v2 trees, reuses already-linked canonical work, and normalizes only deterministic schema aliases. Early v2 Run prose is preflighted and upgraded to the structured ledger by the same explicit `update --migrate` gate; ambiguous paths become evidenced snapshots instead of invented transitions. Legacy-only files leave the active tree but remain byte-exact in the ignored backup; vault contents remain local. Ambiguous history remains an explicit warning, and the migrator never invents a Sprint or Run.
+
+For projects that already have v2 directories but contain pre-v2 Markdown records without YAML frontmatter, use the explicit repair gate:
+
+```bash
+npx scrumrun@latest repair
+npx scrumrun@latest repair --apply
+```
+
+Repair converts deterministic `## Metadata` fields into v2 frontmatter, preserves the authored body, recovers IDs from canonical filenames, and stores byte-exact backups under `.scrumrun/.migration-backup/repair/`. It does not guess ambiguous relationships; validate afterward with `doctor --strict`.
 
 After migration or an integration update, verify both installed assets and project state:
 
