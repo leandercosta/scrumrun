@@ -1308,6 +1308,7 @@ function runTransitionOptions(args) {
   let summary = null;
   for (let index = 2; index < args.length; index++) {
     const token = args[index];
+    if (token === "--strict") continue;
     const value = args[index + 1] && !args[index + 1].startsWith("--") ? args[index + 1] : null;
     if (token === "--note" || token === "--actor" || token === "--at" || token === "--evidence" || token === "--summary" || evidenceFlags.has(token)) {
       if (!value) throw new Error(`${token} requires a value.`);
@@ -1331,6 +1332,11 @@ function runTransitionOptions(args) {
     noteParts.push(token);
   }
   return { note: note || noteParts.join(" ").trim() || null, evidence, actor, occurredAt, summary };
+}
+
+function requireStrictAudit(args, action) {
+  if (args.includes("--strict")) return;
+  throw new Error(`${action} is disabled in Markdown-first daily work. Update the Task Markdown directly; use --strict only for an owner-requested audit.`);
 }
 
 function removeOptionPairs(args, names) {
@@ -1470,6 +1476,7 @@ function executeRootRoute(route) {
     return;
   }
   if (noun === "plan" && subject === "task" && routeArgs[0] === "--retry") {
+    requireStrictAudit(routeArgs, "Task retry");
     const result = retryTask(process.cwd(), routeArgs[1], { reassign: routeArgs.includes("--reassign") });
     console.log(`Created retry ${result.run.id} for ${result.task.id} (attempt ${result.run.attempt}).`);
     return;
@@ -1486,6 +1493,7 @@ function executeRootRoute(route) {
     return;
   }
   if (noun === "plan" && subject === "task" && routeArgs[0] === "--start") {
+    requireStrictAudit(routeArgs, "Task start");
     let target = routeArgs[1];
     if (!target) {
       const repository = new ArtifactRepository(projectFile());
@@ -1610,9 +1618,10 @@ function executeRootRoute(route) {
   }
   if (noun === "plan" && subject === "run") {
     if (routeArgs[0] === "--finalize") {
+      requireStrictAudit(routeArgs, "Run finalization");
       const runId = routeArgs[1];
       if (!runId) throw new Error("--finalize requires RUN-NNN.");
-      const result = finalizeRun(process.cwd(), runId, runTransitionOptions(routeArgs.slice(2)));
+      const result = finalizeRun(process.cwd(), runId, runTransitionOptions(routeArgs));
       console.log(`${result.run.id}: completed; ${result.task.id}: completed. Final session audit verified ${result.changes} change(s).`);
       if (result.resolved.length) console.log(`Guardrails verified: ${result.resolved.join(", ")}.`);
       if (result.learning && result.learning.created.length) console.log(`Learning candidates: ${result.learning.created.join(", ")}.`);
@@ -1654,6 +1663,7 @@ function executeRootRoute(route) {
       "--block": "blocked"
     };
     if (transitions[routeArgs[0]]) {
+      requireStrictAudit(routeArgs, `Run transition ${routeArgs[0]}`);
       const result = transitionRun(process.cwd(), routeArgs[1], transitions[routeArgs[0]], runTransitionOptions(routeArgs));
       console.log(`${result.run.id}: ${result.run.status}; ${result.task.id}: ${result.task.status}.`);
       if (result.learning) {

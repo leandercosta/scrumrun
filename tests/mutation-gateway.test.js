@@ -61,7 +61,7 @@ test("lightweight finalization verifies the complete workspace once without edit
   fs.writeFileSync(task.file, `${fs.readFileSync(task.file, "utf8")}\n\n## Technical Summary\n\nImplemented the requested source change and ran the final checks.\n`);
   write(directory, "src/session.js", "export const lightweight = true;\n");
 
-  const output = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--finalize", approved.run.id], { cwd: directory, encoding: "utf8" });
+  const output = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--finalize", approved.run.id, "--strict"], { cwd: directory, encoding: "utf8" });
   assert.match(output, new RegExp(`${approved.run.id}: completed`));
   const run = repository.read("run", approved.run.id);
   assert.equal(run.record.status, "completed");

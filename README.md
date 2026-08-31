@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `3.1.1` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `3.1.2` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -100,6 +100,8 @@ scrumrun review release --run
 ```
 
 `update --project` refreshes packaged `core.md` and recognized generated `AGENTS.md` with a local byte-exact backup before replacing them. The CLI can still generate/validate Task, Feature, Sprint, and Run records when desired, but it must never become a routine blocker.
+
+For extra protection, CLI Task start/retry and every Run state transition require `--strict`. This prevents accidental administrative failures in the normal Markdown-first workflow.
 
 Each optional structured Run contains a machine-validated event ledger. It remains useful for strict audit/release work, but daily history can stay as concise, human-readable Task handoff Markdown.
 

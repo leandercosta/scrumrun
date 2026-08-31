@@ -23,7 +23,7 @@ test("concurrent backlog starts allocate unique run ids across processes", async
   }
   const commands = Array.from({ length: count }, (_, index) => {
     const id = `TASK-${String(index + 1).padStart(3, "0")}`;
-    return execFileAsync(process.execPath, [bin, "sc", "plan", "task", "--start", id], { cwd: project, encoding: "utf8" });
+    return execFileAsync(process.execPath, [bin, "sc", "plan", "task", "--start", id, "--strict"], { cwd: project, encoding: "utf8" });
   });
   await Promise.all(commands);
   const runs = new ArtifactRepository(path.join(project, ".scrumrun")).list("run");

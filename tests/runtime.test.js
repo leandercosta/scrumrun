@@ -278,6 +278,6 @@ test("CLI intake output can be explicitly approved and then advanced", () => {
   const approval = execFileSync(process.execPath, [bin, "sc", "plan", "intake", "--approve", token], { cwd: dir, encoding: "utf8" });
   const runId = (approval.match(/→ (RUN-\d+)/) || [])[1];
   assert.ok(runId);
-  const validation = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--validate", runId, "--test", "npm test passed"], { cwd: dir, encoding: "utf8" });
+  const validation = execFileSync(process.execPath, [bin, "sc", "plan", "run", "--validate", runId, "--strict", "--test", "npm test passed"], { cwd: dir, encoding: "utf8" });
   assert.match(validation, new RegExp(`${runId}: validating`));
 });

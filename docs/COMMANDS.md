@@ -13,14 +13,14 @@ Use `.scrumrun/` Markdown for normal project work. `/sc` and the installed CLI a
 ```text
 scrumrun plan intake <request>
 scrumrun plan intake --approve <token>
-scrumrun plan task --add|--list|--show|--run|--audit|--cancel|--retry
+scrumrun plan task --add|--list|--show|--run|--audit|--cancel|--retry --strict
 scrumrun plan task --amend TASK-NNN [--title "..."] [--request "..."] [--acceptance "..."] [--section "Heading=content"] [--type fix|task|feature|docs|discovery] [--feature FEAT-NNN|null] [--sprint SPRINT-NNN|null]
 scrumrun plan sprint --add|--list|--show|--start|--complete|--block
 scrumrun plan sprint --amend SPRINT-NNN [--title "..."] [--timebox "..."] [--exit-gate "..."] [--section "Heading=content"]
 scrumrun plan feature --add|--list|--show|--activate|--complete
 scrumrun plan feature --amend FEAT-NNN [--title "..."] [--purpose "..."] [--exit-criteria "..."] [--section "Heading=content"]
-scrumrun plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block [--note] [typed evidence flags]
-scrumrun plan run --finalize RUN-NNN [--summary "technical recap"] [--note]
+scrumrun plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block --strict [--note] [typed evidence flags]
+scrumrun plan run --finalize RUN-NNN --strict [--summary "technical recap"] [--note]
 scrumrun plan run --authorize-mutation RUN-NNN --path <relative-path> [--path ...]
 scrumrun plan run --record-mutation RUN-NNN --permit MUT-id [--note] [--actor]
 scrumrun plan run --satisfy-guardrail RUN-NNN --guardrail GR-NNN [typed evidence flags]
@@ -28,6 +28,8 @@ scrumrun plan challenge <question>
 ```
 
 Normal execution is Markdown-first: after approval, work in code and the relevant Task Markdown, then record the Technical Summary and any Follow-ups directly. A Run/`--finalize` checkpoint is optional strict audit, never a prerequisite. Mutation permits are available only for explicitly requested strict mode.
+
+The CLI refuses Task start/retry and all Run state changes unless `--strict` is present. This prevents an agent from accidentally manufacturing a failed/blocked retry during normal work; `--strict` is for an owner-requested audit only.
 
 `--amend` is an optional structured helper. The Markdown-first workflow may adjust Task/Feature/Sprint content directly, preserving a useful handoff. Use the CLI when atomic relation synchronization or machine audit is valuable; do not let status vocabulary or missing relations stop approved work.
 

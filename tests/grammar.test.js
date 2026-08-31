@@ -164,7 +164,8 @@ test("plan amendments update every mutable planning artifact without hand-editin
   assert.match(run(["plan", "sprint", "--show", "SPRINT-001"], { cwd: dir }), /Routes and authorization are reviewed/);
   assert.equal(JSON.parse(run(["review", "artifact", "--run"], { cwd: dir })).passed, true);
 
-  run(["plan", "task", "--start", "TASK-001"], { cwd: dir });
+  assert.throws(() => run(["plan", "task", "--start", "TASK-001"], { cwd: dir, stdio: ["ignore", "pipe", "pipe"] }), /Command failed/);
+  run(["plan", "task", "--start", "TASK-001", "--strict"], { cwd: dir });
   assert.throws(() => run(["plan", "task", "--amend", "TASK-001", "--title", "Too late"], { cwd: dir, stdio: ["ignore", "pipe", "pipe"] }), /Command failed/);
 });
 

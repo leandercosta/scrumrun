@@ -4,11 +4,18 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 3.1.2 - 2026-08-31
+
+### Fixed
+
+- **Mechanical strict-audit gate.** The CLI now refuses Task start/retry and every Run state transition unless `--strict` is explicitly present. This prevents a normal agent loop from creating failed/blocked administrative Runs even if it ignores the Markdown-first guidance.
+
 ## 3.1.1 - 2026-08-31
 
 ### Fixed
 
 - **No strict-Run commands in daily work.** Generated Core and agent instructions now explicitly prohibit `plan run --fail|--block|--retry|--finalize|--complete|--validate` and `plan task --start` in normal operation. A legacy Run incorrectly failed for administrative reasons stays as history; the Task's direct Markdown handoff records the real result.
+- **CLI backstop.** Task start/retry and Run state-changing commands now require an explicit `--strict`, so an agent that ignores the guidance cannot accidentally create another failed/blocked administrative Run.
 
 ## 3.1.0 - 2026-08-31
 
