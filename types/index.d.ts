@@ -21,7 +21,7 @@ export type ArtifactKind =
 
 export type ArtifactStatus =
   | "backlog" | "proposed" | "active" | "completed" | "paused" | "cancelled"
-  | "running" | "validating" | "learning" | "partial" | "failed" | "blocked"
+  | "running" | "in_progress" | "validating" | "learning" | "partial" | "failed" | "blocked"
   | "candidate" | "approved" | "rejected" | "deprecated" | "invalidated"
   | "open" | "resolved" | "confirmed" | "stale" | "archived" | "executing" | "passed";
 

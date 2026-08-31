@@ -69,7 +69,7 @@ Every artifact also requires \`id\`, \`kind\`, \`status\`, \`created\`, \`update
 |---|---|---|---|
 ${relationRows.join("\n")}
 
-Task is the atomic unit. A Task may have zero or one Sprint. A Task may have many Runs, but every Run belongs to exactly one Task and has a monotonically increasing attempt number within that Task. Sprint membership is authoritative on \`Task.sprint\`; a Sprint's \`## Tasks\` list is a human-readable projection that must agree with it.
+Task is the atomic unit. A Task may have zero or one Sprint. A Run is optional Markdown history and may reference either a Task or a Sprint; it never controls Task status in Markdown-first work. Sprint membership is authoritative on \`Task.sprint\`; a Sprint's \`## Tasks\` list is a human-readable projection that must agree with it. Additional owner-defined relations such as \`depends_on: [TASK-014, DEC-018]\` are preserved as local Markdown graph data.
 
 ## Scalar constraints
 
@@ -85,7 +85,7 @@ Newly authored Runs use \`ledger: ${RUN_LEDGER_VERSION}\`. Their \`## Events\` s
 
 Every event requires \`schema\`, \`id\`, contiguous \`sequence\`, RFC3339 \`occurred_at\`, \`timestamp_precision\`, \`actor\`, \`from\`, \`to\`, \`reason\`, and structured \`evidence\`. Event types are ${RUN_EVENT_TYPES.map((value) => `\`${value}\``).join(", ")}. Evidence kinds are ${RUN_EVIDENCE_KINDS.map((value) => `\`${value}\``).join(", ")}.
 
-A native ledger begins with \`created → executing\`; an evidenced migration \`snapshot\` may establish one historical baseline without inventing missing transitions. Event order, transition legality, final status, updated date, and completion evidence are machine-validated. Run owns the event history; Task stores its intended scope and synchronized current status without copying Run events.
+A native ledger begins with \`created → executing\`; an evidenced migration \`snapshot\` may establish one historical baseline without inventing missing transitions. Event order, transition legality, final status, updated date, and completion evidence are machine-validated when a strict audit Run is used. Run owns optional event history; Task Markdown owns the delivered scope and status in normal work.
 
 ## Truth questions
 

@@ -4,6 +4,20 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 4.0.0 - 2026-08-31
+
+### Changed
+
+- **Simple Markdown model.** Core, Guardrails, Knowledge, Feature, Sprint, Task, Run, and Backlog are one local Markdown graph connected by stable IDs and relative links. Derived cache/index data is optional and never required for normal work.
+- **Execution-first.** An approved Task continues through discover → implement → verify → fix → verify. Intermediate inventories, progress reports, and discovered in-scope gaps are internal work, never a valid stopping point or Follow-up.
+- **Flexible Task bodies.** Tasks preserve arbitrary owner frontmatter and sections. `## Done when` and `## Completion` are the packaged minimal convention; project Guardrails may require extra sections only for affected Tasks.
+- **Human status vocabulary.** `in_progress` is accepted as a Task status. A Markdown-first Task neither needs a Run nor must agree with historical Run state.
+- **Runs are optional.** A Run may record a Task or a Sprint execution, but no Run, ledger, permit, or CLI state transition can block daily delivery.
+
+### Safety
+
+- **Sealed Markdown policy.** Fresh and refreshed projects pin Core and Guardrail fingerprints. Agents do not edit policy during product work; owner-reviewed policy changes use `scrumrun update --project --seal-policy`. Strict doctor/release audits detect policy drift at the edge, not during every edit.
+
 ## 3.1.2 - 2026-08-31
 
 ### Fixed

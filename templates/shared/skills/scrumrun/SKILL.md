@@ -3,7 +3,9 @@ name: scrumrun
 description: Use when initializing or migrating ScrumRun, handling product requests, planning or executing Tasks/Sprints/Features/Runs, managing guardrails or semantic memory, checking status, and running reviews.
 ---
 
-# ScrumRun 2.0
+# ScrumRun 4.0 — execution-first Markdown
+
+Package 4.0 implements the stable ScrumRun method contract 2.0.0.
 
 ScrumRun is an evidence-driven Agile runtime for AI agents. Its canonical shell command is:
 
@@ -36,9 +38,11 @@ Normal hot path:
 5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `scrumrun knowledge study "<topic>"`);
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
-**Markdown is the daily runtime.** After approval, work directly in source files and the relevant `.scrumrun/` Markdown. Create/refine the Task, its acceptance criteria, technical summary, follow-ups, and optional Run handoff without waiting for a CLI transition. Do not invoke `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution. The CLI is optional maintenance for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, and release checks.
+**Markdown is the daily runtime.** After approval, work directly in source files and the relevant `.scrumrun/` Markdown until the approved Task is delivered. Continue the full loop — discover → implement → verify → fix → verify — before responding. A progress report is allowed only when the owner asks for status and must be followed immediately by further execution; it never ends the Task. Do not stop to issue a progress report, inventory, decomposition, or list of remaining work; those are internal implementation steps. A missing implementation discovered in scope remains required work now, never a follow-up or a “next step”. Stop only for an owner decision, external access, an explicit Guardrail, security/secret risk, destructive work without approval, or an unmet required delivery criterion. Do not invoke `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution. The CLI is optional maintenance for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, and release checks.
 
-**Do not block on administrative state.** A missing/invalid Run, legacy status vocabulary, stale generated view, or optional unrun test is a warning to reconcile in Markdown, not a reason to refuse productive work. Block only for an explicit Guardrail, security/secret risk, destructive action without approval, or an unmet required Acceptance Criterion. Optional E2E/integration/review coverage belongs in `## Follow-ups` or a risk note, never in a fabricated failed Run.
+**Do not block on administrative state.** A missing/invalid Run, legacy status vocabulary, stale generated view, or optional unrun test is a warning to reconcile in Markdown, not a reason to refuse productive work. Define a concise `## Done when` delivery contract. `## Follow-ups` is only for work outside that contract: never relabel an unfinished requirement as a follow-up without explicit owner approval. Optional E2E/integration/review coverage belongs there or in a risk note, never in a fabricated failed Run.
+
+**A check must prove its claim.** A passing narrow checker does not prove a broader Task condition. If the task says no visible hardcoded literals, scan the relevant source, replace every in-scope match, and re-run that scan plus the build. Apply the same coverage rule to all completion claims.
 
 **Normal-operation command ban.** Do not invoke `scrumrun plan run --fail`, `--block`, `--retry`, `--finalize`, `--complete`, `--validate`, or `scrumrun plan task --start` during ordinary work. Those are optional strict-audit tools and cannot be used to decide whether a Task is delivered. If an old Run is already failed for an administrative reason, leave it as historical evidence, continue the Task directly, and write the corrected outcome in the Task's Technical Summary and Follow-ups.
 
@@ -104,11 +108,11 @@ During execution:
 
 1. keep the change inside the approved Task scope;
 2. preserve existing owner work and unrelated dirty files;
-3. define or confirm the Task's `## Acceptance Criteria` before execution and check them off as evidence;
-4. work normally: edit code and update the Task's `## Technical Summary`, `## Follow-ups`, and any Guardrail evidence required by an active rule;
+3. define or confirm the Task's short `## Done when` contract before execution and use it as the only delivery boundary;
+4. work normally and continuously. Privately decompose work or create linked child Tasks when useful, but do not return after planning; edit code until the contract is satisfied;
 5. validate in proportion to risk and against the acceptance criteria. Tests, reviews, and environments are required only when the owner, Acceptance Criteria, or an active Guardrail says so. Do not fail or block an otherwise accepted Task merely because an optional E2E/integration suite does not exist or was not run;
 6. run a configured reviewer only when a Guardrail requires it;
-7. complete the Task directly in Markdown after the required work is satisfied; use CLI release/doctor/repair commands only when their audit or recovery value is wanted;
+7. complete the Task directly in Markdown after the required work is satisfied, adding a concise `## Completion`; use CLI release/doctor/repair commands only when their audit or recovery value is wanted;
 8. use path-scoped Mutation Gateway commands only when the owner explicitly requests strict execution.
 
 Never overwrite a prior attempt. Never mark work complete because time/token budget ended.
@@ -117,7 +121,7 @@ When work remains queued, the briefing may name the next backlog Task. The owner
 
 Every explicit Guardrail remains mandatory. In strict mode, the CLI final checkpoint fails closed on policy drift, protected-path changes, unsafe symlinks, unscannable content, newly introduced secret-like content, or missing Guardrail Evidence. The ignored permit cache is disposable; deleting it invalidates outstanding strict-mode permits and never creates authority.
 
-Task Markdown is the daily operational handoff authority. A structured Run is optional strict audit history only. Early v2 prose Runs may be repaired/migrated explicitly, but their state never overrides the Task's direct handoff or blocks approved work.
+Task Markdown is the daily operational handoff authority. A structured Run is optional strict audit history only. `core.md` and `guardrails.md` are sealed policy: never edit either during product work. A policy change requires an explicit owner request and the owner seals reviewed changes with `scrumrun update --project --seal-policy`. Early v2 prose Runs may be repaired/migrated explicitly, but their state never overrides the Task's direct handoff or blocks approved work.
 
 Linked canonical writes use the ignored durable transaction journal. An interrupted prepared mutation rolls back before the next approved mutation; a committed journal is verified and finalized. Audit remains read-only and reports pending recovery. Use `doctor --recover` only when explicitly requested, and never overwrite bytes changed after interruption.
 

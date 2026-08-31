@@ -39,6 +39,7 @@ const { indexPath, indexStatus, mapStatus, queryIndex, rebuildIndex, writeMap } 
 const { auditProject } = require(path.join(root, "lib", "v2", "conformance"));
 const { recoverPendingTransactions, previewPendingRecovery } = require(path.join(root, "lib", "v2", "transaction"));
 const { containsSecret } = require(path.join(root, "lib", "security", "secrets"));
+const { sealPolicyIntegrity } = require(path.join(root, "lib", "runtime", "policy-integrity"));
 
 const COMMANDS = ["sc"];
 const COMPATIBILITY_COMMANDS = Object.keys(COMMAND_ALIASES);
@@ -58,7 +59,7 @@ Usage:
   scrumrun <noun> <subject> <action> [args]
   scrumrun sc <noun> <subject> <action> [args]  # compatibility alias
   scrumrun install [all|codex|opencode|claude] [--force]
-  scrumrun update  [all|codex|opencode|claude] [--project] [--migrate] [--verbose]
+  scrumrun update  [all|codex|opencode|claude] [--project] [--seal-policy] [--migrate] [--verbose]
   scrumrun init [--local|--shared] [--lean] [--no-agent-hint] [--force]
   scrumrun status
   scrumrun core [--path|--prompt]
@@ -380,10 +381,13 @@ function refreshProjectGuidance(cwd = process.cwd()) {
   } else {
     results.push({ status: "skipped", dest: `${agentsFile} (not recognized as ScrumRun-generated)` });
   }
+  const marker = path.join(cwd, ".scrumrun", "method.json");
+  const sealed = writeFile(marker, sealPolicyIntegrity(path.join(cwd, ".scrumrun")), { backup: true });
+  results.push({ status: sealed.changed ? "updated" : "skipped", dest: marker, backup: sealed.backup });
   return results;
 }
 
-function updateInstallation(target, { migrate = false, project = false, verbose = false } = {}) {
+function updateInstallation(target, { migrate = false, project = false, sealPolicy = false, verbose = false } = {}) {
   installVerbose = verbose;
   installSummary.cleaned = 0;
   installSummary.written = 0;
@@ -391,7 +395,14 @@ function updateInstallation(target, { migrate = false, project = false, verbose 
   installSummary.targets.length = 0;
   const migration = migrate ? migrationPreflightOnUpdate({ apply: true }) : { status: "skipped" };
   install(target, true, { compatibility: true });
+  if (sealPolicy && !project) throw new Error("`--seal-policy` requires `--project` so the owner-reviewed project policy is explicit.");
   const projectResults = project ? refreshProjectGuidance() : [];
+  if (sealPolicy && project) {
+    const scrumDir = path.join(process.cwd(), ".scrumrun");
+    const marker = path.join(scrumDir, "method.json");
+    const sealed = writeFile(marker, sealPolicyIntegrity(scrumDir, { includeGuardrails: true }), { backup: true });
+    projectResults.push({ status: sealed.changed ? "updated" : "skipped", dest: marker, backup: sealed.backup });
+  }
   if (migrate && v2Project()) {
     try {
       refreshState(path.join(process.cwd(), ".scrumrun"));
@@ -1706,7 +1717,12 @@ function executeRootRoute(route) {
   }
   if (noun === "config" && subject === "update") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
-    return updateInstallation(target, { migrate: !routeArgs.includes("--no-migrate"), verbose: routeArgs.includes("--verbose") });
+    return updateInstallation(target, {
+      migrate: routeArgs.includes("--migrate"),
+      project: routeArgs.includes("--project"),
+      sealPolicy: routeArgs.includes("--seal-policy"),
+      verbose: routeArgs.includes("--verbose")
+    });
   }
   if (noun === "config" && subject === "init") {
     const localMode = routeArgs.includes("--local");
@@ -2322,6 +2338,8 @@ function promptCommand(parts) {
 
 function initProject({ force, mode, agentHint, lean }) {
   const cwd = process.cwd();
+  const marker = path.join(cwd, ".scrumrun", "method.json");
+  const markerExisted = fs.existsSync(marker);
   const vars = {
     PROJECT_NAME: path.basename(cwd),
     DATE: new Date().toISOString().slice(0, 10)
@@ -2332,6 +2350,10 @@ function initProject({ force, mode, agentHint, lean }) {
 
   results.push(...copyDir(path.join(projectTemplate, ".scrumrun"), path.join(cwd, ".scrumrun"), { force, vars }));
   results.push(copyFile(path.join(root, "CORE.md"), path.join(cwd, ".scrumrun", "core.md"), { force, vars }));
+  if (force || !markerExisted) {
+    const sealed = writeFile(marker, sealPolicyIntegrity(path.join(cwd, ".scrumrun"), { includeGuardrails: true }), { backup: false });
+    results.push({ status: sealed.changed ? "written" : "skipped", dest: marker, backup: sealed.backup });
+  }
   results.push(ensureProjectIgnore(cwd));
 
   if (mode === "shared" || agentHint) {
@@ -2611,8 +2633,9 @@ function doctor(target = "all", { compatibility = false, strict = false, recover
       console.log(`miss ScrumRun project audit: ${scrumDir}`);
     } else {
       const audit = auditProject(process.cwd());
-      ok = ok && audit.passed && audit.findings.length === 0;
-      console.log(`${audit.passed && audit.findings.length === 0 ? "ok " : "fail"} ScrumRun project audit: ${audit.findings.length} finding(s)`);
+      const blocking = audit.findings.filter((item) => ["critical", "high"].includes(item.severity));
+      ok = ok && audit.passed && blocking.length === 0;
+      console.log(`${audit.passed && blocking.length === 0 ? "ok " : "fail"} ScrumRun project audit: ${audit.findings.length} finding(s)`);
       for (const item of audit.findings) console.log(`  ${item.severity} ${item.code}: ${item.message}`);
     }
   }
@@ -2633,7 +2656,7 @@ if (!command || command === "--help" || command === "-h") {
   console.log(`ScrumRun ${version}`);
 } else if (command === "install" || command === "update") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  if (command === "update") updateInstallation(target, { migrate: args.includes("--migrate"), project: args.includes("--project"), verbose: args.includes("--verbose") });
+  if (command === "update") updateInstallation(target, { migrate: args.includes("--migrate"), project: args.includes("--project"), sealPolicy: args.includes("--seal-policy"), verbose: args.includes("--verbose") });
   else install(target, true, { compatibility: false });
 } else if (command === "sc") {
   runRoot(args.slice(1));

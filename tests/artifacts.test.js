@@ -65,7 +65,7 @@ test("artifact repository refuses conflicting overwrite and unsafe ids", () => {
   assert.throws(() => repository.write({ ...task, id: "../TASK-002" }, "# Unsafe"), /invalid task id/i);
 });
 
-test("artifact validation enforces run relations and method version", () => {
+test("artifact validation requires a Run target and the current method version", () => {
   const errors = validateArtifact({
     id: "RUN-001",
     kind: "run",
@@ -75,7 +75,21 @@ test("artifact validation enforces run relations and method version", () => {
     method: "1.5.2"
   });
   assert.ok(errors.some((error) => error.includes("method must be 2.0.0")));
-  assert.ok(errors.some((error) => error.includes("run.task")));
+  assert.ok(errors.some((error) => error.includes("TASK-NNN or SPRINT-NNN")));
+});
+
+test("Task Markdown preserves owner-defined relation lists and a Run may target a Sprint", () => {
+  const task = {
+    id: "TASK-001", kind: "task", status: "in_progress", created: "2026-08-31", updated: "2026-08-31", method: METHOD_VERSION,
+    depends_on: ["TASK-000", "DEC-008"], guardrails: ["GR-004", "GR-009"]
+  };
+  const parsedTask = parseArtifact(serializeArtifact(task, "# Flexible\n\n## Migration Plan\n\nOwner-defined prose."));
+  assert.deepEqual(parsedTask.record.depends_on, ["TASK-000", "DEC-008"]);
+  assert.deepEqual(parsedTask.record.guardrails, ["GR-004", "GR-009"]);
+  assert.deepEqual(validateArtifact(parsedTask.record, "task"), []);
+
+  const run = { id: "RUN-001", kind: "run", status: "executing", created: "2026-08-31", updated: "2026-08-31", method: METHOD_VERSION, sprint: "SPRINT-001", attempt: 1 };
+  assert.deepEqual(validateArtifact(run, "run"), []);
 });
 
 test("run state machine follows executing to validating to learning to completed", () => {

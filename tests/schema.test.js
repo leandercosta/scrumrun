@@ -39,7 +39,7 @@ test("one executable schema owns artifact identities, lifecycles, relations, and
     assert.ok(ARTIFACT_TYPES[relation.targetKind]);
     for (const kind of relation.requiredFor || []) assert.ok(ARTIFACT_TYPES[kind]);
   }
-  assert.equal(STRUCTURAL_RELATIONS.task.cardinality, "1 for Run; otherwise 0..1");
+  assert.equal(STRUCTURAL_RELATIONS.task.cardinality, "0..1");
   assert.deepEqual(SCALAR_FIELDS.attempt, {
     kinds: ["run"],
     required: true,
@@ -57,7 +57,7 @@ test("kernel validation consumes structural cardinalities from the executable sc
     updated: "2026-07-21",
     method: METHOD_VERSION
   };
-  assert.ok(validateArtifact(run).includes("run.task must reference TASK-NNN"));
+  assert.ok(validateArtifact(run).includes("run must reference TASK-NNN or SPRINT-NNN"));
   assert.ok(validateArtifact({ ...run, task: "TASK-001" }).includes("run.attempt is required"));
   assert.deepEqual(validateArtifact({ ...run, task: "TASK-001", sprint: "SPRINT-001", attempt: 1 }), []);
   assert.ok(validateArtifact({ ...run, task: "FEAT-001", attempt: 1 }).includes("run.task must reference TASK-NNN or null"));

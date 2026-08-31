@@ -10,6 +10,7 @@ const { authorizeMutation, recordMutation } = require("../lib/runtime/mutation-g
 const { approveRequest, finalizeRun, stateIsStale, transitionRun } = require("../lib/runtime/orchestrator");
 const { planRequest } = require("../lib/runtime/request-engine");
 const { guardrailState, parseRunLedger, validateRunLedger } = require("../lib/runtime/run-ledger");
+const { sealPolicyIntegrity } = require("../lib/runtime/policy-integrity");
 
 const root = path.resolve(__dirname, "..");
 const bin = path.join(root, "bin", "scrumrun.js");
@@ -28,6 +29,11 @@ function write(directory, relative, content) {
   const file = path.join(directory, relative);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, content);
+}
+
+function sealPolicy(directory) {
+  const marker = path.join(directory, ".scrumrun", "method.json");
+  fs.writeFileSync(marker, sealPolicyIntegrity(path.join(directory, ".scrumrun"), { includeGuardrails: true }));
 }
 
 test("Mutation Gateway records scoped before/after evidence and permits a verified lifecycle", () => {
@@ -72,6 +78,7 @@ test("lightweight finalization verifies the complete workspace once without edit
 test("lightweight finalization fails closed until a manual Guardrail has task evidence", () => {
   const directory = project();
   fs.appendFileSync(path.join(directory, ".scrumrun", "guardrails.md"), "\n## GR-010 - Architecture review\n\nStatus: active\nEnforcement: manual\nScope: completion\nRule: A passed architecture review is required before completion.\n");
+  sealPolicy(directory);
   const approved = approve(directory, "Implement a reviewed architecture change");
   const repository = new ArtifactRepository(path.join(directory, ".scrumrun"));
   const task = repository.read("task", approved.task.id);
@@ -199,6 +206,7 @@ Enforcement: manual
 Scope: completion
 Rule: A passed architecture review is required before completion.
 `);
+  sealPolicy(directory);
   const approved = approve(directory, "Implement a reviewed architecture change");
   transitionRun(directory, approved.run.id, "validating", { note: "Tests passed." });
   transitionRun(directory, approved.run.id, "learning", { note: "Learning reviewed." });

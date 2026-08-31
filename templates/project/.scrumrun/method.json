@@ -1,6 +1,9 @@
 {
   "method": "2.0.0",
   "layout": "v2",
+  "workflow": {
+    "daily": "markdown-first"
+  },
   "paths_schema": 1,
   "paths": {
     "guardrails": "guardrails.md",

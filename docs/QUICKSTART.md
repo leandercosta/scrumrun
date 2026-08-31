@@ -1,18 +1,19 @@
 # Quickstart
 
-Get from "never heard of it" to your first approved Run in under 10 minutes.
+Get from "never heard of it" to your first delivered Task in under 10 minutes.
 No `SPEC.md` reading required.
 
 ## The three-minute mental model
 
 ScrumRun gives an AI coding agent a small vocabulary and a project memory.
 
-- **Task** — one atomic piece of work.
-- **Sprint** — a batch of Tasks grouped by time or theme. Optional.
-- **Run** — one attempt at executing a Task. Retries create new Runs; the
-  previous one is never overwritten.
-- **Feature** — a bigger initiative that groups Tasks and its own decisions.
-- **Memory** — what the project learned: facts, decisions, insights, dossiers.
+- **Core** — how the agent works; read first and never edited during product work.
+- **Guardrails** — rules that cannot be broken.
+- **Knowledge** — facts, decisions, insights, and dossiers about the project.
+- **Task** — one concrete delivery, independent or inside a Sprint.
+- **Sprint** — a feature, fix, or maintenance batch of Tasks. Optional.
+- **Feature** — a bigger initiative that groups delivery context.
+- **Run** — optional audit/handoff Markdown for a Task or Sprint.
 
 Everything lives as Markdown under `.scrumrun/`. Any Markdown-capable agent
 can follow it.
@@ -64,24 +65,25 @@ command (`| less`, `> intake.txt`) or set `NO_COLOR=1` to get the plain
 Markdown summary instead; add `--json` for a fully structured payload
 you can feed to CI or a downstream tool.
 
-Only then does a Task and a Run get created.
+Only then does the Task become approved. The agent executes it directly in code and Markdown; a Run is optional.
 
-## Watching the Run
+## Delivering the Task
 
-The agent executes inside the approved scope. Every step lands in an
-append-only ledger under `.scrumrun/runs/RUN-NNN.md` with a stable event
-id, timestamp, actor, reason, and typed evidence.
+The agent executes inside the approved scope until `## Done when` is true.
+It does not stop after an inventory, partial fix, or progress report. Any
+missing implementation discovered in scope is work to do now, not a follow-up.
 
 ```
-RUN-001-EVT-001  planned by owner       reason: "checkout double-charge fix"
-RUN-001-EVT-002  executed               command: npm test  → 132 passed
-RUN-001-EVT-003  validated (REV-001)    guardrail checks: passed
-RUN-001-EVT-004  learned (INS-001)      "refresh triggers duplicate submit"
-RUN-001-EVT-005  completed
+TASK-001
+  → inspect the duplicate-submit path
+  → implement the fix
+  → run the relevant checks
+  → correct failures
+  → write ## Completion and status: completed
 ```
 
-A retry does not overwrite `RUN-001`. It creates `RUN-002` beside it. The
-old attempt stays as evidence.
+A Run may be added when a strict audit or detailed handoff is useful. It never
+needs to exist for normal work to start or finish.
 
 You can render a Run's ledger as a human timeline instead of reading the
 raw JSON:

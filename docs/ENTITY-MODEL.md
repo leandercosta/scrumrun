@@ -1,4 +1,4 @@
-# ScrumRun 2.0 Entity Model
+# ScrumRun 4.0 Markdown Model
 
 This document explains the model. Exact ids, directories, initial states, transitions, structural cardinalities, truth ownership, and authority boundaries are generated from `lib/v2/schema.js` into [`SCHEMA.md`](SCHEMA.md). Do not maintain another hand-written schema table here.
 
@@ -6,32 +6,35 @@ This document explains the model. Exact ids, directories, initial states, transi
 
 | Entity | Question | Lifetime |
 |---|---|---|
+| Core | How must the agent work? | Stable, sealed policy |
+| Guardrails | What may never be broken here? | Stable, sealed project policy |
+| Knowledge | What do we know, and why? | Reviewed until stale/deprecated/invalidated |
+| Backlog | What is provisioned but not started? | Tasks with `status: backlog` |
 | Feature | Why does this initiative matter? | Long-lived |
-| Task | What atomic outcome is approved? | Until outcome/closure |
-| Sprint | When are related Tasks grouped? | Timebox/batch |
-| Run | How did one execution attempt happen? | Immutable attempt history |
-| Memory | What do we know, and why? | Reviewed until stale/deprecated/invalidated |
+| Sprint | Which Tasks ship together? | Feature, fix, or maintenance batch |
+| Task | What concrete outcome must be delivered? | Until outcome/closure |
+| Run | What happened while executing a Task or Sprint? | Optional audit/handoff record |
 
 ```text
-FEAT-003
+SPRINT-012 (type: fix)
    └── TASK-018
-          ├── executed_by → RUN-044
-          ├── included_in → SPRINT-012
-          ├── constrained_by → DEC-018
-          └── generated → INS-041
+          ├── feature → FEAT-003
+          ├── depends_on → TASK-014, DEC-018
+          ├── guardrails → GR-004
+          └── run → RUN-044 (optional)
 ```
 
-Task is always the executable unit. A Task may be independent of a Sprint. Sprint never substitutes for Task. A retry creates another Run for the same Task.
+Task is the executable unit. A Task may be independent of a Sprint. A Sprint groups Tasks and may be `feature`, `fix`, or `maintenance`. Runs are optional and never substitute for a Task's direct Markdown handoff.
 
 ## Canonical artifacts
 
-All artifacts carry `id`, `kind`, `status`, `created`, `updated`, and `method`. Relations live in frontmatter for structural ownership and in `## Relations` for extensible graph edges. The generated [`SCHEMA.md`](SCHEMA.md) is the authoritative inventory.
+All artifacts carry `id`, `kind`, `status`, `created`, `updated`, and `method`. Relations use simple frontmatter and relative links: `sprint: SPRINT-012`, `feature: FEAT-003`, `depends_on: [TASK-014, DEC-018]`, and `## Related`. Unknown fields and sections are preserved. The generated [`SCHEMA.md`](SCHEMA.md) is the authoritative inventory.
 
 ## Operational flow
 
-Approval creates one Task and one Run. The Run progresses `executing → validating → learning → completed|failed|blocked`, while the Task mirrors `running → validating → learning → completed|failed|blocked`. Pair mutations are recoverable.
+Approval creates or refines a Task. An optional Run can record strict audit or handoff history, but no Run, ledger, permit, or status synchronization blocks normal Markdown work. An approved Task continues through discover → implement → verify → fix → verify until its `## Done when` contract is delivered.
 
-Feature and Sprint provide context/grouping and do not own execution history. Review attaches evidence. Memory explains decisions and constraints across all of them.
+Feature and Sprint provide context/grouping and do not own execution history. Review attaches evidence. Knowledge, Decisions, and Insights explain constraints across all of them. Core and Guardrails are sealed Markdown policy: only explicit owner-reviewed maintenance may change them.
 
 ## Generated projections
 

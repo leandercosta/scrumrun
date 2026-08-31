@@ -20,9 +20,9 @@ The boundaries above are deliberately different: SPEC owns meanings, the executa
 | Kind | Stable ID | Canonical directory | Allowed initial status | Truth owned by this artifact |
 |---|---|---|---|---|
 | feature | `FEAT-NNN` | `features/` | `backlog`, `proposed` | initiative purpose, scope, dependencies, and lifecycle |
-| task | `TASK-NNN` | `tasks/` | `backlog`, `proposed`, `running` | scope, acceptance criteria, approval, and intended status |
-| sprint | `SPRINT-NNN` | `sprints/` | `proposed` | timebox or delivery-batch membership; never execution history |
-| run | `RUN-NNN` | `runs/` | `executing` | append-only execution events, evidence, result, and attempt number |
+| task | `TASK-NNN` | `tasks/` | `backlog`, `proposed`, `in_progress`, `running` | scope, owner-defined sections, links, and status |
+| sprint | `SPRINT-NNN` | `sprints/` | `proposed` | timebox or delivery-batch membership; may be feature, fix, or maintenance |
+| run | `RUN-NNN` | `runs/` | `executing` | optional human-readable execution record and outcome |
 | review | `REV-NNN` | `reviews/` | `proposed` | scoped findings, checks, evidence, and verdict |
 | knowledge | `K-NNN` | `memory/knowledge/` | `candidate` | approved evidence-backed fact and validity |
 | decision | `DEC-NNN` | `memory/decisions/` | `open` | decision, rationale, validity, and lifecycle |
@@ -37,9 +37,9 @@ Every artifact also requires `id`, `kind`, `status`, `created`, `updated`, and `
 |---|---|---|---|
 | `feature` | feature (`FEAT-NNN`) | 0..1 | long-lived initiative containing the artifact |
 | `sprint` | sprint (`SPRINT-NNN`) | 0..1 | optional delivery batch containing a Task or Run |
-| `task` | task (`TASK-NNN`) | 1 for Run; otherwise 0..1 | atomic work executed or reviewed by the artifact |
+| `task` | task (`TASK-NNN`) | 0..1 | atomic work executed or reviewed by the artifact |
 
-Task is the atomic unit. A Task may have zero or one Sprint. A Task may have many Runs, but every Run belongs to exactly one Task and has a monotonically increasing attempt number within that Task. Sprint membership is authoritative on `Task.sprint`; a Sprint's `## Tasks` list is a human-readable projection that must agree with it.
+Task is the atomic unit. A Task may have zero or one Sprint. A Run is optional Markdown history and may reference either a Task or a Sprint; it never controls Task status in Markdown-first work. Sprint membership is authoritative on `Task.sprint`; a Sprint's `## Tasks` list is a human-readable projection that must agree with it. Additional owner-defined relations such as `depends_on: [TASK-014, DEC-018]` are preserved as local Markdown graph data.
 
 ## Scalar constraints
 
@@ -58,14 +58,14 @@ Newly authored Runs use `ledger: 1`. Their `## Events` section contains append-o
 
 Every event requires `schema`, `id`, contiguous `sequence`, RFC3339 `occurred_at`, `timestamp_precision`, `actor`, `from`, `to`, `reason`, and structured `evidence`. Event types are `transition`, `snapshot`, `guardrail`, `mutation`. Evidence kinds are `approval`, `command`, `test`, `file`, `review`, `decision`, `insight`, `risk`, `note`, `migration`, `legacy`, `guardrail`, `mutation`.
 
-A native ledger begins with `created → executing`; an evidenced migration `snapshot` may establish one historical baseline without inventing missing transitions. Event order, transition legality, final status, updated date, and completion evidence are machine-validated. Run owns the event history; Task stores its intended scope and synchronized current status without copying Run events.
+A native ledger begins with `created → executing`; an evidenced migration `snapshot` may establish one historical baseline without inventing missing transitions. Event order, transition legality, final status, updated date, and completion evidence are machine-validated when a strict audit Run is used. Run owns optional event history; Task Markdown owns the delivered scope and status in normal work.
 
 ## Truth questions
 
 - **feature:** Why does this initiative exist?
-- **task:** What approved atomic outcome is intended?
-- **sprint:** When are related Tasks grouped?
-- **run:** How did one execution attempt actually happen?
+- **task:** What concrete outcome is intended?
+- **sprint:** Which Tasks are grouped for this delivery?
+- **run:** What happened while executing a Task or Sprint?
 - **review:** What independent validation was performed?
 - **knowledge:** What verified project fact is reusable?
 - **decision:** What normative choice constrains future work?
@@ -77,7 +77,7 @@ A native ledger begins with `created → executing`; an evidenced migration `sna
 | Kind | Declared transitions |
 |---|---|
 | feature | `backlog` → `proposed`, `active`, `cancelled`<br>`proposed` → `active`, `cancelled`<br>`active` → `paused`, `completed`, `cancelled`<br>`completed` → terminal<br>`paused` → `active`, `cancelled`<br>`cancelled` → terminal |
-| task | `backlog` → `proposed`, `running`, `cancelled`<br>`proposed` → `running`, `cancelled`<br>`running` → `validating`, `failed`, `blocked`, `cancelled`<br>`validating` → `learning`, `failed`, `blocked`<br>`learning` → `completed`, `failed`, `blocked`<br>`partial` → `running`, `cancelled`<br>`completed` → terminal<br>`failed` → `running`, `cancelled`<br>`blocked` → `running`, `cancelled`<br>`cancelled` → terminal |
+| task | `backlog` → `proposed`, `in_progress`, `running`, `cancelled`<br>`proposed` → `in_progress`, `running`, `cancelled`<br>`in_progress` → `completed`, `failed`, `blocked`, `cancelled`<br>`running` → `validating`, `completed`, `failed`, `blocked`, `cancelled`<br>`validating` → `learning`, `completed`, `failed`, `blocked`<br>`learning` → `completed`, `failed`, `blocked`<br>`partial` → `in_progress`, `running`, `cancelled`<br>`completed` → terminal<br>`failed` → `in_progress`, `running`, `cancelled`<br>`blocked` → `in_progress`, `running`, `cancelled`<br>`cancelled` → terminal |
 | sprint | `proposed` → `running`, `cancelled`<br>`running` → `partial`, `completed`, `blocked`, `cancelled`<br>`partial` → `running`, `completed`, `cancelled`<br>`completed` → terminal<br>`blocked` → `running`, `cancelled`<br>`cancelled` → terminal |
 | run | `executing` → `validating`, `failed`, `blocked`<br>`validating` → `learning`, `failed`, `blocked`<br>`learning` → `completed`, `failed`, `blocked`<br>`partial` → `executing`, `failed`, `blocked`<br>`completed` → terminal<br>`failed` → terminal<br>`blocked` → `executing`, `failed` |
 | review | `proposed` → `running`<br>`running` → `passed`, `failed`<br>`passed` → `archived`<br>`failed` → `running`, `archived`<br>`archived` → terminal |

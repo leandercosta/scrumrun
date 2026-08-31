@@ -53,13 +53,13 @@ test("root and compatibility assets are rendered directly from the manifest", ()
 test("root prompt encodes the Markdown-first entity, approval, guardrail, and memory contracts", () => {
   const content = renderRootPrompt();
   for (const noun of Object.keys(nouns)) assert.match(content, new RegExp(`\\*\\*${noun}\\*\\*`));
-  assert.match(content, /Task, acceptance criteria, technical summary, and follow-ups directly/);
+  assert.match(content, /until the approved Task is delivered/);
   assert.match(content, /Run is optional audit\/handoff context/);
   assert.match(content, /guardrails\.md.*canonical/);
   assert.match(content, /passed.*blocked.*deferred/);
   assert.match(content, /GR-NNN/);
   assert.match(content, /update --project/);
-  assert.match(content, /Optional unrun E2E\/review coverage/);
+  assert.match(content, /optional unrun E2E\/review coverage/i);
   assert.match(content, /Insights remain `candidate`/);
   assert.doesNotMatch(content, /Six nouns|method 1\.0/);
 });
@@ -225,7 +225,7 @@ test("fresh client install exposes only /sc and the shared skill", () => {
   assert.deepEqual(fs.readdirSync(prompts).sort(), ["sc.md"]);
   assert.equal(read(path.join(prompts, "sc.md")), renderRootPrompt());
   const skill = read(path.join(home, ".codex", "skills", "scrumrun", "SKILL.md"));
-  assert.match(skill, /# ScrumRun 2\.0/);
+  assert.match(skill, /# ScrumRun 4\.0/);
   assert.match(skill, /Feature \(`FEAT-NNN`\)/);
 });
 
@@ -263,13 +263,25 @@ test("doctor checks the canonical root by default and compatibility only on requ
   assert.match(stale, /expected [a-f0-9]{12}, found [a-f0-9]{12}/);
 });
 
-test("doctor --strict also requires a warning-free canonical project audit", () => {
+test("doctor --strict requires a blocking-finding-free canonical project audit", () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-doctor-strict-home-"));
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-doctor-strict-project-"));
   run(["install", "codex"], { env: { ...process.env, HOME: home } });
   run(["init", "--shared", "--force"], { cwd: project });
   const output = run(["doctor", "codex", "--strict"], { cwd: project, env: { ...process.env, HOME: home } });
   assert.match(output, /ok\s+ScrumRun project audit: 0 finding\(s\)/);
+});
+
+test("doctor --strict reports derived-view staleness without blocking Markdown work", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-doctor-markdown-home-"));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-doctor-markdown-project-"));
+  run(["install", "codex"], { env: { ...process.env, HOME: home } });
+  run(["init", "--shared", "--force"], { cwd: project });
+  fs.mkdirSync(path.join(project, ".scrumrun", "tasks"), { recursive: true });
+  fs.writeFileSync(path.join(project, ".scrumrun", "tasks", "TASK-001.md"), "---\nid: TASK-001\nkind: task\nstatus: in_progress\ncreated: 2026-08-31\nupdated: 2026-08-31\nmethod: 2.0.0\n---\n\n# Direct work\n\n## Owner section\n\nFree Markdown.\n");
+  const output = run(["doctor", "codex", "--strict"], { cwd: project, env: { ...process.env, HOME: home } });
+  assert.match(output, /ok\s+ScrumRun project audit: 1 finding\(s\)/);
+  assert.match(output, /warning STATE_STALE/);
 });
 
 test("update --project refreshes generated Markdown-first guidance with a backup", () => {
@@ -279,9 +291,9 @@ test("update --project refreshes generated Markdown-first guidance with a backup
   const core = path.join(project, ".scrumrun", "core.md");
   fs.writeFileSync(core, "# Previous core\n");
   const output = run(["update", "codex", "--project"], { cwd: project, env: { ...process.env, HOME: home } });
-  assert.match(output, /Project guidance: 1 file\(s\) refreshed/);
+  assert.match(output, /Project guidance: \d+ file\(s\) refreshed/);
   assert.match(read(core), /Markdown is the normal runtime/);
-  assert.match(read(path.join(project, "AGENTS.md")), /Markdown-first/);
+  assert.match(read(path.join(project, "AGENTS.md")), /execution-first Markdown/);
   assert.ok(fs.readdirSync(path.join(project, ".scrumrun", ".backup")).some((name) => name.includes("core.md")));
 });
 

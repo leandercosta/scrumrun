@@ -11,6 +11,7 @@ const { ARTIFACT_TRANSITIONS, ARTIFACT_TYPES, METHOD_VERSION } = require("../lib
 const { INVARIANTS, auditProject } = require("../lib/v2/conformance");
 const { planRequest } = require("../lib/runtime/request-engine");
 const { addPlanArtifact, approveRequest, nextBacklogTask, retryTask, startBacklogTask, transitionRun } = require("../lib/runtime/orchestrator");
+const { sealPolicyIntegrity } = require("../lib/runtime/policy-integrity");
 
 const root = path.resolve(__dirname, "..");
 const bin = path.join(root, "bin", "scrumrun.js");
@@ -90,6 +91,20 @@ test("artifact conformance review passes a clean v2 project and fails unsafe can
   assert.ok(unsafe.findings.some((finding) => finding.code === "ARTIFACT_PATH"));
 });
 
+test("policy fingerprints detect Core or Guardrail drift only at the audit edge", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-policy-integrity-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const scrum = path.join(project, ".scrumrun");
+  assert.equal(auditProject(project).passed, true);
+
+  fs.appendFileSync(path.join(scrum, "guardrails.md"), "\n## GR-010 - Owner policy\n\nStatus: active\nEnforcement: manual\nScope: execution\nRule: Owner-reviewed project policy.\n");
+  const drift = auditProject(project);
+  assert.ok(drift.findings.some((finding) => finding.code === "GUARDRAILS_TAMPERED"));
+
+  fs.writeFileSync(path.join(scrum, "method.json"), sealPolicyIntegrity(scrum, { includeGuardrails: true }));
+  assert.equal(auditProject(project).passed, true);
+});
+
 test("artifact conformance enforces Run attempts, Task/Sprint agreement, and Sprint membership projection", () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-conformance-relations-"));
   execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
@@ -123,35 +138,47 @@ test("artifact conformance validates Run event continuity, evidence, and final s
   assert.ok(audit.findings.some((finding) => finding.code === "RUN_LEDGER_INVALID" && /\.from must be executing/.test(finding.message)));
 });
 
-test("approved Task body includes Acceptance Criteria section", () => {
+test("approved Task body includes a compact Done when delivery contract", () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-acceptance-"));
   execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
   const approved = approveRequest(project, planRequest(project, "Fix pricing rounding").approvalToken);
   const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
   const task = repository.read("task", approved.task.id);
-  assert.match(task.body, /## Acceptance Criteria/);
+  assert.match(task.body, /## Done when/);
+  assert.match(task.body, /## Completion/);
 });
 
-test("conformance warns when an active Task lacks Acceptance Criteria", () => {
+test("conformance preserves an active Markdown-first Task with owner-defined sections", () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-acceptance-warn-"));
   execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
   const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
   const common = { created: "2026-07-21", updated: "2026-07-21", method: METHOD_VERSION };
-  repository.write({ ...common, id: "TASK-001", kind: "task", status: "running" }, "# Work\n\nNo criteria here.");
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "in_progress", depends_on: ["DEC-001"] }, "# Work\n\n## Migration Plan\n\nOwner-defined work.");
   const audit = auditProject(project);
-  assert.ok(audit.findings.some((f) => f.code === "ACCEPTANCE_CRITERIA_MISSING" && f.severity === "warning"));
+  assert.equal(audit.findings.some((f) => f.code === "ACCEPTANCE_CRITERIA_MISSING"), false);
+  assert.equal(audit.findings.some((f) => f.code === "TASK_ORPHANED"), false);
 });
 
-test("conformance identifies an active Task with no Run and points to explicit recovery", () => {
+test("an active Markdown-first Task does not require a Run", () => {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-orphan-task-"));
   execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
   const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
   const common = { created: "2026-08-31", updated: "2026-08-31", method: METHOD_VERSION };
-  repository.write({ ...common, id: "TASK-001", kind: "task", status: "running" }, "# Work\n\n## Acceptance Criteria\n\n- Resume safely.");
+  repository.write({ ...common, id: "TASK-001", kind: "task", status: "in_progress" }, "# Work\n\n## Done when\n\n- Resume safely.");
   const audit = auditProject(project);
   const orphan = audit.findings.find((item) => item.code === "TASK_ORPHANED");
-  assert.ok(orphan);
-  assert.match(orphan.message, /repair --recover-orphan-tasks/);
+  assert.equal(orphan, undefined);
+});
+
+test("a Run may execute a Sprint without inventing a single Task target", () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-sprint-run-"));
+  execFileSync(process.execPath, [bin, "init", "--lean", "--force"], { cwd: project, stdio: "ignore" });
+  const repository = new ArtifactRepository(path.join(project, ".scrumrun"));
+  const common = { created: "2026-08-31", updated: "2026-08-31", method: METHOD_VERSION };
+  repository.write({ ...common, id: "SPRINT-001", kind: "sprint", status: "running" }, "# Release batch");
+  repository.write({ ...common, id: "RUN-001", kind: "run", status: "executing", sprint: "SPRINT-001", attempt: 1 }, "# Sprint execution");
+  const audit = auditProject(project);
+  assert.equal(audit.findings.some((item) => item.code === "RUN_TASK_MISSING" || item.code === "RUN_TARGET_MISSING"), false);
 });
 
 test("completing a Run with --summary stores it and context surfaces it", () => {
@@ -211,6 +238,7 @@ test("state.md is a structured briefing with progressive disclosure pointers", (
   const stateContent = fs.readFileSync(path.join(project, ".scrumrun", "state.md"), "utf8");
   assert.match(stateContent, /^# ScrumRun Briefing/m);
   assert.match(stateContent, /## Now/);
+  assert.match(stateContent, /## Blocked by dependency/);
   assert.match(stateContent, /## Recent/);
   assert.match(stateContent, /## Where to look/);
   assert.match(stateContent, /Progressive disclosure/);
@@ -283,7 +311,7 @@ test("addPlanArtifact creates backlog tasks with sequential ids and no Run", () 
   assert.equal(first.record.id, "TASK-001");
   assert.equal(first.record.status, "backlog");
   assert.equal(first.record.type, "task");
-  assert.match(first.body, /## Acceptance Criteria/);
+  assert.match(first.body, /## Done when/);
 
   const second = addPlanArtifact(project, "task", "Crash on empty input", { type: "fix" });
   assert.equal(second.record.id, "TASK-002");

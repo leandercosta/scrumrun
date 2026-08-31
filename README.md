@@ -4,30 +4,33 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `3.1.2` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `4.0.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
 ## The model
 
 ```text
-Feature = why the initiative matters
-Task    = what atomic work must be done
-Sprint  = when Tasks are grouped as a timebox/batch
-Run     = how one concrete attempt happened
-Memory  = what the project learned and why
+Core       = how the agent works
+Guardrails = rules that cannot be broken
+Knowledge  = what the project knows and why
+Backlog    = provisioned Tasks not yet started
+Feature    = why a larger initiative exists
+Sprint     = a feature, fix, or maintenance delivery grouping Tasks
+Task       = concrete work, independent or in a Sprint
+Run        = optional record of what happened while executing a Task/Sprint
 ```
 
 ```text
-FEAT-003
+SPRINT-012 (type: fix)
    └── TASK-018
-          ├── executed_by → RUN-044
-          ├── included_in → SPRINT-012
-          ├── constrained_by → DEC-018
-          └── generated → INS-041
+          ├── feature → FEAT-003
+          ├── depends_on → TASK-014, DEC-018
+          ├── guardrails → GR-004
+          └── run → RUN-044 (optional)
 ```
 
-A Task does not need a Sprint. A retry creates a new Run. A fix is a Task with `type: fix`; backlog is a view of backlog Tasks.
+A Task does not need a Sprint. A Sprint may be `feature`, `fix`, or `maintenance`. A Run is optional and may document a Task or Sprint. Backlog is simply Tasks with `status: backlog`.
 
 See [`docs/SCHEMA.md`](docs/SCHEMA.md) for the generated executable contract and [`docs/ENTITY-MODEL.md`](docs/ENTITY-MODEL.md) for the conceptual guide.
 
@@ -79,15 +82,15 @@ RECEIVED → CONTEXTUALIZING → POLICY → RISK → CLASSIFICATION
 
 The agent may assert the classification (`--type fix|task|feature|docs|discovery`) and attach a short technical preview (`--preview "…"`), rendered with color in the terminal before any Task exists. Nothing canonical is persisted before approval.
 
-Explicit approval authorizes work. In 3.1, the daily runtime is the `.scrumrun/` folder: the agent creates or refines the relevant Task Markdown, works in code, and leaves a short handoff. Feature, Sprint, and Run are optional context, not prerequisites. A structured CLI audit path remains available when a team wants it.
+Explicit approval authorizes work. In 4.0, the daily runtime is the `.scrumrun/` folder: the agent creates or refines the relevant Task Markdown, works in code, and leaves a short handoff. Feature, Sprint, and Run are optional context, not prerequisites. A structured CLI audit path remains available only at maintenance/release edges.
 
 ```text
 EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 ```
 
-Every Task carries `## Acceptance Criteria` so "done" is defined before work begins. After approval, the agent works directly in code and Task Markdown, updating `## Technical Summary` and `## Follow-ups`. The normal close is simply the documented Task handoff — no CLI transition is required.
+Every Task carries a short `## Done when` delivery contract. After approval, the agent works directly in code and Task Markdown until that contract is delivered: it keeps the full discover → implement → verify → fix → verify loop running. A report is allowed only when you ask for it and never ends execution. The normal close is a concise `## Completion`; `## Follow-ups` may only contain work outside the agreed contract. No CLI transition is required.
 
-Guardrails still apply. An agent stops only for an explicit active Guardrail, a secret/security risk, destructive work without approval, or an unmet required Acceptance Criterion. Tests, reviews, and environments are gates only when the owner, Acceptance Criteria, or a Guardrail explicitly requires them. Optional missing E2E coverage is a follow-up/risk, not a failed Task.
+Guardrails still apply. An agent stops only for an explicit active Guardrail, a secret/security risk, destructive work without approval, or an unmet required delivery criterion. Tests, reviews, and environments are gates only when the owner, `Done when`, or a Guardrail explicitly requires them. Optional missing E2E coverage is a follow-up/risk, not a failed Task.
 
 Use the CLI at the edges, where its safety is valuable:
 
@@ -98,6 +101,10 @@ scrumrun doctor
 scrumrun repair --recover-orphan-tasks --apply
 scrumrun review release --run
 ```
+
+`core.md` and `guardrails.md` are sealed Markdown policy. Agents never edit them during normal product work. An owner-requested policy change is reviewed and then sealed explicitly with `scrumrun update --project --seal-policy`; `doctor --strict` and release checks detect later policy drift.
+
+Relations are plain, offline Markdown: stable IDs in frontmatter (`sprint: SPRINT-012`, `depends_on: [TASK-014, DEC-018]`) and relative links in `## Related`. Task Markdown is intentionally extensible: a Guardrail can require `## Migration Plan`, `## Rollback`, or `## Guardrail Evidence` only where relevant, and ScrumRun preserves every unknown section.
 
 `update --project` refreshes packaged `core.md` and recognized generated `AGENTS.md` with a local byte-exact backup before replacing them. The CLI can still generate/validate Task, Feature, Sprint, and Run records when desired, but it must never become a routine blocker.
 
@@ -161,10 +168,16 @@ It is progressive disclosure: the briefing is enough for most work; the agent fo
 
 ## Migrating an ongoing v1 project
 
-Update the client integrations. For an existing project, refresh the Markdown-first guidance explicitly:
+Update the client integrations. For an existing project, refresh the execution-first guidance explicitly:
 
 ```bash
 scrumrun update --project
+```
+
+If you intentionally changed project Guardrails after owner review, seal the reviewed Markdown policy once:
+
+```bash
+scrumrun update --project --seal-policy
 ```
 
 This shows the source inventory, proposed mappings, and blockers without changing project data. Apply only the verified plan with:

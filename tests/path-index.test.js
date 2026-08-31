@@ -45,8 +45,7 @@ test("conformance flags method.json missing the paths block", () => {
     const audit = auditProject(dir);
     const missing = audit.findings.find((finding) => finding.code === "METHOD_PATHS_MISSING");
     assert.ok(missing, `expected METHOD_PATHS_MISSING, got ${audit.findings.map((f) => f.code).join(", ")}`);
-    assert.equal(missing.severity, "high");
-    assert.equal(audit.passed, false);
+    assert.equal(missing.severity, "warning");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

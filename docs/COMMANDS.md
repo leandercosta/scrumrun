@@ -1,4 +1,4 @@
-# ScrumRun 3.1 Command Reference
+# ScrumRun 4.0 Command Reference
 
 The canonical grammar is:
 
@@ -27,13 +27,13 @@ scrumrun plan run --satisfy-guardrail RUN-NNN --guardrail GR-NNN [typed evidence
 scrumrun plan challenge <question>
 ```
 
-Normal execution is Markdown-first: after approval, work in code and the relevant Task Markdown, then record the Technical Summary and any Follow-ups directly. A Run/`--finalize` checkpoint is optional strict audit, never a prerequisite. Mutation permits are available only for explicitly requested strict mode.
+Normal execution is Markdown-first: after approval, work in code and the relevant Task Markdown through discover → implement → verify → fix → verify, then record `## Completion` and any genuinely out-of-scope Follow-ups directly. A Run/`--finalize` checkpoint is optional strict audit, never a prerequisite. Mutation permits are available only for explicitly requested strict mode.
 
 The CLI refuses Task start/retry and all Run state changes unless `--strict` is present. This prevents an agent from accidentally manufacturing a failed/blocked retry during normal work; `--strict` is for an owner-requested audit only.
 
 `--amend` is an optional structured helper. The Markdown-first workflow may adjust Task/Feature/Sprint content directly, preserving a useful handoff. Use the CLI when atomic relation synchronization or machine audit is valuable; do not let status vocabulary or missing relations stop approved work.
 
-Every new Task starts with a `## Validation Scope`: only checks explicitly required by the owner, Acceptance Criteria, or an active Guardrail block completion. Missing optional E2E, integration, or review coverage belongs in a follow-up/risk note; it must not be used to mark the Run failed.
+Every new Task starts with `## Done when` and `## Validation Scope`: only checks explicitly required by the owner, Done when contract, or an active Guardrail block completion. A discovered in-scope gap remains work to implement, not a status report or Follow-up. Missing optional E2E, integration, or review coverage belongs in a follow-up/risk note; it must not be used to mark the Run failed.
 
 ## What can be changed
 
@@ -82,14 +82,14 @@ scrumrun review release --run
 ```text
 scrumrun config project --show|--language|--interaction|--approval|--quick-tasks
 scrumrun config init --local|--shared|--lean|--no-agent-hint|--force
-scrumrun config update [all|codex|opencode|claude] [--project] [--migrate]
+scrumrun config update [all|codex|opencode|claude] [--project] [--seal-policy] [--migrate]
 scrumrun config migrate --to 2 --dry-run|--apply|--rollback
 scrumrun config doctor [all|codex|opencode|claude] [--strict] [--recover]
 scrumrun config uninstall --force
 scrumrun config help <topic>
 ```
 
-Top-level CLI aliases (`init`, `update`, `migrate`, `doctor`, `uninstall`, `status`) remain available for shell automation. `update --project` refreshes the packaged Markdown-first Core and recognized generated agent instructions with local backup; ordinary update does not inspect migrations, while `--migrate` explicitly does so and applies the verified plan.
+Top-level CLI aliases (`init`, `update`, `migrate`, `doctor`, `uninstall`, `status`) remain available for shell automation. `update --project` refreshes the packaged execution-first Core and recognized generated agent instructions with local backup. `update --project --seal-policy` is the owner-reviewed maintenance action that pins fresh Core/Guardrail fingerprints. Ordinary update does not inspect migrations, while `--migrate` explicitly does so and applies the verified plan.
 
 Run transitions accept typed evidence through `--command`, `--test`, `--file`, `--review`, `--decision`, `--insight`, `--risk`, or generic `--evidence kind:value`. `doctor --recover` is an explicit write that resolves only safe pending kernel transactions; doctor without it remains read-only.
 

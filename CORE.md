@@ -84,13 +84,21 @@ AGENTS.md
 
 **Before querying project state, read `.scrumrun/method.json`.** Its `paths` block is the authoritative index of every canonical location in this project. Navigate by that index; if a path is not declared there, it is not canonical truth. Directory listing and grep are fallbacks — never the first step. A ScrumRun-aware agent must never search for `goals/`, `backlog.md`, `sprint.md`, or any legacy layout: those are absent by design once migration completes and are surfaced only through `.scrumrun/.migration-backup/`.
 
-**Markdown is the normal runtime.** After explicit approval, work directly in source files and relevant `.scrumrun/` Markdown. A Task is free to be created, refined, started, completed, and handed off in Markdown; a Run is optional audit context, never a state machine that can prevent daily work. Update the Task's scope, Acceptance Criteria, Technical Summary, and Follow-ups directly. Do not use `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution.
+**Markdown is the normal runtime.** After explicit approval, work directly in source files and relevant `.scrumrun/` Markdown. A Task is free to be created, refined, started, completed, and handed off in Markdown; a Run is optional audit context, never a state machine that can prevent daily work. Update the Task's scope, Done when, Completion, and Follow-ups directly. Do not use `npx scrumrun@latest` or normal `scrumrun plan/run` commands during execution.
+
+**Execution is continuous.** Once the owner approves a Task, implement it through its delivery contract before replying. Keep using tools and editing files through the full loop: discover → implement → verify → fix → verify. A progress report is allowed only when the owner asks for status, and it must be followed immediately by more execution in the same workflow; it is never an endpoint. Do not stop to give an inventory, a progress report, a decomposition, or a remaining-work list: those are internal steps, not a deliverable. A discovery of missing code, literals, tests, migrations, or configuration inside the approved contract is required work to implement now — it cannot become a report, a partial checker, a “next step”, or a Follow-up. Stop only for an owner decision, external access, an explicit Guardrail, a secret/security risk, destructive work without approval, or an unmet required delivery criterion. A Task's `## Done when` is short and observable; `## Follow-ups` contains only work outside that contract. Never move unfinished contract work to Follow-ups without explicit owner approval.
+
+**Verification must cover the claim.** Never claim that a Task condition is verified merely because a narrower check passes. If the request is “no visible hardcoded literals”, a locale-key parity checker alone is insufficient: scan the relevant views for literals, replace every result in scope, then re-run both the scan and the build. The same rule applies to every delivery claim.
 
 **The CLI is maintenance, not a work gate.** Use it for `init`, `update --project`, `migrate`, `repair`, `doctor`, reports, and release checks. Strict per-edit permits and ledger finalization remain available only when the owner asks for that audit level. Missing/invalid Runs, old status vocabulary, stale projections, and optional tests are warnings to reconcile in Markdown — never an automatic blocker.
 
-**Block only on real constraints.** An agent must stop for an explicit active Guardrail, secret/security risk, destructive action without approval, or an unmet required Acceptance Criterion. It must not manufacture a failed/blocked Run because optional E2E coverage, an optional reviewer, or a non-required environment is unavailable; record meaningful gaps in `## Follow-ups` or a risk note.
+**Block only on real constraints.** An agent must stop for an explicit active Guardrail, secret/security risk, destructive action without approval, or an unmet required Done when item. It must not manufacture a failed/blocked Run because optional E2E coverage, an optional reviewer, or a non-required environment is unavailable; record meaningful gaps in `## Follow-ups` or a risk note.
 
-**Normal operation never mutates Run state through the CLI.** Do not call `plan run --fail|--block|--retry|--finalize|--complete|--validate` or `plan task --start` in daily work. Those are owner-requested strict audit tools only. When a legacy Run already has the wrong administrative outcome, preserve it as history and correct the delivery record directly in the Task's Technical Summary and Follow-ups.
+**Normal operation never mutates Run state through the CLI.** Do not call `plan run --fail|--block|--retry|--finalize|--complete|--validate` or `plan task --start` in daily work. Those are owner-requested strict audit tools only. When a legacy Run already has the wrong administrative outcome, preserve it as history and correct the delivery record directly in the Task's Completion and Follow-ups.
+
+**Policy is sealed at the edge.** `core.md` is the universal execution contract and `guardrails.md` is project policy. Never edit either while delivering product work. A policy change requires an explicit owner request; after review, `scrumrun update --project --seal-policy` records fresh fingerprints. Daily work stays Markdown-only; `doctor --strict` and release audit policy fingerprints, canonical guardrails, and code checks at the boundary.
+
+**Markdown relations are the graph.** Every artifact has a stable ID. Use small frontmatter links such as `sprint: SPRINT-012`, `feature: FEAT-003`, and `depends_on: [TASK-151, DEC-008]`, plus a human-readable `## Related` section with relative links. Preserve all unknown frontmatter and all owner-defined sections. A Guardrail may require a Task section such as `## Migration Plan`, `## Rollback`, or `## Guardrail Evidence`; add it only to the affected Task and keep it until the rule is satisfied.
 
 Canonical truth is Markdown. SQLite/cache data stores only rebuildable indexes, symbol projections, relations, and bounded context packages. Deleting `.cache/` must never delete authored truth.
 
@@ -176,7 +184,7 @@ understand → approve → work → validate required criteria → hand off
 
 Rules:
 
-- a Task carries the intended scope, `## Acceptance Criteria`, `## Technical Summary`, and relevant `## Follow-ups`;
+- a Task carries intended scope, a short `## Done when` contract, `## Completion`, and relevant `## Follow-ups`;
 - validation matches risk and acceptance criteria; tests, reviews, and environments are gates only when explicitly required by the owner, the Task, or an active Guardrail;
 - direct Markdown workflow never blocks on Run linkage, status syntax, stale generated views, or missing optional coverage. If an optional check matters, record it as a follow-up/risk instead of fabricating failure;
 - configured reviews run only when a Guardrail requires one;
@@ -184,7 +192,7 @@ Rules:
 - strict permits, workspace-drift checks, and append-only Guardrail obligations apply only to that optional strict audit path;
 - learning proposes memory candidates when work reveals reusable context and never auto-confirms AI inference;
 - complete a Sprint only when its included Tasks meet its real exit gate;
-- do not mark work complete merely because time or token budget ended.
+- do not mark work complete merely because time or token budget ended, and do not stop an approved Task merely to report intermediate progress.
 
 Canonical mutations are schema-validated, lossless, and atomic. Preserve unknown fields, prose, and unrelated owner edits. A failed mutation must leave canonical state unchanged or recoverable.
 
