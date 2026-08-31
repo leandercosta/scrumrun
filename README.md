@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `3.0.1` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `3.0.2` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -92,6 +92,18 @@ scrumrun plan run --finalize RUN-001
 ```
 
 The checkpoint validates the complete delta, policy, protected paths, secret boundary, acceptance evidence, and every Guardrail before writing the Run ledger and synchronizing the Task. Failed retries remain available as separate Runs.
+
+Before a Task starts, refine it through the CLI rather than hand-editing Markdown. `--amend` updates title, request, acceptance criteria, Feature/Sprint links, task type, or any named section while preserving its ID and status. It synchronizes related Feature/Sprint projections atomically.
+
+```bash
+scrumrun plan task --amend TASK-153 \
+  --title "Organization Aside and context selector" \
+  --request "Add shared organization navigation, context selection, routes, and authorization boundaries." \
+  --acceptance "Organization context is available before protected routes render." \
+  --section "Architecture Notes=Navigation stays in the Aside; authorization stays server-side."
+```
+
+Tasks become immutable in scope once started; create a follow-up Task for a new request. Runs, Reviews, confirmed memory, and Guardrails are deliberately append-only/evidence-led rather than editable. See [the command reference](docs/COMMANDS.md#what-can-be-changed) for the complete artifact matrix.
 
 Each Run contains a machine-validated event ledger. Events have stable ids such as `RUN-044-EVT-003`, RFC3339 timestamps, actors, reasons, and typed evidence for commands, tests, files, reviews, decisions, insights, and risks. Run is the only operational history; Task keeps its approved scope and synchronized current status without duplicating those events. Completion is rejected when validation or learning evidence is missing.
 

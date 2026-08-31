@@ -14,8 +14,11 @@ Use the installed `scrumrun` command for all normal project work. `/sc` is an op
 scrumrun plan intake <request>
 scrumrun plan intake --approve <token>
 scrumrun plan task --add|--list|--show|--run|--audit|--cancel|--retry
+scrumrun plan task --amend TASK-NNN [--title "..."] [--request "..."] [--acceptance "..."] [--section "Heading=content"] [--type fix|task|feature|docs|discovery] [--feature FEAT-NNN|null] [--sprint SPRINT-NNN|null]
 scrumrun plan sprint --add|--list|--show|--start|--complete|--block
+scrumrun plan sprint --amend SPRINT-NNN [--title "..."] [--timebox "..."] [--exit-gate "..."] [--section "Heading=content"]
 scrumrun plan feature --add|--list|--show|--activate|--complete
+scrumrun plan feature --amend FEAT-NNN [--title "..."] [--purpose "..."] [--exit-criteria "..."] [--section "Heading=content"]
 scrumrun plan run --list|--show|--validate|--learn|--complete|--resume|--fail|--block [--note] [typed evidence flags]
 scrumrun plan run --finalize RUN-NNN [--summary "technical recap"] [--note]
 scrumrun plan run --authorize-mutation RUN-NNN --path <relative-path> [--path ...]
@@ -25,6 +28,19 @@ scrumrun plan challenge <question>
 ```
 
 Normal execution is Markdown-first: after approval, work in code and the linked Task, then use one `--finalize` checkpoint. It verifies every workspace change and all Guardrail evidence before writing the Run transitions. A retry requires a failed, blocked, or partial Task and creates a new Run. Mutation permits are available only for explicitly requested strict mode.
+
+`--amend` is the canonical way to adjust planning truth before execution — never edit an artifact Markdown file directly. Every named `--section "Heading=content"` replaces or adds one `## Heading` section, so new planning context does not need a new CLI release. Repeated `--acceptance`, `--exit-criteria`, and `--exit-gate` values become checklist items. Updating a Task's `--feature` or `--sprint` synchronizes the linked Feature/Sprint projection atomically. A Task is amendable only while `backlog` or `proposed`; after it starts, scope is historical/approved truth and follow-up work needs a new Task.
+
+## What can be changed
+
+| Artifact | Canonical operation | Why |
+| --- | --- | --- |
+| Task, Feature, Sprint | `--add`, `--amend`, lifecycle commands | Planning truth can be refined before execution. |
+| Run | transitions, `--finalize`, `--retry` | Execution history is append-only; it is never amended. |
+| Review | `--run` / `--record` | A verdict is evidence, not editable prose. Record another review if it changes. |
+| Knowledge, Decision, Insight, Dossier | create + lifecycle commands | Preserve evidence lineage; supersede/deprecate rather than rewrite confirmed truth. |
+| Guardrail | `--add` / `--retire` | Policy history must remain auditable. |
+| `state.md`, `map.md`, cache | rebuild commands | Derived projections, never manually edited. |
 
 ## Knowledge
 

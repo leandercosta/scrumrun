@@ -16,6 +16,7 @@ Natural-language product requests automatically enter the read-only ScrumRun int
 After approval:
 
 - Task is the atomic work item; define its `## Acceptance Criteria` before execution;
+- before a Task starts, amend its intended scope through `scrumrun plan task --amend TASK-NNN` (including `--section "Heading=content"`); never hand-edit canonical planning Markdown;
 - Sprint is only a real timebox/batch of Tasks;
 - Run is one execution attempt and follows `executing → validating → learning → completed|failed|blocked`;
 - a retry creates a new Run and preserves the old one;

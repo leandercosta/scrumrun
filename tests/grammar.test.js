@@ -129,6 +129,45 @@ test("direct CLI grammar is canonical while sc remains a compatibility alias", (
   assert.match(compatibility, /TASK-001 \| backlog \| Direct Task/);
 });
 
+test("plan amendments update every mutable planning artifact without hand-editing Markdown", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-amend-"));
+  run(["init", "--lean", "--force"], { cwd: dir });
+  run(["plan", "feature", "--add", "Organization context"], { cwd: dir });
+  run(["plan", "sprint", "--add", "Admin batch"], { cwd: dir });
+  run(["plan", "task", "--add", "Initial aside"], { cwd: dir });
+
+  const amended = run([
+    "plan", "task", "--amend", "TASK-001",
+    "--title", "Organization Aside and context selector",
+    "--request", "Add the shared Organization Aside, context selector, routes, and authorization boundaries.",
+    "--acceptance", "Organization context is available before protected routes render.",
+    "--acceptance", "User Account stays separate from Organization administration.",
+    "--section", "Architecture Notes=The Aside owns navigation only; authorization stays server-side.",
+    "--type", "feature", "--feature", "FEAT-001", "--sprint", "SPRINT-001"
+  ], { cwd: dir });
+  assert.match(amended, /Amended TASK-001/);
+
+  const task = run(["plan", "task", "--show", "TASK-001"], { cwd: dir });
+  assert.match(task, /^# Organization Aside and context selector$/m);
+  assert.match(task, /^type: feature$/m);
+  assert.match(task, /^feature: FEAT-001$/m);
+  assert.match(task, /^sprint: SPRINT-001$/m);
+  assert.match(task, /## Architecture Notes/);
+  assert.match(task, /Organization context is available/);
+  assert.match(task, /User Account stays separate/);
+  assert.match(run(["plan", "feature", "--show", "FEAT-001"], { cwd: dir }), /- TASK-001/);
+  assert.match(run(["plan", "sprint", "--show", "SPRINT-001"], { cwd: dir }), /^- TASK-001$/m);
+
+  run(["plan", "feature", "--amend", "FEAT-001", "--purpose", "Keep organization context explicit.", "--exit-criteria", "All organization flows share one context model."], { cwd: dir });
+  run(["plan", "sprint", "--amend", "SPRINT-001", "--timebox", "Deliver in the current admin batch.", "--exit-gate", "Routes and authorization are reviewed."], { cwd: dir });
+  assert.match(run(["plan", "feature", "--show", "FEAT-001"], { cwd: dir }), /Keep organization context explicit/);
+  assert.match(run(["plan", "sprint", "--show", "SPRINT-001"], { cwd: dir }), /Routes and authorization are reviewed/);
+  assert.equal(JSON.parse(run(["review", "artifact", "--run"], { cwd: dir })).passed, true);
+
+  run(["plan", "task", "--start", "TASK-001"], { cwd: dir });
+  assert.throws(() => run(["plan", "task", "--amend", "TASK-001", "--title", "Too late"], { cwd: dir, stdio: ["ignore", "pipe", "pipe"] }), /Command failed/);
+});
+
 test("CLI plan task --add resolves the project root from a subdirectory", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "scrumrun-plan-add-subdir-"));
   run(["init", "--lean", "--force"], { cwd: dir });

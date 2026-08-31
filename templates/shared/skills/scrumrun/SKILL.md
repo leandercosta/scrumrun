@@ -36,7 +36,9 @@ Normal hot path:
 5. follow the briefing's pointers to only the relevant canonical artifacts; go deeper only when the briefing lacks what you need (`## Where to look`, `scrumrun knowledge study "<topic>"`);
 6. load `.scrumrun/core.md` when the method contract or an exceptional transition is needed.
 
-**Never write Run events by hand.** Work directly in code and the linked Task Markdown after approval, then let the one final CLI checkpoint mutate `runs/RUN-NNN.md`: `scrumrun plan run --finalize RUN-NNN`. It creates the validated transition ledger, audits the full workspace delta, and records the Guardrail results together. Do not invoke `scrumrun` during normal execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` commands remain only for owner-requested strict mode. Recover hand-written Runs via `scrumrun plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
+**Never write Run events by hand.** Work directly in code and the linked Task Markdown after approval, then let the one final CLI checkpoint mutate `runs/RUN-NNN.md`: `scrumrun plan run --finalize RUN-NNN`. It creates the validated transition ledger, audits the full workspace delta, and records the Guardrail results together. Do not invoke `npx scrumrun@latest` during normal execution. The older `--validate | --learn | --complete | --satisfy-guardrail | --authorize-mutation | --record-mutation` commands remain only for owner-requested strict mode. Recover hand-written Runs via `scrumrun plan run --normalize-legacy` — originals are preserved byte-exact under `.scrumrun/.migration-backup/runs/`.
+
+**Never hand-edit canonical planning Markdown.** Before a Task starts, refine it with `scrumrun plan task --amend TASK-NNN`; use title/request/acceptance/relation options or generic repeated `--section "Heading=content"`. Feature and Sprint support the same `--amend` pattern. Runs, Reviews, confirmed memory, and Guardrails are append-only evidence/policy, so record a new event or supersede them instead of rewriting them.
 
 Lean mode is a read policy, not an incomplete store. Generated files and `.scrumrun/.cache/` are never authoritative.
 
@@ -163,9 +165,9 @@ Dry-run must not write project data. Apply requires a hashed inventory, byte-exa
 
 ### `scrumrun plan`
 
-- `task`: add/list/show/run/audit/cancel/retry atomic work; use `type: fix` for fixes and `status: backlog` for parked work. `--next` surfaces the oldest backlog Task; `--start [TASK-NNN]` promotes it and creates its first Run.
-- `sprint`: add/list/show/start/complete/block a real Task batch/timebox.
-- `feature`: add/list/show/activate/complete long-lived initiatives.
+- `task`: add/amend/list/show/run/audit/cancel/retry atomic work; use `--amend TASK-NNN` before it starts to refine planning truth without hand-editing Markdown. Use `type: fix` for fixes and `status: backlog` for parked work. `--next` surfaces the oldest backlog Task; `--start [TASK-NNN]` promotes it and creates its first Run.
+- `sprint`: add/amend/list/show/start/complete/block a real Task batch/timebox.
+- `feature`: add/amend/list/show/activate/complete long-lived initiatives.
 - `run`: list/show/render/stats/normalize-legacy/authorize-mutation/record-mutation/satisfy-guardrail/validate/learn/complete/resume/fail/block concrete Task attempts. `--complete` accepts `--summary "…"` to store a technical summary.
 - `intake <request>`: execute the read-only request pipeline; accepts `--type fix|task|feature|docs|discovery` and `--preview "…"`.
 - `challenge <question>`: deep read-only analysis with evidence, risks, options, and recommendation.

@@ -31,7 +31,7 @@ const { ARTIFACT_TYPES, ArtifactRepository } = require(path.join(root, "lib", "v
 const { aliases: COMMAND_ALIASES, resolveAlias, resolveRoute } = require(path.join(root, "lib", "commands", "manifest"));
 const { renderCommandHelp, renderCompatibilityPrompt, renderRootPrompt } = require(path.join(root, "lib", "commands", "render"));
 const { planRequest } = require(path.join(root, "lib", "runtime", "request-engine"));
-const { addPlanArtifact, approveRequest, finalizeRun, nextBacklogTask, refreshErrors, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
+const { addPlanArtifact, amendPlanArtifact, approveRequest, finalizeRun, nextBacklogTask, refreshErrors, refreshState, retryTask, startBacklogTask, transitionRun } = require(path.join(root, "lib", "runtime", "orchestrator"));
 const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
 const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
@@ -1473,6 +1473,27 @@ function executeRootRoute(route) {
     }
     const result = startBacklogTask(process.cwd(), target);
     console.log(`Started ${result.task.id} (${result.run.id}) assigned to ${result.task.assignee || "agent"}.`);
+    return;
+  }
+  if (noun === "plan" && ["task", "feature", "sprint"].includes(subject) && routeArgs[0] === "--amend") {
+    const id = routeArgs[1];
+    if (!id) throw new Error(`--amend requires a ${subject.toUpperCase()}-NNN id.`);
+    const amendArgs = routeArgs.slice(2);
+    const amendValue = (flag) => amendArgs.includes(flag) ? optionValue(amendArgs, flag) : undefined;
+    const result = amendPlanArtifact(process.cwd(), subject, id, {
+      title: amendValue("--title"),
+      request: amendValue("--request"),
+      acceptance: amendArgs.includes("--acceptance") ? optionValues(amendArgs, "--acceptance") : undefined,
+      purpose: amendValue("--purpose"),
+      exitCriteria: amendArgs.includes("--exit-criteria") ? optionValues(amendArgs, "--exit-criteria") : undefined,
+      timebox: amendValue("--timebox"),
+      exitGate: amendArgs.includes("--exit-gate") ? optionValues(amendArgs, "--exit-gate") : undefined,
+      sections: optionValues(amendArgs, "--section"),
+      type: amendValue("--type"),
+      feature: amendValue("--feature"),
+      sprint: amendValue("--sprint")
+    });
+    console.log(`Amended ${result.record.id}: ${path.relative(process.cwd(), result.file)} (status remains ${result.record.status}).`);
     return;
   }
   if (noun === "plan" && ["task", "feature", "sprint"].includes(subject) && routeArgs[0] === "--add") {

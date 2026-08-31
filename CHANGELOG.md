@@ -4,6 +4,16 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 3.0.2 - 2026-08-31
+
+### Added
+
+- **Planning artifact amendments.** `scrumrun plan task|feature|sprint --amend <ID>` updates planning truth through the CLI rather than hand-editing Markdown. It supports title and structured fields plus generic repeated `--section "Heading=content"`, so new scope context does not require another command. Task Feature/Sprint relations update their projections atomically.
+
+### Safety
+
+- A Task can be amended only while `backlog` or `proposed`; once started, its approved scope is preserved and new work belongs in a follow-up Task. Runs, Reviews, confirmed memory, and Guardrails remain append-only/evidence-led by design.
+
 ## 3.0.1 - 2026-08-31
 
 ### Fixed
