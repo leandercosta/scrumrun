@@ -4,7 +4,7 @@
 
 ScrumRun gives an agent a small command surface and a precise project memory: what should be done, how each attempt happened, which decisions constrain the code, and why the architecture exists in its current form.
 
-**Package:** `4.0.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
+**Package:** `4.1.0` · **Method target:** `2.0.0` · **Runtime:** Node.js `>=22.13.0` · **License:** MIT
 
 **New here?** Read the [Quickstart](docs/QUICKSTART.md) — first Run in under 10 minutes, no `SPEC.md` reading required. Full docs map in [`docs/INDEX.md`](docs/INDEX.md).
 
@@ -63,6 +63,32 @@ scrumrun <noun> <subject> <action> [args]
 
 The five nouns are `plan`, `knowledge`, `rules`, `review`, and `config`. `/sc` is an optional AI-client shortcut; `scrumrun sc ...` remains a compatibility alias for existing integrations.
 
+## Compatibility
+
+ScrumRun is designed to be **portable across AI clients and operating systems**. The runtime is plain Markdown + a small Node.js CLI; nothing is tied to a specific vendor.
+
+### Operating systems
+
+| OS | Status | Notes |
+|---|---|---|
+| macOS 12+ | Supported | Primary development platform. |
+| Linux (glibc-based distros) | Supported | Tested on Ubuntu/Debian/Fedora; `fs.watch` uses inotify. |
+| Windows 10/11 | Supported | Requires Git for Windows for the optional pre-commit hook; `.scrumrun/` paths are POSIX-normalized internally. |
+| WSL2 | Supported | Behaves as Linux. |
+
+Requirement everywhere: **Node.js ≥ 22.13.0** and (optionally) `git` on `PATH`.
+
+### AI clients
+
+| Client | Integration | Notes |
+|---|---|---|
+| Claude Code | `scrumrun install claude` | Installs the `scrumrun` skill under `~/.claude/skills/`. |
+| OpenCode | `scrumrun install opencode` | Installs skill under `~/.config/opencode/skills/`. |
+| Codex | `scrumrun install codex` | Installs skill under `~/.codex/skills/`. |
+| Cursor / Windsurf / Zed / any Markdown-capable agent | Manual | Point the agent at `.scrumrun/` and `CORE.md`; no CLI adapter required. |
+
+The method itself (Markdown tree + guardrails + task/run model) is client-agnostic: any agent that can read files can operate a ScrumRun project.
+
 ## Daily flow
 
 Natural language is the normal entry point:
@@ -89,6 +115,8 @@ EXECUTING → VALIDATING → LEARNING → COMPLETED | FAILED | BLOCKED
 ```
 
 Every Task carries a short `## Done when` delivery contract. After approval, the agent works directly in code and Task Markdown until that contract is delivered: it keeps the full discover → implement → verify → fix → verify loop running. A report is allowed only when you ask for it and never ends execution. The normal close is a concise `## Completion`; `## Follow-ups` may only contain work outside the agreed contract. No CLI transition is required.
+
+**Opt-in Task-schema validator.** Adding `task_schema: 1` to a Task's frontmatter turns on the structural checks in `lib/v2/task-schema.js`: `## Request` + `## Done when` are required, `## Completion` (or an associated Run's `## Technical Summary`) is required once the Task is `completed`, and inside a git repo the Task must record its `branch` while executing. `scrumrun doctor --strict` and `scrumrun review artifact --run --strict` promote these to blocking errors; without `--strict` they are warnings. Legacy Tasks without `task_schema` are unaffected.
 
 Guardrails still apply. An agent stops only for an explicit active Guardrail, a secret/security risk, destructive work without approval, or an unmet required delivery criterion. Tests, reviews, and environments are gates only when the owner, `Done when`, or a Guardrail explicitly requires them. Optional missing E2E coverage is a follow-up/risk, not a failed Task.
 
@@ -150,6 +178,22 @@ AI extraction creates candidates only. Confirmation requires resolvable evidence
 The fast graph/search layer is `.scrumrun/.cache/semantic-index.sqlite`. It is ignored and disposable: deleting it never deletes knowledge. The index selects FTS5/BM25 when the current Node.js SQLite build provides it and otherwise uses a deterministic, parameterized lexical fallback; both backends preserve bounded graph retrieval without changing canonical Markdown. Unchanged queries use a metadata-only freshness check; metadata drift falls back to complete content fingerprints before rebuilding. Cache-schema upgrades force one safe disposable rebuild. The current JavaScript/TypeScript adapter derives qualified symbols plus `defined_in`, `depends_on`, `used_by`, and `protected_by` relations.
 
 `map.md` is shown only when its source fingerprint matches the current semantic index. A fresh placeholder or stale map is rejected with an explicit rebuild instruction instead of being presented as project truth.
+
+For local projects that benefit from always-fresh projections, opt into the lightweight watcher in `.scrumrun/config.md` and start it once:
+
+```yaml
+watcher.enabled: true
+watcher.debounce_ms: 250
+watcher.poll_interval_ms: 1500
+```
+
+```bash
+scrumrun config watch --start
+scrumrun config watch --status
+scrumrun config watch --stop
+```
+
+The watcher uses native `fs.watch` where recursive watching is available and polling otherwise. It is never authority or a work gate: a later on-demand rebuild always remains correct if it stops. The daemon records its PID in `.scrumrun/.cache/watcher.pid`, ignores the vault, `.cache/contexts/`, and its own generated outputs, coalesces rapid writes, and writes only `state.md`, `map.md`, and `.cache/`.
 
 ## Project briefing
 
