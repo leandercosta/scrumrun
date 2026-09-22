@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 4.1.2 - 2026-09-22
+
+### Fixed
+
+- **`doctor --strict` now honors `allow_secrets_in`.** The audit pipeline was calling `containsSecret()` directly, ignoring the allowlist declared in `.scrumrun/config.md` frontmatter. Result: files listed under `allow_secrets_in` still triggered `SECRET_CANONICAL`. The audit now loads the allowlist once per run and calls `containsSecretWithAllowlist(text, relativePath, allowlist)` — a straight wiring bug from 4.0. Common false-positive triggers (`password: null`, `password:string`, `password` inside documentation) are now silenceable by whitelisting the specific file(s).
+
 ## 4.1.1 - 2026-09-22
 
 ### Added
