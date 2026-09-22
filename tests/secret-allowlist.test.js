@@ -45,6 +45,32 @@ test("SECRET_CANONICAL fires when config has no allowlist", () => {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test("SECRET_CANONICAL respects allow_secrets_in with multi-line inline array", () => {
+  const dir = mkProject();
+  try {
+    writeTask(dir, "TASK-601", "## Note\n\npassword: null");
+    writeTask(dir, "TASK-602", "## Note\n\npassword: null");
+    const configFile = path.join(dir, ".scrumrun", "config.md");
+    fs.writeFileSync(configFile, "---\nallow_secrets_in: [tasks/TASK-601.md,\ntasks/TASK-602.md]\n---\n\n# config\n");
+    const audit = auditProject(dir);
+    const files = audit.findings.filter((f) => f.code === "SECRET_CANONICAL").map((s) => s.message);
+    assert.equal(files.length, 0, `both files must be whitelisted; findings: ${files.join(" | ")}`);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("SECRET_CANONICAL respects allow_secrets_in as YAML block list", () => {
+  const dir = mkProject();
+  try {
+    writeTask(dir, "TASK-701", "## Note\n\npassword: null");
+    writeTask(dir, "TASK-702", "## Note\n\npassword: null");
+    const configFile = path.join(dir, ".scrumrun", "config.md");
+    fs.writeFileSync(configFile, "---\nallow_secrets_in:\n  - tasks/TASK-701.md\n  - tasks/TASK-702.md\n---\n\n# config\n");
+    const audit = auditProject(dir);
+    const files = audit.findings.filter((f) => f.code === "SECRET_CANONICAL").map((s) => s.message);
+    assert.equal(files.length, 0, `both files must be whitelisted; findings: ${files.join(" | ")}`);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test("SECRET_CANONICAL respects allow_secrets_in from config.md frontmatter", () => {
   const dir = mkProject();
   try {

@@ -4,6 +4,12 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 4.1.3 - 2026-09-22
+
+### Fixed
+
+- **`parseFrontmatter` handles multi-line arrays and YAML block lists.** The inline `allow_secrets_in: [a,\nb,\nc]` and the block form `allow_secrets_in:\n  - a\n  - b` used to be parsed as a single truncated string, silently disabling the whitelist. The parser now (a) keeps reading until the closing `]` for multi-line inline arrays, and (b) recognizes `- item` block lists as an array value. Existing single-line inline arrays continue to work.
+
 ## 4.1.2 - 2026-09-22
 
 ### Fixed
