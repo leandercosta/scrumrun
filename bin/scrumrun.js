@@ -35,11 +35,13 @@ const { addPlanArtifact, amendPlanArtifact, approveRequest, finalizeRun, nextBac
 const { authorizeMutation, recordMutation, satisfyGuardrail } = require(path.join(root, "lib", "runtime", "mutation-gateway"));
 const { recordArtifactReview } = require(path.join(root, "lib", "runtime", "review-service"));
 const { createMemory, listMemory, showMemory, transitionMemory } = require(path.join(root, "lib", "memory", "service"));
+const { applyCompaction, proposedClusters, rollbackCompaction } = require(path.join(root, "lib", "memory", "compaction"));
 const { indexPath, indexStatus, mapStatus, queryIndex, rebuildIndex, writeMap } = require(path.join(root, "lib", "memory", "index"));
 const { auditProject } = require(path.join(root, "lib", "v2", "conformance"));
 const { recoverPendingTransactions, previewPendingRecovery } = require(path.join(root, "lib", "v2", "transaction"));
 const { containsSecret } = require(path.join(root, "lib", "security", "secrets"));
 const { sealPolicyIntegrity } = require(path.join(root, "lib", "runtime", "policy-integrity"));
+const { readStatus: watcherStatus, startWatcher, stopWatcher } = require(path.join(root, "lib", "runtime", "watcher"));
 
 const COMMANDS = ["sc"];
 const COMPATIBILITY_COMMANDS = Object.keys(COMMAND_ALIASES);
@@ -59,7 +61,7 @@ Usage:
   scrumrun <noun> <subject> <action> [args]
   scrumrun sc <noun> <subject> <action> [args]  # compatibility alias
   scrumrun install [all|codex|opencode|claude] [--force]
-  scrumrun update  [all|codex|opencode|claude] [--project] [--seal-policy] [--migrate] [--verbose]
+  scrumrun update  [all|codex|opencode|claude] [--project] [--seal-policy] [--migrate] [--repair-legacy] [--verbose]
   scrumrun init [--local|--shared] [--lean] [--no-agent-hint] [--force]
   scrumrun status
   scrumrun core [--path|--prompt]
@@ -68,6 +70,7 @@ Usage:
   scrumrun migrate --to 2 --apply
   scrumrun migrate --to 2 --rollback
   scrumrun doctor [all|codex|opencode|claude] [--strict] [--recover]
+  scrumrun config watch --start|--stop|--status  # optional generated-projection daemon; never a gate
   scrumrun repair [--recover-orphan-tasks] [--apply]
   scrumrun uninstall [--force]
 
@@ -219,11 +222,16 @@ function cleanupLegacy(commandsDir, skillsDir) {
       }
     }
   }
-  const oldSkill = path.join(skillsDir, "ai-scrum");
-  if (fs.existsSync(oldSkill)) {
-    fs.rmSync(oldSkill, { recursive: true, force: true });
-    installSummary.cleaned += 1;
-    installLog(`  rm legacy ${oldSkill}`);
+  if (fs.existsSync(skillsDir)) {
+    const legacySkillNames = new Set(["ai-scrum", ...COMPATIBILITY_COMMANDS]);
+    for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (!legacySkillNames.has(entry.name)) continue;
+      const target = path.join(skillsDir, entry.name);
+      fs.rmSync(target, { recursive: true, force: true });
+      installSummary.cleaned += 1;
+      installLog(`  rm legacy ${target}`);
+    }
   }
 }
 
@@ -384,10 +392,13 @@ function refreshProjectGuidance(cwd = process.cwd()) {
   const marker = path.join(cwd, ".scrumrun", "method.json");
   const sealed = writeFile(marker, sealPolicyIntegrity(path.join(cwd, ".scrumrun")), { backup: true });
   results.push({ status: sealed.changed ? "updated" : "skipped", dest: marker, backup: sealed.backup });
+  const viewFile = path.join(cwd, ".scrumrun", "view.html");
+  const viewResult = writeFile(viewFile, fs.readFileSync(path.join(templates, "shared", "view.html"), "utf8"), { backup: true });
+  results.push({ status: viewResult.changed ? "updated" : "skipped", dest: viewFile, backup: viewResult.backup });
   return results;
 }
 
-function updateInstallation(target, { migrate = false, project = false, sealPolicy = false, verbose = false } = {}) {
+function updateInstallation(target, { migrate = false, project = false, sealPolicy = false, verbose = false, repairLegacy = false } = {}) {
   installVerbose = verbose;
   installSummary.cleaned = 0;
   installSummary.written = 0;
@@ -403,6 +414,18 @@ function updateInstallation(target, { migrate = false, project = false, sealPoli
     const sealed = writeFile(marker, sealPolicyIntegrity(scrumDir, { includeGuardrails: true }), { backup: true });
     projectResults.push({ status: sealed.changed ? "updated" : "skipped", dest: marker, backup: sealed.backup });
   }
+  let repairSummary = "";
+  if (repairLegacy && v2Project()) {
+    try {
+      const { repair } = require(path.join(root, "lib", "commands", "repair"));
+      const scrumDir = path.join(process.cwd(), ".scrumrun");
+      const result = repair(scrumDir, { apply: true, recoverOrphanTasks: true });
+      const applied = (result.plan && result.plan.entries && result.plan.entries.length) || 0;
+      repairSummary = ` Legacy repair: ${applied} entry(ies) normalized.`;
+    } catch (error) {
+      repairSummary = ` Legacy repair skipped: ${error.message}.`;
+    }
+  }
   if (migrate && v2Project()) {
     try {
       refreshState(path.join(process.cwd(), ".scrumrun"));
@@ -414,7 +437,7 @@ function updateInstallation(target, { migrate = false, project = false, sealPoli
   if (!verbose) {
     const targetSummary = installSummary.targets.join(", ") || "no clients";
     const projectSummary = projectResults.length ? ` Project guidance: ${projectResults.filter((item) => item.status === "updated").length} file(s) refreshed.` : "";
-    console.log(`Updated ${targetSummary} — ${installSummary.written} files written, ${installSummary.cleaned} legacy removed.${projectSummary} Run with --verbose to see file paths.`);
+    console.log(`Updated ${targetSummary} — ${installSummary.written} files written, ${installSummary.cleaned} legacy removed.${projectSummary}${repairSummary} Run with --verbose to see file paths.`);
   }
   return migration;
 }
@@ -1372,6 +1395,25 @@ function printMemoryArtifact(artifact) {
 function runV2Memory(subject, args) {
   const kind = subject === "fact" ? "knowledge" : subject;
   const action = args[0];
+  if (kind === "dossier" && action === "--compact") {
+    if (args.includes("--dry-run")) {
+      const preview = proposedClusters(process.cwd());
+      console.log(JSON.stringify({ mode: "dry-run", ...preview }, null, 2));
+      return;
+    }
+    if (args.includes("--apply")) {
+      const result = applyCompaction(process.cwd(), { approved: args.includes("--approve") });
+      console.log(JSON.stringify({ mode: "apply", ...result }, null, 2));
+      return;
+    }
+    if (args.includes("--rollback")) {
+      const dossier = args[args.indexOf("--rollback") + 1];
+      if (!dossier || dossier.startsWith("--")) throw new Error("--rollback requires a DOS-NNN id.");
+      console.log(JSON.stringify(rollbackCompaction(process.cwd(), dossier), null, 2));
+      return;
+    }
+    throw new Error("Usage: scrumrun knowledge dossier --compact --dry-run|--apply --approve|--rollback DOS-NNN");
+  }
   const createAction = kind === "insight" ? "--propose" : "--add";
   if (action === createAction) {
     const artifact = createMemory(process.cwd(), kind, memoryOptions(args));
@@ -1691,7 +1733,7 @@ function executeRootRoute(route) {
   if (noun === "knowledge" && subject === "vault") return runVault(routeArgs);
   if (noun === "knowledge" && subject === "context") return runContext(routeArgs);
   if (noun === "review" && subject === "artifact" && routeArgs[0] === "--run") {
-    const audit = auditProject(process.cwd());
+    const audit = auditProject(process.cwd(), { staged: routeArgs.includes("--staged"), strict: routeArgs.includes("--strict") });
     console.log(JSON.stringify(audit, null, 2));
     if (!audit.passed) process.exitCode = 1;
     return;
@@ -1714,6 +1756,15 @@ function executeRootRoute(route) {
   if (noun === "config" && subject === "doctor") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
     return doctor(target, { strict: routeArgs.includes("--strict"), recover: routeArgs.includes("--recover"), dryRun: routeArgs.includes("--dry-run") });
+  }
+  if (noun === "config" && subject === "watch") {
+    let result;
+    if (routeArgs[0] === "--start") result = startWatcher(process.cwd());
+    else if (routeArgs[0] === "--stop") result = stopWatcher(process.cwd());
+    else if (routeArgs[0] === "--status") result = watcherStatus(process.cwd());
+    else throw new Error("Usage: scrumrun config watch --start|--stop|--status");
+    console.log(JSON.stringify(result, null, 2));
+    return;
   }
   if (noun === "config" && subject === "update") {
     const target = ["all", "codex", "opencode", "claude"].includes(routeArgs[0]) ? routeArgs[0] : "all";
@@ -2350,6 +2401,7 @@ function initProject({ force, mode, agentHint, lean }) {
 
   results.push(...copyDir(path.join(projectTemplate, ".scrumrun"), path.join(cwd, ".scrumrun"), { force, vars }));
   results.push(copyFile(path.join(root, "CORE.md"), path.join(cwd, ".scrumrun", "core.md"), { force, vars }));
+  results.push(copyFile(path.join(templates, "shared", "view.html"), path.join(cwd, ".scrumrun", "view.html"), { force }));
   if (force || !markerExisted) {
     const sealed = writeFile(marker, sealPolicyIntegrity(path.join(cwd, ".scrumrun"), { includeGuardrails: true }), { backup: false });
     results.push({ status: sealed.changed ? "written" : "skipped", dest: marker, backup: sealed.backup });
@@ -2632,7 +2684,7 @@ function doctor(target = "all", { compatibility = false, strict = false, recover
       ok = false;
       console.log(`miss ScrumRun project audit: ${scrumDir}`);
     } else {
-      const audit = auditProject(process.cwd());
+      const audit = auditProject(process.cwd(), { strict: true });
       const blocking = audit.findings.filter((item) => ["critical", "high"].includes(item.severity));
       ok = ok && audit.passed && blocking.length === 0;
       console.log(`${audit.passed && blocking.length === 0 ? "ok " : "fail"} ScrumRun project audit: ${audit.findings.length} finding(s)`);
@@ -2656,12 +2708,38 @@ if (!command || command === "--help" || command === "-h") {
   console.log(`ScrumRun ${version}`);
 } else if (command === "install" || command === "update") {
   const target = ["all", "codex", "opencode", "claude"].includes(args[1]) ? args[1] : "all";
-  if (command === "update") updateInstallation(target, { migrate: args.includes("--migrate"), project: args.includes("--project"), sealPolicy: args.includes("--seal-policy"), verbose: args.includes("--verbose") });
+  if (command === "update") updateInstallation(target, { migrate: args.includes("--migrate"), project: args.includes("--project"), sealPolicy: args.includes("--seal-policy"), verbose: args.includes("--verbose"), repairLegacy: args.includes("--repair-legacy") });
   else install(target, true, { compatibility: false });
 } else if (command === "sc") {
   runRoot(args.slice(1));
 } else if (["plan", "knowledge", "rules", "review", "config"].includes(command)) {
   runRoot(args);
+} else if (command === "action") {
+  const { executeAction, listActions } = require(path.join(root, "lib", "actions"));
+  try {
+    const name = args[1];
+    if (!name || name === "--list") {
+      console.log("Available actions:");
+      for (const item of listActions()) console.log(`  ${item.name.padEnd(30)} ${item.describe}`);
+      process.exit(0);
+    }
+    const rest = args.slice(2);
+    let payload = {};
+    const payloadFlag = rest.indexOf("--payload");
+    const fileFlag = rest.indexOf("--file");
+    if (payloadFlag !== -1) {
+      payload = JSON.parse(rest[payloadFlag + 1] || "{}");
+    } else if (fileFlag !== -1) {
+      payload = JSON.parse(fs.readFileSync(rest[fileFlag + 1], "utf8"));
+    } else if (rest.includes("--stdin")) {
+      payload = JSON.parse(fs.readFileSync(0, "utf8"));
+    }
+    const result = executeAction(name, process.cwd(), payload);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    console.error(`action failed: ${error.message}`);
+    process.exitCode = 1;
+  }
 } else if (COMMAND_ALIASES[command]) {
   runCompatibilityAlias(command, args.slice(1));
 } else if (command === "init") {

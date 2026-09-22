@@ -4,6 +4,17 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased
 
+## 4.1.1 - 2026-09-22
+
+### Added
+
+- **`scrumrun update --repair-legacy`.** New flag runs `repair --apply` after refreshing project guidance, so a single `scrumrun update --project --repair-legacy` upgrades the CLI, refreshes packaged Markdown, and normalizes the local `.scrumrun/` tree in one shot. The repair pass covers status aliases, `feature:` free-text kebab labels, guardrail scopes, missing frontmatter, orphaned Runs/Tasks, and legacy Sprint projections — never touches secrets (they always require human review).
+
+### Changed
+
+- **Broader status aliases in `scrumrun repair`.** `TASK_STATUS_ALIAS` now maps `pending`, `planned`, `skipped`, `canceled`, `wontdo`/`won't do`, `wip`, `doing`, `in-progress`, `review`, `reviewing`, `finished`, `closed` alongside the existing `done`/`todo`/`complete`/`in_progress`/`executing`/`active`. `RUN_STATUS_ALIAS` gains `in-progress`, `wip`, `finished`, `closed`, `canceled`/`cancelled`, `skipped`, `running`. `doctor --strict` remains strict for fresh installs; the aliases only take effect when an owner explicitly runs `repair --apply` (or `update --repair-legacy`).
+- **Guardrail scope parser tolerates parentheses and `+` separators.** `Scope: frontend + backend` and `Scope: frontend (vue templates, docs)` now parse to the intended token(s) instead of splitting on commas inside parens and producing bogus scope names. Unknown scopes still fail conformance in fresh installs — `repair` rewrites them to `all` when normalizing legacy projects.
+
 ## 4.1.0 - 2026-09-22
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "scrumrun",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "description": "Markdown-first Agile memory and guardrails for AI coding agents.",
   "bin": {
     "scrumrun": "bin/scrumrun.js",
